@@ -1,0 +1,57 @@
+/* 仅 remotion 转换页使用：把原视频组件（树、表格、流程、卡片、SVG 图示）还原成可阅读的网页结构。
+   颜色全部取自 site.css 的变量（含深色模式）；不覆盖 site.css 任何规则。 */
+.para-body .rm-table { overflow-x: auto; margin: 4px 0; }
+.rm-table table { border-collapse: collapse; width: 100%; font-size: 15px; }
+.rm-table th, .rm-table td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+.rm-table thead th { background: var(--bg-soft); }
+.rm-table tbody th { font-weight: 700; white-space: nowrap; }
+.rm-table tr[data-key="1"] td, .rm-table tr[data-key="1"] th { background: var(--hl-orange-band); }
+
+.rm-tree, .rm-tree ul { list-style: none; margin: 4px 0; padding-left: 1.2em; border-left: 2px solid var(--line); }
+.rm-tree { border-left: 0; padding-left: 0; }
+.rm-tree li { margin: 5px 0; }
+.rm-node { display: inline-block; border: 2px solid currentColor; padding: 2px 10px; font-weight: 700; background: var(--surface); }
+.rm-node small { display: block; font-size: 12.5px; font-weight: 500; color: var(--fg-dim); }
+
+.rm-chain, .rm-rows, .rm-bullets { margin: 6px 0; padding: 0; list-style: none; }
+.rm-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 4px; }
+.rm-chain li { display: inline-flex; align-items: center; gap: 4px; }
+.rm-arrow { color: var(--fg-dim); font-weight: 700; padding: 0 2px; }
+.rm-step { display: inline-block; border: 2px solid currentColor; padding: 2px 10px; font-weight: 700; background: var(--surface); }
+.rm-step small { display: block; font-size: 12.5px; font-weight: 500; color: var(--fg-dim); }
+.rm-flow { display: grid; gap: 8px; }
+
+.rm-rows li { display: flex; gap: 10px; align-items: flex-start; margin: 6px 0; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.rm-badge { flex: none; min-width: 1.7em; height: 1.7em; padding: 0 6px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;  color: #fff; font-weight: 700; font-size: 13px; }
+.rm-row-title { margin-right: .6em; }
+.rm-bullets li { margin: 4px 0; padding-left: 1.1em; position: relative; }
+.rm-bullets li::before { content: ""; position: absolute; left: 0; top: .65em; width: 7px; height: 7px; background: var(--orange); }
+
+.rm-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(13em, 1fr)); gap: 10px; margin: 6px 0; }
+.rm-cards > .rm-a { display: block; }
+.rm-card { border: 2px solid var(--line); background: var(--surface); padding: 8px 12px; }
+.rm-card-title { font-weight: 700; font-size: 1.05em; }
+.rm-card-body { font-weight: 600; margin-top: 4px; }
+.rm-card-note { font-size: 13px; color: var(--fg-dim); margin-top: 4px; }
+.rm-def { margin: 6px 0; padding: 8px 14px; border-left: 4px solid var(--orange); background: var(--hl-orange-band); font-weight: 600; }
+
+.rm-svg { display: block; width: 100%; height: auto; margin: 6px 0; }
+.rm-svg text { font-family: inherit; }
+.rm-stage + .rm-stage { margin-top: 6px; border-top: 1px dashed var(--line); padding-top: 6px; }
+.para-body figure.photo { margin: 6px 0; }
+.para-body figure.photo img { max-height: 280px; }
+.para-body mark { background: none; }
+.para-body mark.hl-red, .para-body mark.hl-orange, .para-body mark.hl-green { background: linear-gradient(transparent 55%, var(--hl-red-band) 0); }
+.para-body mark.hl-orange { background: linear-gradient(transparent 55%, var(--hl-orange-band) 0); }
+.para-body mark.hl-green { background: linear-gradient(transparent 55%, var(--hl-green-band) 0); }
+.para-body > div { margin: 4px 0; }
+.tip-body mark { background: none; }
+
+/* 嵌在块内（未被提升为 .tip）的提示框：与 .tip 同一套变量 */
+.rm-callout { margin: 6px 0; padding: 8px 12px; border: 1px solid var(--tip-test-line); background: var(--tip-test-bg); line-height: 1.7; }
+.rm-callout::before { content: attr(data-label); display: inline-block; margin-right: 8px; padding: 1px 7px; font-size: 12.5px; font-weight: 700; background: var(--accent-text); color: var(--on-label); }
+.rm-callout[data-label="易错"] { background: var(--tip-mistake-bg); border-color: var(--tip-mistake-line); }
+.rm-callout[data-label="易错"]::before { background: var(--red); }
+.rm-callout[data-label="解题方法"] { background: var(--method-bg); border-color: var(--method-line); }
+.rm-callout[data-label="解题方法"]::before { background: var(--method); }
+.rm-stage-label { display: inline-block; margin: 2px 0; padding: 0 8px; font-size: 12.5px; font-weight: 700; color: var(--fg-dim); border: 1px solid var(--line); }

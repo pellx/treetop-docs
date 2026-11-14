@@ -1,7 +1,13 @@
 /* 树梢文档 —— 交互脚本（外壳与内容页共用）
- * html[data-mode]="shell"：index.html，外壳；音频播放器在此，内容页放在 iframe 中。
+ * html[data-mode]="shell"：根目录 index.html，外壳；音频播放器在此，内容页放在 iframe 中。
  * html[data-mode]="page" ：内容页；在 iframe 中（embedded）时由外壳播放，独立打开时自带播放器。
  * 外壳 ⇄ 内容页 通过 postMessage 通信，消息均带 src:'bio-docs'。
+ *
+ * 多册：SITE / PLAYLIST / SEARCH_DATA 收录全部册，按册工作——
+ *   外壳路由 #/ 为五册总索引，#/<册key>（如 #/bx1）为本册目录，#/<章id>、#/<期>/<锚点> 同单册；
+ *   当前册决定：侧栏显示哪一组 .nav-group、搜索范围、播放清单（连播到本册最后一期停止，不出册）。
+ *   内容页只看自己所在的册；共用页面（使用说明）搜索全部册。
+ * 路径：页面 data-root 为到站点根的相对前缀；SITE…file、PLAYLIST.src 都相对站点根。
  */
 (function () {
   'use strict';
@@ -55,12 +61,15 @@
   }
 
   /* ---------- 站点结构索引 ---------- */
-  var EPS = {}, EP_ORDER = [], CH_OF = {};
+  var EPS = {}, EP_ORDER = [], CH_OF = {}, BOOK_BY = {}, BOOK_OF = {}, PL_BY = {};
   SITE.books.forEach(function (b) {
+    BOOK_BY[b.key] = b; PL_BY[b.key] = [];
     b.chapters.forEach(function (ch) {
-      ch.eps.forEach(function (e) { e.book = b; e.ch = ch; EPS[e.slug] = e; EP_ORDER.push(e.slug); CH_OF[e.slug] = ch; });
+      BOOK_OF[ch.id] = b.key;
+      ch.eps.forEach(function (e) { e.book = b; e.ch = ch; EPS[e.slug] = e; EP_ORDER.push(e.slug); CH_OF[e.slug] = ch; BOOK_OF[e.slug] = b.key; });
     });
   });
+  PL.forEach(function (x) { var k = BOOK_OF[x.ep]; if (k) PL_BY[k].push(x); });
   function sceneLabel(item) {
     var e = EPS[item.ep]; if (!e) return item.n;
     if (item.p === 0) return '导读';
@@ -176,7 +185,7 @@
         sub.title = it.t;
       } else if (k < 0) {
         bar.style.width = '0';
-        if (title.textContent !== '未开始播放') sub.textContent = scope === 'all' ? '已播放到最后一期，连播结束' : '本期播放完毕';
+        if (title.textContent !== '未开始播放') sub.textContent = scope === 'all' ? '已播放到本册最后一期，连播结束' : '本期播放完毕';
       }
       if (oldState) oldState(playing, it, k);
     };
@@ -190,13 +199,13 @@
     function syncEpBtn(li) { var b = $('.nav-ep-btn', li); if (b) b.setAttribute('aria-expanded', li.classList.contains('open') ? 'true' : 'false'); }
     function setPts(eps, open) { eps.forEach(function (li) { li.classList.toggle('open', open); syncEpBtn(li); }); }
     function allOpen(eps) { return eps.length > 0 && eps.every(function (li) { return li.classList.contains('open'); }); }
-    function setAll(open) {
-      $$('.nav-ch', side).forEach(function (ch) {
+    function setAll(scope, open) {
+      $$('.nav-ch', scope).forEach(function (ch) {
         ch.classList.toggle('collapsed', !open);
         var cb = $('.nav-ch-btn', ch); if (cb) cb.setAttribute('aria-expanded', open ? 'true' : 'false');
         var pb = $('.nav-ch-points', ch); if (pb) pb.setAttribute('aria-pressed', open ? 'true' : 'false');
       });
-      setPts($$('.nav-ep', side), open);
+      setPts($$('.nav-ep', scope), open);
     }
 
     $$('.nav-ch-btn').forEach(function (b) {
@@ -247,14 +256,16 @@
       });
     }
 
-    /* 书本级：展开/收起全部章节与考点 */
-    var book = $('.nav-book', side);
-    if (book && !$('.nav-tools', side)) {
+    /* 书本级：展开/收起全部章节与考点（每册一组；外壳中每个 .nav-group 各自一组，总索引组没有章节则不加） */
+    $$('.nav-book', side).forEach(function (book) {
+      var grp = book.parentNode;
+      if (!$('.nav-ch', grp) || $('.nav-tools', grp)) return;
       book.insertAdjacentHTML('afterend',
         '<div class="nav-tools"><button type="button" data-nav="open">全部展开</button><button type="button" data-nav="close">全部收起</button></div>');
-      on($('[data-nav="open"]', side), 'click', function () { setAll(true); });
-      on($('[data-nav="close"]', side), 'click', function () { setAll(false); });
-    }
+      var tools = book.nextElementSibling;
+      on($('[data-nav="open"]', tools), 'click', function () { setAll(grp, true); });
+      on($('[data-nav="close"]', tools), 'click', function () { setAll(grp, false); });
+    });
 
     /* 章级：展开/收起本章全部考点 */
     $$('.nav-ch', side).forEach(function (ch) {
@@ -323,7 +334,8 @@
   }
 
   /* ---------- 搜索 ---------- */
-  function initSearch(go) {
+  // scope()：返回当前册 key（只搜本册）或 ''（搜全部册）
+  function initSearch(go, scope) {
     var q = $('#q'), box = $('#results'); if (!q || !box) return;
     var isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
     var hint = $('#kbdHint'); if (hint && isMac) hint.textContent = '⌘ K';
@@ -349,8 +361,9 @@
       var v = q.value.trim().toLowerCase();
       if (!v) { box.hidden = true; box.innerHTML = ''; cur = []; return; }
       var terms = v.split(/\s+/).filter(Boolean);
-      var res = [];
+      var res = [], sc = scope ? scope() : '';
       idx.forEach(function (r) {
+        if (sc && BOOK_OF[r.x.ep] !== sc) return;
         var score = 0;
         for (var i = 0; i < terms.length; i++) {
           var t = terms[i], inT = r.t.indexOf(t) >= 0, inS = r.s.indexOf(t) >= 0, inB = r.b.indexOf(t) >= 0;
@@ -571,7 +584,7 @@
     initSearch(function (x, href) {
       if (x.ep === EP) { history.replaceState(null, '', '#' + (x.a || '')); gotoAnchor(x.a, true); setNav(EP, x.a, 'read'); }
       else location.href = href;
-    });
+    }, function () { return BOOK_OF[EP] || ''; });
     if (EP) {
       var items = PL.filter(function (x) { return x.ep === EP; });
       player = new Player(items, ROOT, {
@@ -601,7 +614,8 @@
     var follow = true; // 跨期续播时，若正文停留在刚播完的那一期，则跟随翻页
     themeHook = function (v) { if (frame && frame.contentWindow) post(frame.contentWindow, { t: 'theme', v: v }); };
 
-    var player = new Player(PL, '', {
+    var curBook = '';   // 当前册：决定侧栏分组、搜索范围、播放清单
+    var player = new Player([], '', {
       onLine: function (it, k, prev) {
         setNav(it.ep, it.a === 'intro' ? '' : it.a, 'play');
         markHomeRow(it.ep);
@@ -612,9 +626,25 @@
       },
       onEnd: function () { setNav('', '', 'play'); markHomeRow(''); if (frameReady) post(frame.contentWindow, { t: 'clear' }); }
     });
+    player.book = '';
+    // 播放清单只含一册：在另一册开始播放时才切换（正在播的册不受浏览其他册影响）
+    function usePlaylist(key) {
+      if (!key || !PL_BY[key] || player.book === key) return;
+      clearTimeout(player.gapTimer);
+      player.audio.pause();
+      player.items = PL_BY[key]; player.book = key; player.i = -1;
+      player.emit();
+    }
+    function playEp(ep, id) {
+      usePlaylist(BOOK_OF[ep]);
+      var k = id ? player.indexOf(ep, id) : player.items.findIndex(function (x) { return x.ep === ep; });
+      if (k >= 0) player.playAt(k);
+    }
     player.startIndex = function () {
-      // 播放器“播放”键：正文显示某期时从该期开头，否则从第一期
-      if (frameKind === 'ep' && frameEp) { var k = player.items.findIndex(function (x) { return x.ep === frameEp; }); if (k >= 0) return k; }
+      // 播放器“播放”键（未开始时）：正文显示某期时从该期开头，否则从当前册（总索引时为第一册）第一期
+      var ep = frameKind === 'ep' && frameEp ? frameEp : '';
+      usePlaylist(ep ? BOOK_OF[ep] : (curBook || SITE.books[0].key));
+      if (ep) { var k = player.items.findIndex(function (x) { return x.ep === ep; }); if (k >= 0) return k; }
       return 0;
     };
     bindPlayerUI(player, 'all');
@@ -622,15 +652,31 @@
     initSearch(function (x) {
       var r = '#/' + x.ep + (x.a ? '/' + x.a : '');
       if (location.hash === r) route(); else location.hash = r;
-    });
+    }, function () { return curBook; });
+
+    // 切换当前册：侧栏只显示该册一组（'' 为五册总索引组），品牌副标题随之变化
+    var brandSub = $('.brand-sub'), brandSub0 = brandSub ? brandSub.textContent : '';
+    function setBook(key) {
+      curBook = BOOK_BY[key] ? key : '';
+      $$('.nav-group[data-book]').forEach(function (g) { g.hidden = g.getAttribute('data-book') !== curBook; });
+      if (brandSub) brandSub.textContent = curBook ? BOOK_BY[curBook].full : brandSub0;
+    }
 
     function markHomeRow(ep) { $$('.ep-table tr[data-ep]').forEach(function (tr) { tr.classList.toggle('playing-row', tr.getAttribute('data-ep') === ep); }); }
 
-    function showHome(chId) {
+    // key 为 '' 时是五册总索引，否则是该册的本册目录（chId 定位到章）
+    function showHome(key, chId) {
+      setBook(key);
       frame.hidden = true; home.hidden = false; frameKind = '';
-      topTitle.textContent = SITE.title + ' · 总索引';
-      D.title = '总索引 · ' + SITE.title;
-      setNav('', '', 'read'); markSpecial('home');
+      $$('.home-inner[data-home]').forEach(function (x) { x.hidden = x.getAttribute('data-home') !== curBook; });
+      if (curBook) {
+        topTitle.textContent = SITE.title + ' · ' + BOOK_BY[curBook].full;
+        D.title = BOOK_BY[curBook].full + ' · ' + SITE.title;
+      } else {
+        topTitle.textContent = SITE.title + ' · 总索引';
+        D.title = '总索引 · ' + SITE.title;
+      }
+      setNav('', '', 'read'); markSpecial(curBook ? 'book' : 'home');
       if (chId) { var el = D.getElementById(chId); if (el) el.scrollIntoView({ block: 'start' }); }
       else home.scrollTop = 0;
     }
@@ -649,7 +695,9 @@
       var h = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
       var parts = h.split('/');
       var head = parts[0] || '', anchor = parts.slice(1).join('/');
-      if (!head || CH_BY_ID[head]) { showHome(head); return; }
+      if (!head) { showHome('', ''); return; }
+      if (BOOK_BY[head]) { showHome(head, ''); return; }
+      if (CH_BY_ID[head]) { showHome(BOOK_OF[head], head); return; }
       if (head === 'guide') {
         loadFrame(SITE.guide, 'guide', '', anchor);
         topTitle.textContent = '使用方法'; D.title = '使用方法 · ' + SITE.title;
@@ -657,7 +705,8 @@
         return;
       }
       var e = EPS[head];
-      if (!e) { showHome(''); return; }
+      if (!e) { showHome('', ''); return; }
+      setBook(BOOK_OF[head]);
       markSpecial('');
       loadFrame(e.file, 'ep', head, anchor);
       topTitle.textContent = e.code + ' ' + e.sec + ' ' + e.full;
@@ -679,7 +728,7 @@
         if (it && it.ep === frameEp) post(frame.contentWindow, { t: 'active', ep: it.ep, id: it.id, scroll: !pendingGoto });
         pendingGoto = null;
       } else if (m.t === 'play') {
-        var k = player.indexOf(m.ep, m.id); if (k >= 0) player.playAt(k);
+        playEp(m.ep, m.id);
       } else if (m.t === 'nav') {
         if (location.hash === m.route || (m.route === '#/' && !location.hash)) route(); else location.hash = m.route;
       } else if (m.t === 'spy') {
@@ -696,13 +745,11 @@
       }
     });
 
-    // 总索引中的“从本期开始连播”
+    // 总索引 / 本册目录中的“从本期开始连播”（切换到该期所在册的播放清单）
     on(D, 'click', function (ev) {
       var b = ev.target.closest('[data-play-ep]'); if (!b) return;
       ev.preventDefault();
-      var ep = b.getAttribute('data-play-ep');
-      var k = player.items.findIndex(function (x) { return x.ep === ep; });
-      if (k >= 0) player.playAt(k);
+      playEp(b.getAttribute('data-play-ep'));
     });
     // 点击与当前哈希相同的路由链接时（滚动侦测用 replaceState 改过哈希），hashchange 不会触发，手动路由
     on(D, 'click', function (ev) {
@@ -727,5 +774,5 @@
   if (MODE === 'shell') initShell(); else initPage();
 
   // 供自动化测试读取
-  window.__bio = { mode: MODE, embed: EMBED, ep: EP };
+  window.__bio = { mode: MODE, embed: EMBED, ep: EP, book: BOOK_OF[EP] || '' };
 })();
