@@ -475,6 +475,7 @@ th { background: var(--bg-soft); font-weight: 600; white-space: nowrap; }
 
 /* ---------- 外壳 & 总索引 ---------- */
 .stage { position: fixed; top: var(--top-h); left: var(--side-w); right: 0; bottom: var(--player-h); }
+body.no-player .stage { bottom: 0; }
 .home { position: absolute; inset: 0; overflow-y: auto; padding: 32px 40px 64px; }
 .home[hidden], .frame[hidden] { display: none; }
 .frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
