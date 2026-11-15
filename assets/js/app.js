@@ -732,6 +732,37 @@
 
     function markHomeRow(ep) { $$('.ep-table tr[data-ep]').forEach(function (tr) { tr.classList.toggle('playing-row', tr.getAttribute('data-ep') === ep); }); }
 
+    /* Windows 路径式面包屑：根图标与当前位置保留，空间不足时从左侧省略中间路径。 */
+    function compressTopTitle() {
+      var units = $$('[data-crumb]', topTitle), ellipsis = $('[data-crumb-ellipsis]', topTitle);
+      if (!units.length || !ellipsis || !topTitle.clientWidth) return;
+      units.forEach(function (u) { u.hidden = false; }); units[units.length - 1].style.flex = 'none'; ellipsis.hidden = true;
+      var i = 0;
+      while (topTitle.scrollWidth > topTitle.clientWidth && i < units.length - 1) {
+        units[i].hidden = true; ellipsis.hidden = false; i++;
+      }
+      if (topTitle.scrollWidth > topTitle.clientWidth) units[units.length - 1].style.flex = '0 1 auto';
+    }
+    topLayoutHook = function () {
+      if (searchLayoutHook) searchLayoutHook();
+      compressTopTitle();
+    };
+    on(window, 'resize', topLayoutHook);
+    function setTopCrumbs(items) {
+      var root = '<a class="top-crumb-home" href="#/" aria-label="树梢文档，返回总索引" title="树梢文档 · 总索引">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a3 3 0 01-3-3V6a3 3 0 013-3z"/><path d="M7 3a3 3 0 00-3 3v12a3 3 0 013-3h12M9 8h6M9 12h6"/></svg></a>';
+      var parentHref = '#/';
+      for (var i = items.length - 2; i >= 0; i--) { if (items[i].h) { parentHref = items[i].h; break; } }
+      var ellipsis = '<span class="top-crumb-unit" data-crumb-ellipsis hidden><span class="top-crumb-sep" aria-hidden="true">›</span><a class="top-crumb-ellipsis" href="' + escH(parentHref) + '" aria-label="返回上一级目录" title="返回上一级目录">…</a></span>';
+      topTitle.innerHTML = root + ellipsis + items.map(function (it) {
+        var label = escH(it.t), body = it.h ? '<a class="top-crumb" href="' + escH(it.h) + '">' + label + '</a>' : '<span class="top-crumb" aria-current="location">' + label + '</span>';
+        return '<span class="top-crumb-unit" data-crumb><span class="top-crumb-sep" aria-hidden="true">›</span>' + body + '</span>';
+      }).join('');
+      topTitle.setAttribute('role', 'navigation'); topTitle.setAttribute('aria-label', '当前位置');
+      topTitle.title = ['树梢文档'].concat(items.map(function (it) { return it.t; })).join(' / ');
+      if (topLayoutHook) { topLayoutHook(); requestAnimationFrame(topLayoutHook); }
+    }
+
     // key 为 '' 时是五册总索引，否则是该册的本册目录（chId 定位到章）
     function showHome(key, chId) {
       setBook(key);
@@ -739,10 +770,13 @@
       frame.hidden = true; home.hidden = false; frameKind = ''; view = 'home';
       $$('.home-inner[data-home]').forEach(function (x) { x.hidden = x.getAttribute('data-home') !== curBook; });
       if (curBook) {
-        topTitle.textContent = SITE.title + ' · ' + BOOK_BY[curBook].full;
+        var crumbs = [{ t: BOOK_BY[curBook].full, h: '#/' + curBook }];
+        if (chId && CH_BY[chId]) crumbs.push({ t: '第' + CH_BY[chId].n + '章 · ' + CH_BY[chId].title });
+        else crumbs.push({ t: '本册目录' });
+        setTopCrumbs(crumbs);
         D.title = BOOK_BY[curBook].full + ' · ' + SITE.title;
       } else {
-        topTitle.textContent = SITE.title + ' · 总索引';
+        setTopCrumbs([{ t: '总索引' }]);
         D.title = '总索引 · ' + SITE.title;
       }
       setNav('', '', 'read'); markSpecial(curBook ? 'book' : 'home');
@@ -766,7 +800,11 @@
       var r = KN.show(args);
       setBook(r.book);
       home.hidden = true; frame.hidden = true; view = 'map';
-      topTitle.textContent = SITE.title + ' · ' + r.title;
+      var titles = r.title.split(' · '), crumbs = [];
+      if (r.book) crumbs.push({ t: BOOK_BY[r.book].full, h: '#/' + r.book });
+      crumbs.push({ t: r.book ? '知识网络' : '学科知识网络', h: titles.length > 2 ? '#/map/' + (r.book || 'bio') : '' });
+      if (titles.length > 2) crumbs.push({ t: titles.slice(2).join(' · ') });
+      setTopCrumbs(crumbs);
       D.title = r.title + ' · ' + SITE.title;
       setNav('', '', 'read'); markSpecial('map');
     }
@@ -795,7 +833,7 @@
       if (CH_BY_ID[head]) { showHome(BOOK_OF[head], head); return; }
       if (head === 'guide') {
         loadFrame(SITE.guide, 'guide', '', anchor);
-        topTitle.textContent = '使用方法'; D.title = '使用方法 · ' + SITE.title;
+        setTopCrumbs([{ t: '使用方法' }]); D.title = '使用方法 · ' + SITE.title;
         setNav('', '', 'read'); markSpecial('guide');
         return;
       }
@@ -804,7 +842,11 @@
       setBook(BOOK_OF[head]);
       markSpecial('');
       loadFrame(e.file, 'ep', head, anchor);
-      topTitle.textContent = e.code + ' ' + e.sec + ' ' + e.full;
+      setTopCrumbs([
+        { t: e.book.full, h: '#/' + e.book.key },
+        { t: '第' + e.ch.n + '章 · ' + e.ch.title, h: '#/' + e.ch.id },
+        { t: e.code + ' ' + e.sec + ' ' + e.full }
+      ]);
       D.title = e.code + ' ' + e.full + ' · ' + SITE.title;
       setNav(head, /^p\d+$|^review$/.test(anchor) ? anchor : '', 'read');
       revealNav(head);
@@ -851,6 +893,12 @@
     // 点击与当前哈希相同的路由链接时（滚动侦测用 replaceState 改过哈希），hashchange 不会触发，手动路由
     on(D, 'click', function (ev) {
       var a = ev.target.closest('a[href^="#/"]'); if (!a || ev.defaultPrevented) return;
+      if (a.classList.contains('top-crumb-ellipsis')) {
+        ev.preventDefault();
+        var target = a.getAttribute('href');
+        if (target === location.hash) route(); else { location.hash = target; route(); }
+        return;
+      }
       if (a.getAttribute('href') === location.hash) { ev.preventDefault(); route(); }
     });
     on(D, 'keydown', function (ev) { if (isSearchKey(ev)) { ev.preventDefault(); focusSearch(); } });
