@@ -537,7 +537,12 @@
       if (swallowUp && (ev.code === 'Space' || ev.key === ' ')) { ev.preventDefault(); swallowUp = false; }
     });
   }
-  function isSearchKey(ev) { return (ev.ctrlKey || ev.metaKey) && !ev.altKey && (ev.key === 'k' || ev.key === 'K'); }
+  function isSearchKey(ev) {
+    var shortcut = (ev.ctrlKey || ev.metaKey) && !ev.altKey && (ev.key === 'k' || ev.key === 'K');
+    var kn = window.TreetopKN;
+    var networkSlash = ev.key === '/' && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && !isTyping(ev) && !!(kn && typeof kn.searchActive === 'function' && kn.searchActive());
+    return shortcut || networkSlash;
+  }
 
   /* =====================================================================
    * 内容页
