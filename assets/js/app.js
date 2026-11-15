@@ -609,7 +609,7 @@
    * 外壳（index.html）
    * ===================================================================== */
   function initShell() {
-    var frame = $('#frame'), home = $('#home'), topTitle = $('#topTitle');
+    var frame = $('#frame'), home = $('#home'), topTitle = $('#topTitle'), playerBox = $('#player');
     var frameEp = '', frameKind = '', frameReady = false, pendingGoto = null;
     // 当前显示的是哪一层：'home'（总索引/本册目录）、'frame'（讲义或使用说明）、'map'（知识网络，见 knowledge-network.js）
     var view = 'home';
@@ -705,8 +705,15 @@
       D.title = r.title + ' · ' + SITE.title;
       setNav('', '', 'read'); markSpecial('map');
     }
+    /* 播放器只属于具体讲义；目录、使用说明和知识网络不显示，也不保留底部占位。 */
+    function syncPlayerVisibility() {
+      var lecture = view === 'frame' && frameKind === 'ep';
+      playerBox.hidden = !lecture;
+      D.body.classList.toggle('no-player', !lecture);
+    }
     function route() {
       routeView();
+      syncPlayerVisibility();
       if (KN) KN.onView({ view: view, ep: view === 'frame' && frameKind === 'ep' ? frameEp : '', book: curBook });
     }
     function routeView() {
