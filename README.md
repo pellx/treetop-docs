@@ -22,6 +22,14 @@
 - **本地服务器**：在仓库根目录运行 `python3 -m http.server 8000`，然后访问 `http://localhost:8000/`；同一局域网内的手机也可访问。
 - **深链**：`index.html#/bx1`（必修1 本册目录）、`index.html#/bx1-ch2`（第 2 章）、`index.html#/bx1-01/p3`（第 3 个考点）、`index.html#/bx1-01/co3`（某句旁白）。
 
+## 知识网络
+
+- **学科网络**：`index.html#/map/bio`，8 个知识领域从中心向外发散，可叠加 4 条跨册主线。
+- **全书网络**：`index.html#/map/bx1` … `#/map/xb3`，本册各部分加跨章专题。
+- **局部聚焦**：选中节点只显示信息卡；"展开 ▸"后主干收到左侧、子集向右；"读讲义 ›"精确进入考点，顶栏"↩ 回到网络"恢复范围、逻辑、焦点、选中与展开。
+- 三种组织逻辑：知识关系、大题任务、推导方法；图与列表两种形态（手机默认列表）。
+- 所有考点都能从所在册的网络到达；未整理的部分按讲义顺序列出并如实标注。数据维护与覆盖说明见 [docs/knowledge-network.md](./docs/knowledge-network.md)。
+
 ## 目录结构
 
 ```text
@@ -36,11 +44,14 @@
 │   ├── selective-3/    选择性必修3（xb3-XX.html）
 ├── assets/
 │   ├── css/site.css            全站样式与颜色变量
+│   ├── css/knowledge-network.css  知识网络样式（只引用 site.css 的变量）
 │   ├── js/
 │   │   ├── app.js              目录、搜索、播放器、路由与外壳通信（按册工作）
 │   │   ├── site-data.js        学科 / 教材 / 章 / 节结构（五册）
 │   │   ├── playlist.js         播放清单（五册，按册过滤）
-│   │   └── search-data.js      搜索索引（五册，按册过滤）
+│   │   ├── search-data.js      搜索索引（五册，按册过滤）
+│   │   ├── knowledge-network-data.js  知识网络手工数据（不由 build.py 生成）
+│   │   └── knowledge-network.js       知识网络（学科 / 全书 / 局部）
 │   ├── audio/<编号>/           每句旁白的 mp3（如 audio/BX2-01/）
 │   ├── img/<编号>/             正文图片
 │   ├── img/site/               站点图标
