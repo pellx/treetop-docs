@@ -57,6 +57,7 @@
 ## 交付记录
 
 - 需求原文及代码快照已交给 VPS 上独立运行的 Claude Code 任务，启动时指定模型 `claude-fable-5-2`。
-- 已收到 Fable 完整方案：[knowledge-network-fable-plan.md](knowledge-network-fable-plan.md)。实际模型为 `claude-fable-5-2`，21张图片均成功读取。
-- 主会话核查了首版27个知识点目标及关键接入位置，补充了[核对意见](knowledge-network-review.md)。
-- 方案已交付；尚未实现网页功能、验证交互效果、提交或部署。
+- 前版：[局部交互与图片参考方案](knowledge-network-fable-plan.md)。实际模型为 `claude-fable-5-2`，21张图片均成功读取；保留为局部示例及设计背景。
+- 最新（2026-11-16）：[全书＋学科级智能索引：第三轮讨论稿](knowledge-network-book-subject-fable.md)。延续原会话，实际模型仍为 `claude-fable-5-2`，成功返回，无工具权限拒绝。最新范围涵盖整个生物学科、五本书及局部专题，与现有站点共存。
+- [核对意见](knowledge-network-review.md)已补入第三轮说明：核对了当前5册104期732个考点位置、选必二各章数量，以及新稿明确写出的27个不同锚点。锚点存在不代表跨册语义已核验；覆盖比例、展示骨架、导航返回和原型参数的限定单独记录。
+- 用户确定的分工：当前由 Fable 探讨呈现方案；后续具体网页文件与实现由 Opus 负责。本轮未启动 Opus、实现网页功能、验证交互效果、提交或部署。

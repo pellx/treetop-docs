@@ -611,6 +611,9 @@
   function initShell() {
     var frame = $('#frame'), home = $('#home'), topTitle = $('#topTitle');
     var frameEp = '', frameKind = '', frameReady = false, pendingGoto = null;
+    // 当前显示的是哪一层：'home'（总索引/本册目录）、'frame'（讲义或使用说明）、'map'（知识网络，见 knowledge-network.js）
+    var view = 'home';
+    var KN = window.TreetopKN && typeof window.TreetopKN.init === 'function' ? window.TreetopKN : null;
     var follow = true; // 跨期续播时，若正文停留在刚播完的那一期，则跟随翻页
     themeHook = function (v) { if (frame && frame.contentWindow) post(frame.contentWindow, { t: 'theme', v: v }); };
 
@@ -620,7 +623,7 @@
         setNav(it.ep, it.a === 'intro' ? '' : it.a, 'play');
         markHomeRow(it.ep);
         if (frameEp === it.ep && frameReady) post(frame.contentWindow, { t: 'active', ep: it.ep, id: it.id, scroll: true });
-        else if (prev && prev.ep !== it.ep && follow && frameKind === 'ep' && frameEp === prev.ep) {
+        else if (prev && prev.ep !== it.ep && follow && view === 'frame' && frameKind === 'ep' && frameEp === prev.ep) {
           location.hash = '#/' + it.ep; // 跟随到下一期；就绪后再发送高亮
         }
       },
@@ -642,7 +645,7 @@
     }
     player.startIndex = function () {
       // 播放器“播放”键（未开始时）：正文显示某期时从该期开头，否则从当前册（总索引时为第一册）第一期
-      var ep = frameKind === 'ep' && frameEp ? frameEp : '';
+      var ep = view === 'frame' && frameKind === 'ep' && frameEp ? frameEp : '';
       usePlaylist(ep ? BOOK_OF[ep] : (curBook || SITE.books[0].key));
       if (ep) { var k = player.items.findIndex(function (x) { return x.ep === ep; }); if (k >= 0) return k; }
       return 0;
@@ -667,7 +670,8 @@
     // key 为 '' 时是五册总索引，否则是该册的本册目录（chId 定位到章）
     function showHome(key, chId) {
       setBook(key);
-      frame.hidden = true; home.hidden = false; frameKind = '';
+      if (KN) KN.hide();
+      frame.hidden = true; home.hidden = false; frameKind = ''; view = 'home';
       $$('.home-inner[data-home]').forEach(function (x) { x.hidden = x.getAttribute('data-home') !== curBook; });
       if (curBook) {
         topTitle.textContent = SITE.title + ' · ' + BOOK_BY[curBook].full;
@@ -682,7 +686,8 @@
     }
     function markSpecial(s) { $$('.nav-link[data-special]').forEach(function (a) { a.classList.toggle('active', a.getAttribute('data-special') === s); }); }
     function loadFrame(file, kind, ep, anchor) {
-      home.hidden = true; frame.hidden = false;
+      if (KN) KN.hide();
+      home.hidden = true; frame.hidden = false; view = 'frame';
       if (frameKind === kind && frameEp === ep && frameReady) {
         post(frame.contentWindow, { t: 'goto', a: anchor || '', smooth: true });
       } else {
@@ -691,10 +696,28 @@
         try { frame.contentWindow.location.replace(file); } catch (e) { frame.src = file; }
       }
     }
+    // 知识网络：#/map/<范围>/<逻辑>/<焦点>；网络页显示时 iframe 保留但隐藏，播放不中断
+    function showMap(args) {
+      var r = KN.show(args);
+      setBook(r.book);
+      home.hidden = true; frame.hidden = true; view = 'map';
+      topTitle.textContent = SITE.title + ' · ' + r.title;
+      D.title = r.title + ' · ' + SITE.title;
+      setNav('', '', 'read'); markSpecial('map');
+    }
     function route() {
-      var h = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
+      routeView();
+      if (KN) KN.onView({ view: view, ep: view === 'frame' && frameKind === 'ep' ? frameEp : '', book: curBook });
+    }
+    function routeView() {
+      var raw = location.hash.replace(/^#\/?/, ''), h;
+      try { h = decodeURIComponent(raw); } catch (e) { h = raw; }
       var parts = h.split('/');
       var head = parts[0] || '', anchor = parts.slice(1).join('/');
+      if (head === 'map') {
+        if (KN) { showMap(raw.split('/').slice(1).join('/')); return; }
+        showHome('', ''); return;
+      }
       if (!head) { showHome('', ''); return; }
       if (BOOK_BY[head]) { showHome(head, ''); return; }
       if (CH_BY_ID[head]) { showHome(BOOK_OF[head], head); return; }
@@ -732,10 +755,12 @@
       } else if (m.t === 'nav') {
         if (location.hash === m.route || (m.route === '#/' && !location.hash)) route(); else location.hash = m.route;
       } else if (m.t === 'spy') {
-        if (m.ep && m.ep === frameEp) {
+        // 只在正文可见时采纳：网络页或总索引显示期间，隐藏 iframe 迟到的滚动消息不得改写地址
+        if (m.ep && m.ep === frameEp && view === 'frame') {
           setNav(m.ep, m.a, 'read');
           var want = '#/' + m.ep + (m.a ? '/' + m.a : '');
-          if (location.hash !== want) history.replaceState(null, '', want);
+          // 保留 history.state（知识网络的返回凭据记在这里）
+          if (location.hash !== want) history.replaceState(history.state, '', want);
         }
       } else if (m.t === 'key') {
         if (m.k === 'search') focusSearch();
@@ -758,6 +783,14 @@
     });
     on(D, 'keydown', function (ev) { if (isSearchKey(ev)) { ev.preventDefault(); focusSearch(); } });
     installKeys({ active: function () { return true; }, toggle: function () { player.toggle(); }, step: function (d) { player.stepKey(d); } });
+    if (KN) {
+      try {
+        if (!KN.init({
+          route: route,
+          current: function () { return { view: view, ep: view === 'frame' && frameKind === 'ep' ? frameEp : '', a: navState.ep === frameEp ? navState.a : '', book: curBook }; }
+        })) KN = null;
+      } catch (e) { KN = null; if (window.console) console.error('[知识网络] 初始化失败，原站功能不受影响：', e); }
+    }
     on(window, 'hashchange', route);
     route();
   }
