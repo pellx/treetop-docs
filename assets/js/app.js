@@ -368,7 +368,7 @@
     var q = $('#q'), box = $('#results'); if (!q || !box) return;
     var isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
     var hint = $('#kbdHint'); if (hint && isMac) hint.textContent = '⌘ K';
-    var sel = -1, cur = [];
+    var sel = -1, cur = [], networkMode = false, defaultPlaceholder = q.getAttribute('placeholder') || '搜索';
     var search = $('.search'), toggle = $('#searchToggle'), searchBox = $('#searchBox');
     var topbar = search && search.closest('.topbar'), lastTopbarWidth = topbar ? topbar.clientWidth : 0;
     function setSearchOpen(open) {
@@ -404,6 +404,20 @@
     }
     if (window.ResizeObserver && topbar) { var topbarObserver = new ResizeObserver(topbarResized); topbarObserver.observe(topbar); }
     else on(window, 'resize', topbarResized);
+    function networkAPI() {
+      var kn = window.TreetopKN;
+      return kn && typeof kn.searchActive === 'function' && kn.searchActive() && typeof kn.search === 'function' && typeof kn.chooseSearch === 'function' ? kn : null;
+    }
+    function syncSearchScope() {
+      var active = !!networkAPI();
+      if (active !== networkMode) {
+        networkMode = active; q.placeholder = active ? '在网络中查找概念、考点…' : defaultPlaceholder;
+        box.hidden = true; box.innerHTML = ''; cur = []; sel = -1;
+      }
+      return active;
+    }
+    searchScopeHook = syncSearchScope;
+    syncSearchScope();
     var idx = SD.map(function (x) {
       return { x: x, t: (x.t || '').toLowerCase(), s: (x.s || '').toLowerCase(), b: ((x.x || '') + ' ' + (x.o || '')).toLowerCase(), raw: (x.x || '') + ' ' + (x.o || '') };
     });
@@ -422,8 +436,19 @@
       return h;
     }
     function run() {
-      var v = q.value.trim().toLowerCase();
+      var active = syncSearchScope(), raw = q.value.trim(), v = raw.toLowerCase();
       if (!v) { box.hidden = true; box.innerHTML = ''; cur = []; return; }
+      if (active) {
+        var kn = networkAPI(); cur = kn ? (kn.search(raw) || []) : []; sel = cur.length ? 0 : -1;
+        if (!cur.length) { box.innerHTML = '<div class="res-empty">没有找到“' + escH(raw) + '”相关内容</div>'; box.hidden = false; return; }
+        box.innerHTML = cur.map(function (x, i) {
+          return '<div class="res-item' + (i === sel ? ' sel' : '') + '" role="option" aria-selected="' + (i === sel ? 'true' : 'false') + '" data-i="' + i + '">' +
+            '<div class="res-t"><span class="res-k">' + escH(x.kind || '结果') + '</span>' + escH(x.title || '') + '</div>' +
+            (x.subtitle ? '<div class="res-s">' + escH(x.subtitle) + '</div>' : '') +
+            (x.detail ? '<div class="res-x">' + escH(x.detail) + '</div>' : '') + '</div>';
+        }).join('');
+        box.hidden = false; return;
+      }
       var terms = v.split(/\s+/).filter(Boolean);
       var res = [], sc = scope ? scope() : '';
       idx.forEach(function (r) {
@@ -454,10 +479,16 @@
       if (MODE === 'shell') return '#/' + x.ep + (x.a ? '/' + x.a : '');
       var e = EPS[x.ep]; return ROOT + e.file + (x.a ? '#' + x.a : '');
     }
-    function choose(i) { var o = cur[i]; if (!o) return; box.hidden = true; q.blur(); go(o.r.x, hrefFor(o.r.x)); }
-    function mark() { $$('.res-item', box).forEach(function (a, i) { a.classList.toggle('sel', i === sel); if (i === sel) a.scrollIntoView({ block: 'nearest' }); }); }
+    function choose(i) {
+      if (syncSearchScope()) {
+        var kn = networkAPI(); if (!kn) return;
+        box.hidden = true; q.blur(); kn.chooseSearch(i); return;
+      }
+      var o = cur[i]; if (!o) return; box.hidden = true; q.blur(); go(o.r.x, hrefFor(o.r.x));
+    }
+    function mark() { $$('.res-item', box).forEach(function (a, i) { a.classList.toggle('sel', i === sel); a.setAttribute('aria-selected', i === sel ? 'true' : 'false'); if (i === sel) a.scrollIntoView({ block: 'nearest' }); }); }
     on(q, 'input', run);
-    on(q, 'focus', function () { if (q.value.trim()) run(); });
+    on(q, 'focus', function () { syncSearchScope(); if (q.value.trim()) run(); });
     on(q, 'keydown', function (ev) {
       if (ev.key === 'ArrowDown') { ev.preventDefault(); if (cur.length) { sel = (sel + 1) % cur.length; mark(); } }
       else if (ev.key === 'ArrowUp') { ev.preventDefault(); if (cur.length) { sel = (sel - 1 + cur.length) % cur.length; mark(); } }
@@ -468,7 +499,7 @@
     on(D, 'click', function (ev) { if (!ev.target.closest('.search')) box.hidden = true; });
     focusSearch = function () { setSearchOpen(true); if (window.innerWidth < 900) D.body.classList.remove('nav-open'); };
   }
-  var focusSearch = function () {}, topLayoutHook = null, searchLayoutHook = null;
+  var focusSearch = function () {}, topLayoutHook = null, searchLayoutHook = null, searchScopeHook = null;
   /* ---------- 键盘快捷键：空格 播放/暂停；小键盘 4/6 与 ←/→ 上一句/下一句 ---------- */
   function isTyping(ev) {
     var t = ev.target;
@@ -816,6 +847,7 @@
     }
     function route() {
       routeView();
+      if (searchScopeHook) searchScopeHook();
       syncPlayerVisibility();
       if (KN) KN.onView({ view: view, ep: view === 'frame' && frameKind === 'ep' ? frameEp : '', book: curBook });
     }
