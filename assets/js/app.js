@@ -60,16 +60,45 @@
     syncThemeBtn();
   }
 
-  /* ---------- 站点结构索引 ---------- */
-  var EPS = {}, EP_ORDER = [], CH_OF = {}, BOOK_BY = {}, BOOK_OF = {}, PL_BY = {};
+  /* ---------- 站点结构索引与统计（所有数量只从 SITE 计算） ---------- */
+  var EPS = {}, EP_ORDER = [], CH_OF = {}, CH_BY = {}, BOOK_BY = {}, BOOK_OF = {}, PL_BY = {};
+  var SITE_STATS = { books: SITE.books.length, eps: 0, points: 0 }, BOOK_STATS = {};
   SITE.books.forEach(function (b) {
     BOOK_BY[b.key] = b; PL_BY[b.key] = [];
+    var bs = BOOK_STATS[b.key] = { chapters: b.chapters.length, eps: 0, points: 0 };
     b.chapters.forEach(function (ch) {
-      BOOK_OF[ch.id] = b.key;
-      ch.eps.forEach(function (e) { e.book = b; e.ch = ch; EPS[e.slug] = e; EP_ORDER.push(e.slug); CH_OF[e.slug] = ch; BOOK_OF[e.slug] = b.key; });
+      BOOK_OF[ch.id] = b.key; CH_BY[ch.id] = ch;
+      ch.eps.forEach(function (e) {
+        e.book = b; e.ch = ch; EPS[e.slug] = e; EP_ORDER.push(e.slug); CH_OF[e.slug] = ch; BOOK_OF[e.slug] = b.key;
+        bs.eps++; bs.points += e.points.length; SITE_STATS.eps++; SITE_STATS.points += e.points.length;
+      });
     });
   });
   PL.forEach(function (x) { var k = BOOK_OF[x.ep]; if (k) PL_BY[k].push(x); });
+
+  /* 总索引与各册目录的数量、考点清单均由上面的同一份 SITE 数据刷新。 */
+  function syncHomeStats() {
+    var summary = $('#siteSummary');
+    if (summary) {
+      var cn = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+      summary.textContent = '共' + (cn[SITE_STATS.books] || SITE_STATS.books) + '册，' + SITE_STATS.eps + '期，' + SITE_STATS.points + '个考点。支持考点检索、知识网络、语音讲解与连续播放。';
+    }
+    $$('#books tr[data-book]').forEach(function (row) {
+      var stats = BOOK_STATS[row.getAttribute('data-book')]; if (!stats) return;
+      $$('[data-stat]', row).forEach(function (cell) { cell.textContent = stats[cell.getAttribute('data-stat')]; });
+    });
+    $$('.home-inner tr[data-ep]').forEach(function (row) {
+      var e = EPS[row.getAttribute('data-ep')]; if (!e) return;
+      var count = $('td.num', row), list = $('.ep-pts', row);
+      if (count) count.textContent = e.points.length;
+      if (list) list.textContent = e.points.join('、');
+    });
+    $$('.home-inner .chapter[id]').forEach(function (sec) {
+      var ch = CH_BY[sec.id], meta = $('.ch-meta', sec); if (!ch || !meta) return;
+      var duration = ch.eps.reduce(function (sum, e) { return sum + (e.dur || 0); }, 0);
+      meta.textContent = ch.eps.length + ' 期 · ' + mmss(duration);
+    });
+  }
   function sceneLabel(item) {
     var e = EPS[item.ep]; if (!e) return item.n;
     if (item.p === 0) return '导读';
@@ -609,6 +638,7 @@
    * 外壳（index.html）
    * ===================================================================== */
   function initShell() {
+    syncHomeStats();
     var frame = $('#frame'), home = $('#home'), topTitle = $('#topTitle'), playerBox = $('#player');
     var frameEp = '', frameKind = '', frameReady = false, pendingGoto = null;
     // 当前显示的是哪一层：'home'（总索引/本册目录）、'frame'（讲义或使用说明）、'map'（知识网络，见 knowledge-network.js）
