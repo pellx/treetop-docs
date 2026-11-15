@@ -1623,7 +1623,6 @@
       var doms = arr(RAW.domains).filter(function (d) { return M.ent[d.id]; });
       var box = D.createElement('section'); box.className = 'kn-entry';
       box.innerHTML = '<div class="kn-entry-h"><h2>学科知识网络</h2><a class="btn-primary" href="#/map/bio">打开学科知识网络 ›</a></div>' +
-        '<p class="kn-muted">' + doms.length + ' 个知识领域 · ' + M.lines.length + ' 条跨册主线 · 索引覆盖 ' + rp.reachable + '/' + rp.points + ' 个考点 · 已整理 ' + rp.concepts + ' 个概念、' + rp.relations.total + ' 条关系（' + (rp.relations.site || 0) + ' 条原文可查）</p>' +
         '<div class="kn-entry-row">' + doms.map(function (d) { return '<a href="#/map/bio/rel/' + d.id + '">' + esc(d.name) + '</a>'; }).join('') + '</div>' +
         (M.lines.length ? '<div class="kn-entry-row kn-entry-lines"><span class="kn-k">主线</span>' + M.lines.map(function (l) { return '<a href="#/map/bio/rel/' + l + '">' + esc(M.ent[l].name) + '</a>'; }).join('') + '</div>' : '');
       if (hero) hero.parentNode.insertBefore(box, hero.nextSibling);
