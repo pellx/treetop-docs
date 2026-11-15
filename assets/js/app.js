@@ -369,6 +369,41 @@
     var isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
     var hint = $('#kbdHint'); if (hint && isMac) hint.textContent = '⌘ K';
     var sel = -1, cur = [];
+    var search = $('.search'), toggle = $('#searchToggle'), searchBox = $('#searchBox');
+    var topbar = search && search.closest('.topbar'), lastTopbarWidth = topbar ? topbar.clientWidth : 0;
+    function setSearchOpen(open) {
+      var collapsible = search && search.classList.contains('is-collapsed'), expanded = !!open && collapsible;
+      if (search && toggle) {
+        search.classList.toggle('is-open', expanded);
+        if (topbar) topbar.classList.toggle('search-open', expanded);
+        toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        toggle.setAttribute('aria-label', expanded ? '收起搜索' : '展开搜索');
+        toggle.title = expanded ? '收起搜索' : '展开搜索';
+      }
+      if (open) { q.focus(); q.select(); }
+      else { box.hidden = true; q.blur(); if (toggle && collapsible) toggle.focus(); }
+      if (topLayoutHook) requestAnimationFrame(topLayoutHook);
+    }
+    /* 标题优先占用空间；完整搜索框被压到过窄时，在任何视口宽度下都收成按钮。 */
+    function syncSearchCollapse() {
+      if (!search || !searchBox || !topbar || search.classList.contains('is-open')) return;
+      search.classList.remove('is-collapsed'); topbar.classList.remove('search-collapsed');
+      var collapse = searchBox.getBoundingClientRect().width < 180;
+      search.classList.toggle('is-collapsed', collapse); topbar.classList.toggle('search-collapsed', collapse);
+      if (collapse) { box.hidden = true; q.blur(); }
+    }
+    searchLayoutHook = syncSearchCollapse;
+    syncSearchCollapse();
+    on(toggle, 'click', function () { setSearchOpen(!(search && search.classList.contains('is-open'))); });
+    function topbarResized() {
+      var width = topbar ? topbar.clientWidth : 0;
+      if (width === lastTopbarWidth) return;
+      lastTopbarWidth = width;
+      if (search && search.classList.contains('is-open')) setSearchOpen(false);
+      if (topLayoutHook) requestAnimationFrame(topLayoutHook);
+    }
+    if (window.ResizeObserver && topbar) { var topbarObserver = new ResizeObserver(topbarResized); topbarObserver.observe(topbar); }
+    else on(window, 'resize', topbarResized);
     var idx = SD.map(function (x) {
       return { x: x, t: (x.t || '').toLowerCase(), s: (x.s || '').toLowerCase(), b: ((x.x || '') + ' ' + (x.o || '')).toLowerCase(), raw: (x.x || '') + ' ' + (x.o || '') };
     });
@@ -431,9 +466,9 @@
     });
     on(box, 'click', function (ev) { var a = ev.target.closest('.res-item'); if (!a) return; ev.preventDefault(); choose(+a.getAttribute('data-i')); });
     on(D, 'click', function (ev) { if (!ev.target.closest('.search')) box.hidden = true; });
-    focusSearch = function () { q.focus(); q.select(); if (window.innerWidth < 900) D.body.classList.remove('nav-open'); };
+    focusSearch = function () { setSearchOpen(true); if (window.innerWidth < 900) D.body.classList.remove('nav-open'); };
   }
-  var focusSearch = function () {};
+  var focusSearch = function () {}, topLayoutHook = null, searchLayoutHook = null;
   /* ---------- 键盘快捷键：空格 播放/暂停；小键盘 4/6 与 ←/→ 上一句/下一句 ---------- */
   function isTyping(ev) {
     var t = ev.target;
