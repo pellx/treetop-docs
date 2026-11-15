@@ -317,8 +317,20 @@ body.nav-resizing { cursor: col-resize; user-select: none; }
   display: flex; align-items: center; gap: 12px; padding: 0 20px;
   background: var(--topbar-bg); backdrop-filter: saturate(1.4) blur(6px); border-bottom: 1px solid var(--line);
 }
-.topbar-title { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 0 auto; }
+.topbar-title { display: flex; align-items: center; font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; min-width: 0; flex: 1 0 auto; }
 .topbar.search-collapsed .topbar-title, .topbar.search-open .topbar-title { flex-shrink: 1; }
+.topbar-title [hidden] { display: none; }
+.top-crumb-home { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 28px; color: var(--fg-dim); }
+.top-crumb-home:hover { color: var(--accent-text); }
+.top-crumb-home svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.top-crumb-unit { display: inline-flex; align-items: center; flex: none; min-width: 0; }
+.top-crumb-unit:last-child { flex: none; }
+.top-crumb-sep { flex: none; margin: 0 7px; color: var(--sep); font-weight: 400; }
+.top-crumb { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg-dim); }
+a.top-crumb:hover { color: var(--accent-text); text-decoration: none; }
+.top-crumb[aria-current="location"] { color: var(--fg); }
+.top-crumb-ellipsis { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; color: var(--fg-dim); letter-spacing: .08em; }
+a.top-crumb-ellipsis:hover { color: var(--accent-text); text-decoration: none; }
 .menu-btn { display: none; background: none; border: 1px solid var(--line); width: 38px; height: 38px; font-size: 20px; align-items: center; justify-content: center; }
 .search { position: relative; flex: 0 1 380px; min-width: 0; }
 .search-toggle { display: none; width: 38px; height: 38px; flex: 0 0 38px; padding: 0; align-items: center; justify-content: center; border: 1px solid var(--line); background: var(--bg-soft); color: var(--fg-dim); }
