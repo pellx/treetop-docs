@@ -49,6 +49,16 @@
 .para:has(> .para-body > .rm-el) { display: inline-flex; margin: 3px 4px 3px 0; padding: 0; vertical-align: top; }
 .para:has(> .para-body > .rm-el) > .play-btn { display: none; }
 .para-body .rm-el { width: 68px; height: 68px; box-sizing: border-box; flex: none; }
+/* 小知识卡：内容不多的单独卡片不再各占一整行，横向排列并自动换行。 */
+.para:has(> .para-body > .rm-tile) { display: inline-flex; align-items: flex-start; width: auto; max-width: 100%; margin: 3px 6px 3px 0; padding: 4px 0; vertical-align: top; }
+.para:has(> .para-body > .rm-tile) > .play-btn { margin-top: 4px; }
+.para-body > .rm-tile { width: auto; max-width: 100%; margin: 0; }
+/* 整段只有箭头：作为流程连接符居中收窄，不再单独占一行、不重复播放按钮。 */
+.para.rm-join { justify-content: center; margin: 2px 0; padding: 0; }
+.para.rm-join > .play-btn { display: none; }
+.para.rm-join > .para-body { flex: 0 0 auto; }
+/* 紧凑步骤之间的箭头随步骤方块同行排列，保持原来横向流程。 */
+.para.rm-join-in { display: inline-flex; width: auto; max-width: 100%; margin: 3px 4px; vertical-align: middle; }
 .tip-body mark { background: none; }
 
 /* 嵌在块内（未被提升为 .tip）的提示框：与 .tip 同一套变量 */
