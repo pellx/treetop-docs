@@ -1102,7 +1102,7 @@
 
   function renderGraph(tr, focus, opts) {
     var cw = refs.canvas.clientWidth || 800, ch = refs.canvas.clientHeight || 520;
-    if (!tr.root.children.length) { refs.nodes.innerHTML = ''; refs.svg.innerHTML = ''; refs.world.style.width = 'auto'; refs.world.style.height = 'auto'; refs.world.style.transform = ''; refs.canvas.classList.remove('kn-overview-pan'); graphGeom = null; graphView.key = ''; var lr0 = $('.kn-lines-row', refs.view); if (lr0) lr0.remove(); renderEmpty(tr); return; }
+    if (!tr.root.children.length) { refs.nodes.innerHTML = ''; refs.svg.innerHTML = ''; refs.world.style.width = 'auto'; refs.world.style.height = 'auto'; refs.world.style.transform = ''; refs.canvas.classList.remove('kn-graph-pan'); graphGeom = null; graphView.key = ''; var lr0 = $('.kn-lines-row', refs.view); if (lr0) lr0.remove(); renderEmpty(tr); return; }
     $$('.kn-empty', refs.nodes).forEach(function (x) { x.remove(); });
     var L = layout(tr, focus, cw, ch);
     var keep = {}, nodesBox = refs.nodes;
@@ -1159,11 +1159,12 @@
         labels.push({ x: pts[0].x + off + 8, y: pts[0].y + off - pts[0].nd.h / 2 - 8, t: '主线：' + M.ent[lid].name, cls: 'kn-line-lab kn-line-' + (li % 4), id: lid });
       });
     }
-    refs.canvas.classList.toggle('kn-overview-pan', L.overview);
+    refs.canvas.classList.add('kn-graph-pan');
     var shownW = L.w, shownH = L.h;
+    var viewKey = S.scope + '|' + S.logic + '|' + S.focusKey;
+    if (graphView.key !== viewKey) { graphView.key = viewKey; graphView.manual = false; }
+    graphView.fit = Math.max(.01, Math.min(1, cw / L.w, ch / L.h));
     if (L.overview) {
-      var viewKey = S.scope + '|' + S.logic + '|' + S.focusKey;
-      if (graphView.key !== viewKey) { graphView.key = viewKey; graphView.manual = false; }
       var availableH = Math.max(1, ch - (L.bottomPad || 0));
       graphView.fit = Math.max(.01, Math.min(1, cw / L.w, availableH / L.h));
       if (!graphView.manual) {
@@ -1174,8 +1175,10 @@
       graphGeom = { L: L, cw: cw, ch: ch };
       applyGraphView(); shownW = cw; shownH = ch;
     } else {
-      graphView.key = ''; graphGeom = null;
-      refs.world.style.width = L.w + 'px'; refs.world.style.height = L.h + 'px'; refs.world.style.transform = '';
+      /* 展开视图沿用原布局起点；拖动与缩放只改变视口变换，不改节点和连线。 */
+      if (!graphView.manual) { graphView.scale = 1; graphView.x = 0; graphView.y = 0; }
+      graphGeom = { L: L, cw: cw, ch: ch };
+      applyGraphView();
     }
     var svg = '';
     L.edges.concat(extraEdges).forEach(function (e) { if (e.d) svg += '<path d="' + e.d + '" class="' + e.cls + '"/>'; });
@@ -1583,7 +1586,7 @@
   function flash(msg) { S.notice = msg; refs.notice.hidden = false; refs.notice.innerHTML = '<span>' + esc(msg) + '</span><button type="button" data-act="notice-close" aria-label="关闭提示">×</button>'; clearTimeout(flashT); }
   function scrollPos() { return { sx: refs.canvas.scrollLeft, sy: refs.canvas.scrollTop, ly: refs.list.scrollTop }; }
   function restoreScroll(sx, sy) {
-    var apply = function () { if (sx || sy) { refs.canvas.scrollLeft = sx; refs.canvas.scrollTop = sy; } var v = getView(S.url); if (v && v.ly) refs.list.scrollTop = v.ly; };
+    var apply = function () { if (!graphGeom && (sx || sy)) { refs.canvas.scrollLeft = sx; refs.canvas.scrollTop = sy; } var v = getView(S.url); if (v && v.ly) refs.list.scrollTop = v.ly; };
     apply(); requestAnimationFrame(apply);
   }
 

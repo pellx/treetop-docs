@@ -52,10 +52,10 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; }
 .kn-body { position: relative; flex: 1; min-height: 0; display: flex; }
 .kn-view { position: relative; flex: 1; min-width: 0; display: flex; }
 .kn-canvas { position: relative; flex: 1; overflow: auto; overscroll-behavior: contain; background: var(--bg); }
-.kn-canvas.kn-overview-pan { overflow: hidden; cursor: grab; touch-action: none; }
-.kn-canvas.kn-overview-pan.is-panning { cursor: grabbing; user-select: none; }
+.kn-canvas.kn-graph-pan { overflow: hidden; overflow: clip; cursor: grab; touch-action: none; }
+.kn-canvas.kn-graph-pan.is-panning { cursor: grabbing; user-select: none; }
 .kn-reset-view { display: none; position: absolute; z-index: 5; left: 10px; top: 10px; align-items: center; gap: 4px; height: 30px; padding: 0 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg-dim); font-size: 12.5px; }
-.kn-overview-pan .kn-reset-view { display: inline-flex; }
+.kn-graph-pan .kn-reset-view { display: inline-flex; }
 .kn-reset-view:hover { color: var(--fg); border-color: var(--accent); }
 .kn-reset-view svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: square; }
 .kn-canvas[hidden], .kn-list[hidden] { display: none; }
