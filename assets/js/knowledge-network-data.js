@@ -9,10 +9,21 @@
  *   site   —— 依据是站内讲义原文，basis 里的 quote 可在该讲义中逐字查到（只说明讲义这样写，不代表另经专家审定）；
  *   editor —— 编辑判断，待确认（可附原文作参考，但"关系本身"是整理者的归纳）；
  *   title  —— 仅依据考点标题，正文待核。
+ *
+ * basis 的条目种类：
+ *   { kind: 'site', ref: '期/锚点', quote: '…' }  站内讲义原文，校验逐字核对；
+ *   { kind: 'editor', note: '…' }                  整理者的说明或判断；
+ *   { kind: 'figure', ref: 'IMG_….jpg', note: '…' } 教材知识框架参考图（docs/knowledge-map/ 下的原文件名），
+ *       只作整理来源记录：note 写"第几讲"与图上写法；网站不显示、不链接图片。
+ *       图片依据不算站内核验——只有图片依据的关系 status 必须是 'editor'；status:'site' 仍须有可逐字查到的 site 引文。
+ *       图上模糊的细箭头（如第18讲信息传递旁、第16讲植物调节）不据此写确定关系；确需引用时标 editor，并在 note 中写明终点待核对。
+ *
+ * relGroups：思维导图"关系类型"按钮组（顺序即显示顺序）。每个关系类型（arrange、collect 除外）只归入一个组；
+ *   default:true 的组在首次打开时启用。按钮组只控制叠加显示哪些关系，与"主题主线"（lines）是不同的维度。
  */
 window.KN_DATA = {
   version: 1,
-  updated: '2026-11-15',
+  updated: '2026-11-16',
 
   /* 关系类型。arrange（编排归类）与 collect（专题收录）由骨架和专题隐含，不单独写成关系。 */
   relTypes: {
@@ -26,8 +37,19 @@ window.KN_DATA = {
     contrast: { name: '对比', note: '容易混淆，需要区分' },
     analogy: { name: '类比', note: '推理结构相似，对象和机制不同，不能互换' },
     scale: { name: '跨尺度对应', note: '同一过程在不同生命系统层次上的对应，不是因果' },
-    apply: { name: '原理→应用', note: '后者应用前者的原理' }
+    apply: { name: '原理→应用', note: '后者应用前者的原理' },
+    measure: { name: '方法·表征', note: '一方是调查、测定或表征另一方的方法，不是因果' }
   },
+
+  /* 关系类型按钮组（见文件头说明）。 */
+  relGroups: [
+    { id: 'rg-compose', name: '组成与基础', types: ['compose', 'basis'], default: true },
+    { id: 'rg-cause', name: '因果与影响', types: ['cause'], default: true },
+    { id: 'rg-seq', name: '过程与顺序', types: ['seq'], default: true },
+    { id: 'rg-contrast', name: '对比与类比', types: ['contrast', 'analogy'], default: false },
+    { id: 'rg-apply', name: '实例与应用', types: ['instance', 'apply', 'measure'], default: true },
+    { id: 'rg-scale', name: '跨尺度联系', types: ['scale'], default: false }
+  ],
 
   /* 学科图第一圈。顺序是编辑安排（大致从细胞到个体、群体再到技术），不是严格的尺度序列。 */
   domains: [
@@ -280,6 +302,54 @@ window.KN_DATA = {
       condition: '答题句式只适用于"除草、灭虫这类措施有什么意义"的设问。',
       basis: [{ kind: 'site', ref: 'xb2-09/p6', quote: '除草灭虫的意义：调整能量流动关系，使能量持续高效地流向对人类最有益的部分' }] },
 
+    /* 种群 · 2026-11-16 切片（参考第17讲知识框架图，逐条核对讲义原文） */
+    { id: 'r-quadrat-density', from: 'k-quadrat', to: 'k-pop-density', type: 'measure', label: '调查（估算）', status: 'site',
+      condition: '适用于植物，以及活动能力弱、活动范围小的动物。',
+      basis: [{ kind: 'site', ref: 'xb2-01/p2', quote: '最后求出各样方种群密度的平均值，作为该种群密度的估算值。' },
+        { kind: 'figure', ref: 'IMG_20261115_225536.jpg', note: '教材知识框架第17讲：样方法、标记重捕法 —"调查方法"→ 种群密度。' }] },
+    { id: 'r-mark-density', from: 'k-mark', to: 'k-pop-density', type: 'measure', label: '调查（估算）', status: 'editor',
+      condition: '适用于活动能力强、活动范围大的动物。',
+      basis: [{ kind: 'site', ref: 'xb2-01/p3', quote: '适用于活动能力强、活动范围大的动物，比如田鼠、鸟类、鱼类。' },
+        { kind: 'site', ref: 'xb2-01/p3', quote: '按比例相等，N = M × n ÷ m。' },
+        { kind: 'figure', ref: 'IMG_20261115_225536.jpg', note: '教材知识框架第17讲：样方法、标记重捕法 —"调查方法"→ 种群密度。' },
+        { kind: 'editor', note: '该考点原文写的是估算个体数 N 与适用对象，未逐字写"调查种群密度"；"调查方法→种群密度"据参考图整理，待确认。' }] },
+    { id: 'r-model-jcurve', from: 'k-model', to: 'k-jcurve', type: 'measure', label: '用数学模型表征（公式 Nt = N0λ^t）', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-02/p1', quote: '建构种群增长模型的方法' },
+        { kind: 'site', ref: 'xb2-02/p2', quote: '种群的数量每年以一定的倍数增长，第 t 年的数量 = 初始数量 × λ 的 t 次方。' },
+        { kind: 'figure', ref: 'IMG_20261115_225536.jpg', note: '教材知识框架第17讲："J"形增长、"S"形增长、波动、下降 —"表征方法"→ 建立数学模型。' }] },
+    { id: 'r-model-scurve', from: 'k-model', to: 'k-scurve', type: 'measure', label: '用数学模型表征（曲线）', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-02/p1', quote: '数学公式精确，曲线图直观，两种形式各有优点。' },
+        { kind: 'site', ref: 'xb2-02/p3', quote: '当出生率等于死亡率时，种群停止增长，数量稳定在一定水平，曲线呈“S”形。' },
+        { kind: 'figure', ref: 'IMG_20261115_225536.jpg', note: '教材知识框架第17讲："J"形增长、"S"形增长、波动、下降 —"表征方法"→ 建立数学模型。' }] },
+    { id: 'r-jcurve-scurve', from: 'k-jcurve', to: 'k-scurve', type: 'contrast', label: '理想条件 vs 资源和空间有限', status: 'site',
+      condition: '比较维度：前提条件（理想条件 vs 资源和空间有限）；有无K值；"J"形 λ 保持不变，"S"形达到K值后停止增长。',
+      basis: [{ kind: 'site', ref: 'xb2-02/p2', quote: '条件是食物和空间条件充裕、气候适宜、没有天敌和其他竞争物种等理想条件。' },
+        { kind: 'site', ref: 'xb2-02/p3', quote: '自然界的资源和空间总是有限的。' }] },
+    { id: 'r-rates-scurve', from: 'k-rates', to: 'k-scurve', type: 'cause', label: '出生率降到等于死亡率时，种群停止增长', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-02/p3', quote: '当出生率等于死亡率时，种群停止增长，数量稳定在一定水平，曲线呈“S”形。' }] },
+    { id: 'r-growthrate-kapply', from: 'k-growthrate', to: 'k-kapply', type: 'apply', label: 'K/2 时增长最快：定捕捞剩余量与防治时机', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-02/p4', quote: '种群数量为 K/2 时，增长速率最大。' },
+        { kind: 'site', ref: 'xb2-02/p5', quote: '捕捞后，让剩余量维持在 K/2 左右，种群增长速率最快，可以持续获得较大的捕捞量。' },
+        { kind: 'site', ref: 'xb2-02/p5', quote: '防治要越早越好，在种群数量达到 K/2 之前进行。' }] },
+    { id: 'r-lambda-growthrate', from: 'k-lambda', to: 'k-growthrate', type: 'contrast', label: '临界值不同：λ 看 1，增长速率看 K/2 与 K', status: 'editor',
+      condition: '比较维度：判读的临界值（λ 曲线为 1；增长速率曲线最高点对应 K/2、降到零对应 K）。两种曲线都不能按曲线升降直接判断数量增减。',
+      basis: [{ kind: 'site', ref: 'xb2-02/p8', quote: '看 λ 和 1 比大小，不看 λ 升还是降' },
+        { kind: 'site', ref: 'xb2-02/p4', quote: '增长速率曲线的最高点对应 K/2，降到零的点对应 K 值。' },
+        { kind: 'editor', note: '两处判读方法原文可查；把二者并列对比是编辑判断（同推导方法组"看率不看数"）。' }] },
+    { id: 'r-kapply-endangered', from: 'k-kapply', to: 'k-endangered', type: 'apply', label: '建立自然保护区，提高K值', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-02/p5', quote: '保护濒危动物，要建立自然保护区，改善栖息环境，提高K值。' }] },
+    { id: 'r-age-endangered', from: 'k-age', to: 'k-endangered', type: 'instance', label: '保护前须调查的数量特征之一', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-03/p5', quote: '先调查种群的数量、年龄结构和性别比例，分析影响它们数量变化的因素。' }] },
+    { id: 'r-abiotic-fluct', from: 'k-abiotic', to: 'k-fluct', type: 'cause', label: '气候等因素可引起种群爆发或波动', status: 'site',
+      condition: '非生物因素的影响往往是综合性的；同一因素对不同种群作用可能相反（干旱使许多植物死亡率升高，却使东亚飞蝗爆发）。',
+      basis: [{ kind: 'site', ref: 'xb2-03/p1', quote: '对东亚飞蝗来说，气候干旱正是种群爆发式增长的主要原因。' },
+        { kind: 'site', ref: 'xb2-02/p6', quote: '有些则会在短时间内大量增长，比如东亚飞蝗的爆发' },
+        { kind: 'figure', ref: 'IMG_20261115_225536.jpg', note: '教材知识框架第17讲："影响种群数量变化的因素"（非生物因素、生物因素）连向种群；种群 —"数量变化"→ "J"形、"S"形、波动、下降。' }] },
+    { id: 'r-biotic-fluct', from: 'k-biotic', to: 'k-fluct', type: 'cause', label: '捕食等种间关系可使数量周期性波动', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-03/p2', quote: '其他生物通过捕食、种间竞争、寄生等关系影响种群数量。' },
+        { kind: 'site', ref: 'xb2-03/p4', quote: '两者呈现周期性波动' },
+        { kind: 'figure', ref: 'IMG_20261115_225536.jpg', note: '教材知识框架第17讲："影响种群数量变化的因素"（非生物因素、生物因素）连向种群；种群 —"数量变化"→ "J"形、"S"形、波动、下降。' }] },
+
     /* 种群→群落→生态系统（部分之间） */
     { id: 'r-pop-comm', from: 'xb2-pop', to: 'xb2-comm', type: 'compose', label: '各种生物种群的集合构成群落', status: 'site',
       basis: [{ kind: 'site', ref: 'xb2-04/p1', quote: '在相同时间聚集在一定地域中各种生物种群的集合，叫做生物群落' }] },
@@ -293,11 +363,51 @@ window.KN_DATA = {
 
     /* 生态系统内部 */
     { id: 'r-web-energy', from: 'k-foodweb', to: 'k-energyflow', type: 'basis', label: '渠道：能量沿食物链和食物网传递', status: 'site',
-      basis: [{ kind: 'site', ref: 'xb2-08/p1', quote: '传递：沿着食物链和食物网，以有机物中的化学能形式传递。' }] },
+      basis: [{ kind: 'site', ref: 'xb2-08/p1', quote: '传递：沿着食物链和食物网，以有机物中的化学能形式传递。' },
+        { kind: 'figure', ref: 'IMG_20261115_225543.jpg', note: '教材知识框架第18讲：营养结构 —"渠道"→ 能量流动、物质循环所在的虚线框。' }] },
     { id: 'r-chain-web', from: 'k-foodchain', to: 'k-foodweb', type: 'compose', label: '食物链相互交错构成食物网', status: 'site',
       basis: [{ kind: 'site', ref: 'xb2-07/p6', quote: '许多食物链彼此相互交错，连接成复杂的营养关系，就是食物网。' }] },
-    { id: 'r-energy-matter', from: 'u-xb2-energy', to: 'u-xb2-matter', type: 'basis', label: '能量是动力，物质是载体', status: 'site',
-      basis: [{ kind: 'site', ref: 'xb2-10/p6', quote: '物质是能量的载体，能量沿着食物链流动，就储存在有机物中；能量是物质循环的动力。' }] },
+    /* 能量与物质的双向作用写成两条：方向不同、关系词不同（2026-11-16 由原单元间"能量是动力，物质是载体"一条拆分）。 */
+    { id: 'r-energy-matter', from: 'k-energyflow', to: 'k-carbon', type: 'basis', label: '是物质循环的动力', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-10/p6', quote: '能量是物质循环的动力。' },
+        { kind: 'figure', ref: 'IMG_20261115_225543.jpg', note: '教材知识框架第18讲：能量流动 —"动力"→ 物质循环；物质循环 —"载体"→ 能量流动（两条方向相反的箭头）。' }] },
+    { id: 'r-carbon-energy', from: 'k-carbon', to: 'k-energyflow', type: 'basis', label: '含碳有机物是能量的载体', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-10/p6', quote: '物质是能量的载体，能量沿着食物链流动，就储存在有机物中' },
+        { kind: 'site', ref: 'xb2-10/p2', quote: '在生物群落内部，以含碳有机物的形式传递。' },
+        { kind: 'figure', ref: 'IMG_20261115_225543.jpg', note: '教材知识框架第18讲：能量流动 —"动力"→ 物质循环；物质循环 —"载体"→ 能量流动（两条方向相反的箭头）。' }] },
+
+    /* 生态系统 · 2026-11-16 切片（参考第18讲知识框架图，逐条核对讲义原文） */
+    { id: 'r-chain-magnify', from: 'k-foodchain', to: 'k-magnify', type: 'basis', label: '渠道：难降解物质沿食物链逐级积累', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-10/p5', quote: '会沿食物链逐级积累，营养级越高，浓度越高。' },
+        { kind: 'figure', ref: 'IMG_20261115_225543.jpg', note: '教材知识框架第18讲：营养结构 —"渠道"→ 能量流动、物质循环所在的虚线框；生物富集列在物质循环下。' }] },
+    { id: 'r-energyin-assim', from: 'k-energy-in', to: 'k-assim', type: 'seq', label: '先固定（同化），再分为呼吸散失与生长、发育和繁殖', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-08/p2', quote: '每个营养级都拆成：固定或同化 → 呼吸散失 + 用于生长、发育和繁殖' },
+        { kind: 'site', ref: 'xb2-08/p4', quote: '同化量 = 呼吸作用散失 + 用于生长、发育和繁殖。' }] },
+    { id: 'r-assim-feature', from: 'k-assim', to: 'k-energy-feature', type: 'cause', label: '每级都有呼吸散失、流向分解者和未利用，所以逐级递减', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-08/p6', quote: '原因：每个营养级都有能量在呼吸作用中散失，还有一部分流向分解者，一部分未被利用。' }] },
+    { id: 'r-assim-efficiency', from: 'k-assim', to: 'k-efficiency', type: 'basis', label: '计算依据：分子分母都用同化量', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-09/p1', quote: '传递效率 = 下一营养级同化量 ÷ 上一营养级同化量 × 100%。' },
+        { kind: 'site', ref: 'xb2-08/p5', quote: '分子分母都必须是同化量，不能用摄入量。' }] },
+    { id: 'r-efficiency-feature', from: 'k-efficiency', to: 'k-energy-feature', type: 'measure', label: '定量表示逐级递减（相邻营养级约10%～20%）', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-08/p6', quote: '相邻两个营养级之间的传递效率大约是10%到20%。' }] },
+    { id: 'r-web-change', from: 'k-foodweb', to: 'k-web-change', type: 'basis', label: '分析依据：先找营养级，再看食物来源是否多样', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-07/p7', quote: '先看减少的生物处在哪个营养级' }] },
+    { id: 'r-feature-webchange', from: 'k-energy-feature', to: 'k-web-change', type: 'basis', label: '解释依据：营养级越低，获得的能量越多', status: 'site',
+      condition: '用于"中间营养级减少，高营养级生物改食较低营养级"的情形。',
+      basis: [{ kind: 'site', ref: 'xb2-07/p7', quote: '营养级降低，获得的能量反而更多，所以鹰的数量增加。' },
+        { kind: 'site', ref: 'xb2-08/p6', quote: '相邻两个营养级之间的传递效率大约是10%到20%。' }] },
+    { id: 'r-biotic-webchange', from: 'k-biotic', to: 'k-web-change', type: 'cause', label: '种内竞争加剧，使失去天敌的被捕食者回落并趋于稳定', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-07/p7', quote: '天敌减少：被捕食者先增加，后因种内竞争加剧而减少，最后趋于稳定。' },
+        { kind: 'site', ref: 'xb2-03/p2', quote: '随着种群密度增大，种内竞争加剧，从而使种群的增长受到限制。' }] },
+    { id: 'r-web-selfreg', from: 'k-foodweb', to: 'k-selfreg', type: 'cause', label: '食物网越复杂，自我调节能力越强', status: 'site',
+      condition: '原文为"一般来说"；北极冻原、荒漠等结构简单的生态系统两种稳定性都低，不能反推"简单就恢复快"。',
+      basis: [{ kind: 'site', ref: 'xb2-12/p4', quote: '一般来说，生态系统中的组分越多，食物网越复杂，自我调节能力就越强。' }] },
+    { id: 'r-info-energy', from: 'u-xb2-info', to: 'u-xb2-energy', type: 'cause', label: '决定能量流动的方向和状态', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-11/p6', quote: '信息传递决定着能量流动和物质循环的方向和状态。' },
+        { kind: 'editor', note: '依据仅为讲义原文；第18讲参考图信息传递旁"调节"细箭头的终点待放大核对，未作为本关系依据。' }] },
+    { id: 'r-info-matter', from: 'u-xb2-info', to: 'u-xb2-matter', type: 'cause', label: '决定物质循环的方向和状态', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-11/p6', quote: '信息传递决定着能量流动和物质循环的方向和状态。' },
+        { kind: 'editor', note: '依据仅为讲义原文；第18讲参考图信息传递旁"调节"细箭头的终点待放大核对，未作为本关系依据。' }] },
     { id: 'r-feature-magnify', from: 'k-energy-feature', to: 'k-magnify', type: 'contrast', label: '沿食物链：能量逐级递减，富集物浓度逐级升高', status: 'site',
       basis: [{ kind: 'site', ref: 'xb2-08/p6', quote: '只能沿食物链由低营养级流向高营养级' },
         { kind: 'site', ref: 'xb2-10/p5', quote: '会沿食物链逐级积累，营养级越高，浓度越高。' }] },

@@ -8,7 +8,8 @@
  *
  * 数据：window.KN_DATA（手工维护，knowledge-network-data.js）＋ window.SITE / SEARCH_DATA（生成，只读）。
  * 未整理的部分在运行时用"期→考点"补全，保证每个考点都能从所在册的网络到达。
- * 地址只存范围、逻辑、焦点；选中、展开、滚动存在 sessionStorage（按地址），"回到思维导图"的返回凭据带标签页标识。
+ * 地址只存范围、逻辑、焦点；选中、展开、滚动、视口存在 sessionStorage（按地址），"回到思维导图"的返回凭据带标签页标识。
+ * 关系类型按钮组（KN_DATA.relGroups，缺失时用内置默认）的开关存在 sessionStorage「tt-kn-rel」，只影响关系层，不改节点布局。
  */
 (function () {
   'use strict';
@@ -528,7 +529,78 @@
    * 四、页面状态与渲染
    * ===================================================================== */
   var api = null, root = null, refs = {};
-  var S = { scope: 'bio', logic: 'rel', focusKey: '', sel: '', selId: '', exp: [], more: [], url: '', notice: '', shown: false, lines: [], preview: '', cardClosed: false, cardId: '' };
+  var S = { scope: 'bio', logic: 'rel', focusKey: '', sel: '', selId: '', exp: [], more: [], url: '', notice: '', shown: false, lines: [], preview: '', cardClosed: false, cardId: '', rel: [], restoreGv: null };
+
+  /* ---------- 关系类型按钮组：与“主题主线”是两个维度；只控制叠加在主框架上的语义关系 ---------- */
+  var DEFAULT_REL_GROUPS = [
+    { id: 'rg-compose', name: '组成与基础', types: ['compose', 'basis'], default: true },
+    { id: 'rg-cause', name: '因果与影响', types: ['cause'], default: true },
+    { id: 'rg-seq', name: '过程与顺序', types: ['seq'], default: true },
+    { id: 'rg-contrast', name: '对比与类比', types: ['contrast', 'analogy'], default: false },
+    { id: 'rg-apply', name: '实例与应用', types: ['instance', 'apply', 'measure'], default: true },
+    { id: 'rg-scale', name: '跨尺度联系', types: ['scale'], default: false }
+  ];
+  var REL_GROUPS = [], TYPE_GROUP = {};
+  function setupGroups() {
+    var src = Array.isArray(RAW.relGroups) && RAW.relGroups.length ? RAW.relGroups : DEFAULT_REL_GROUPS;
+    REL_GROUPS = []; TYPE_GROUP = {};
+    src.forEach(function (g) {
+      if (!g || !g.id || REL_GROUPS.some(function (x) { return x.id === g.id; })) return;
+      var go = { id: String(g.id), name: g.name || g.id, types: [], def: g.default !== false, idx: REL_GROUPS.length };
+      arr(g.types).forEach(function (t) { if (!TYPE_GROUP[t]) { TYPE_GROUP[t] = go; go.types.push(t); } });
+      REL_GROUPS.push(go);
+    });
+  }
+  function defaultRel() { return REL_GROUPS.filter(function (g) { return g.def; }).map(function (g) { return g.id; }); }
+  function loadRel() {
+    var v = sGet('sessionStorage', 'tt-kn-rel');
+    if (!Array.isArray(v)) return defaultRel();
+    return REL_GROUPS.filter(function (g) { return v.indexOf(g.id) >= 0; }).map(function (g) { return g.id; });
+  }
+  function relOn(r) { var g = TYPE_GROUP[r.type]; return !!g && S.rel.indexOf(g.id) >= 0; }
+  function isSym(r) { return r.type === 'contrast' || r.type === 'analogy'; }
+  function gIdx(r) { var g = TYPE_GROUP[r.type]; return g ? String(g.idx % 6) : 'x'; }
+  function entName(id) { return M.ent[id] ? M.ent[id].name : id; }
+  function relLabelText(r) { return (r.type === 'contrast' ? '对比：' : r.type === 'analogy' ? '类比：' : '') + r.label; }
+  function relSentence(r) { return entName(r.from) + ' —' + r.label + (isSym(r) ? '— ' : '→ ') + entName(r.to); }
+  function relDesc(r) { var g = TYPE_GROUP[r.type]; return relSentence(r) + '（' + relTypeName(r.type) + (g ? ' · ' + g.name : '') + ' · ' + STATUS_LABEL[r.status] + '）'; }
+  function visInfo(r, extra) {
+    var o = { id: r.id, from: r.from, to: r.to, type: r.type, group: TYPE_GROUP[r.type] ? TYPE_GROUP[r.type].id : '', status: r.status, dashed: isSym(r) || r.status !== 'site', arrow: !isSym(r), label: r.label };
+    if (extra) for (var k in extra) o[k] = extra[k];
+    return o;
+  }
+  /* 当前范围内的关系：至少一端在焦点子树（含焦点本身）中 */
+  var SCOPE_RELS = {};
+  function scopeRels(tr, focus) {
+    var k = tr.scope + '|' + tr.logic + '|' + focus.key;
+    if (SCOPE_RELS[k]) return SCOPE_RELS[k];
+    var inside = {}; inside[focus.id] = 1;
+    (function walk(x) { x.children.forEach(function (c) { inside[c.id] = 1; walk(c); }); })(focus);
+    SCOPE_RELS[k] = M.rels.filter(function (r) { return inside[r.from] || inside[r.to]; });
+    return SCOPE_RELS[k];
+  }
+  function setRel(list) {
+    S.rel = REL_GROUPS.filter(function (g) { return list.indexOf(g.id) >= 0; }).map(function (g) { return g.id; });
+    sSet('sessionStorage', 'tt-kn-rel', S.rel);
+    /* 只重画：不改展开、焦点、选中与视口 */
+    render({ keepScroll: true });
+  }
+  function toggleRel(id) { var l = S.rel.slice(), i = l.indexOf(id); if (i >= 0) l.splice(i, 1); else l.push(id); setRel(l); }
+  function partOfId(id) {
+    var e = M.ent[id]; if (!e) return '';
+    if (e.kind === 'concept') { var h = M.ent[e.home]; return h ? (h.kind === 'unit' ? h.part : M.partOfEp[h.id]) : ''; }
+    if (e.kind === 'point') return M.partOfEp[e.ep] || '';
+    if (e.kind === 'unit') return e.part;
+    if (e.kind === 'ep') return M.partOfEp[id] || '';
+    if (e.kind === 'part') return id;
+    return '';
+  }
+  function whereText(id) {
+    var bits = [], b = bookOf(id), p = partOfId(id);
+    if (b) bits.push(bookName(b));
+    if (p && M.ent[p] && p !== id) bits.push(M.ent[p].name);
+    return bits.join(' · ');
+  }
   var graphView = { key: '', scale: 1, x: 0, y: 0, fit: 1, manual: false }, graphGeom = null;
   var gen = 0;
 
@@ -554,6 +626,7 @@
         '<button type="button" class="kn-info-btn" data-act="report">覆盖与说明</button>' +
       '</div>' +
       '<div class="kn-sub"><nav class="kn-crumbs" aria-label="在结构中的位置"></nav><div class="kn-from"></div></div>' +
+      '<div class="kn-rels" role="group" aria-label="关系类型" hidden></div>' +
       '<div class="kn-notice" role="status" hidden></div>' +
       '<div class="kn-hint" hidden><span>单击节点只选中并显示信息卡；用"展开 ▸"看下一层，用"读讲义 ›"进入正文。键盘：Tab 选到节点后按 Enter，方向键在思维导图内移动，空格仍控制播放器。</span><button type="button" data-act="hint-close">知道了</button></div>' +
       '<div class="kn-body">' +
@@ -570,7 +643,7 @@
       logicSelect: $('.kn-logic-select', root), scopeSelect: $('.kn-scope-select', root), crumbs: $('.kn-crumbs', root), from: $('.kn-from', root),
       notice: $('.kn-notice', root), hint: $('.kn-hint', root), view: $('.kn-view', root), canvas: $('.kn-canvas', root), world: $('.kn-world', root),
       svg: $('.kn-edges', root), nodes: $('.kn-nodes', root), list: $('.kn-list', root), card: $('.kn-card', root),
-      report: $('.kn-report', root)
+      report: $('.kn-report', root), rels: $('.kn-rels', root)
     };
     return true;
   }
@@ -609,6 +682,7 @@
     if (location.hash !== url) { try { history.replaceState(history.state, '', url); } catch (e) { /* ignore */ } }
     S.url = url;
     var v = getView(url);
+    S.restoreGv = v && v.gv && typeof v.gv === 'object' ? v.gv : null;
     if (v) {
       S.sel = v.sel && tr.byKey[v.sel] ? v.sel : '';
       S.selId = S.sel ? tr.byKey[S.sel].id : (v.selId && M.ent[v.selId] ? v.selId : '');
@@ -677,6 +751,8 @@
   function saveView(extra) {
     if (!S.url) return;
     var p = { sel: S.sel, selId: S.selId, exp: S.exp, more: S.more };
+    /* 视口（平移、缩放）随地址保存，返回该地址时恢复 */
+    if (graphGeom && form() === 'graph' && graphView.key) p.gv = { x: graphView.x, y: graphView.y, scale: graphView.scale, manual: graphView.manual };
     if (extra) for (var k in extra) p[k] = extra[k];
     putView(S.url, p);
   }
@@ -735,6 +811,8 @@
       if (ir) { addNote('「' + M.ent[id].name + '」不在' + LOGICS[logic] + '视图中，已切到知识关系。'); logic = 'rel'; tr = trr; inst = ir; }
     }
     if (!inst) { S.pendingNotice = ''; flash('「' + (M.ent[id] ? M.ent[id].name : id) + '」暂时无法在思维导图中定位。'); return; }
+    /* 离开前把当前地址的选中、展开与视口写入会话，经“来路”或后退返回时恢复 */
+    if (S.shown) saveView(scrollPos());
     if (opts.trail !== false) pushTrail({ url: S.url, label: placeLabel() });
     var focus = inst, sel = '';
     if (!inst.children.length && inst.parent) { focus = inst.parent; sel = inst.key; }
@@ -776,10 +854,11 @@
     if (i >= 0) S.exp.splice(i, 1);
     else {
       S.exp.push(key);
-      /* 同屏控制：同一焦点下最多同时展开 4 个分支，超出时收起最早展开的 */
+      /* 同屏控制：同一焦点下最多同时展开 4 个分支（总览原地展开最多 2 个），超出时收起最早展开的 */
       var n = T().byKey[key], sibs = n && n.parent ? n.parent.children.map(function (c) { return c.key; }) : [];
       var open = S.exp.filter(function (k) { return sibs.indexOf(k) >= 0; });
-      while (open.length > 4) { var drop = open.shift(); S.exp.splice(S.exp.indexOf(drop), 1); }
+      var cap = n && n.parent && n.parent === T().root && cur() === T().root && S.logic === 'rel' ? 2 : 4;
+      while (open.length > cap) { var drop = open.shift(); S.exp.splice(S.exp.indexOf(drop), 1); }
     }
     saveView(); render({ keepScroll: true });
   }
@@ -812,6 +891,7 @@
     $$('.kn-form [data-act="form"]', root).forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-v') === f ? 'true' : 'false'); });
     renderCrumbs(tr, focus);
     renderFrom();
+    renderRels(tr, focus);
     refs.notice.hidden = !S.notice;
     refs.notice.innerHTML = S.notice ? '<span>' + esc(S.notice) + '</span><button type="button" data-act="notice-close" aria-label="关闭提示">×</button>' : '';
     refs.hint.hidden = !!sGet('localStorage', 'tt-kn-hint');
@@ -848,10 +928,36 @@
     var t = trail(), last = t[t.length - 1];
     refs.from.innerHTML = last ? '<button type="button" data-act="trail" title="回到这次跳转前的位置">↩ ' + esc(last.label) + '</button>' : '';
   }
+  /* 关系类型按钮组：图与列表两种形态都显示；数量为当前范围（焦点子树）内可用的关系数 */
+  function relSwatch(sym) {
+    return '<svg class="kn-rel-sw" viewBox="0 0 24 10" aria-hidden="true">' + (sym ? '<path class="kn-sw-sym" d="M2 5H22"/>' : '<path d="M1 5H15"/><path class="kn-sw-head" d="M14 1L22 5L14 9z"/>') + '</svg>';
+  }
+  function renderRels(tr, focus) {
+    var bar = refs.rels;
+    if (S.logic !== 'rel' || !tr.root.children.length) { bar.hidden = true; bar.innerHTML = ''; return; }
+    var ae = D.activeElement, keep = ae && bar.contains(ae) ? { act: ae.getAttribute('data-act'), id: ae.getAttribute('data-id') } : null;
+    var rels = scopeRels(tr, focus);
+    var h = '<span class="kn-k kn-rels-k" aria-hidden="true">关系类型</span><span class="kn-rels-btns">';
+    REL_GROUPS.forEach(function (g) {
+      var n = rels.filter(function (r) { return g.types.indexOf(r.type) >= 0; }).length, on1 = S.rel.indexOf(g.id) >= 0;
+      var sym = g.types.length && g.types.every(function (t) { return t === 'contrast' || t === 'analogy'; });
+      var tip = n ? g.name + '：' + g.types.map(relTypeName).join('、') + '（当前范围 ' + n + ' 条）' : '当前范围暂无此类关系';
+      h += '<button type="button" class="kn-rel-btn kn-g' + (g.idx % 6) + (n ? '' : ' is-none') + '" data-act="rel" data-id="' + esc(g.id) + '" aria-pressed="' + (on1 ? 'true' : 'false') + '" title="' + esc(tip) + '">' +
+        relSwatch(sym) + '<span class="kn-rel-name">' + esc(g.name) + '</span><span class="kn-rel-n">' + (n ? n : '暂无') + '</span></button>';
+    });
+    h += '</span><span class="kn-rels-ops"><button type="button" class="kn-rels-op" data-act="rel-default">恢复默认</button><button type="button" class="kn-rels-op" data-act="rel-clear">清除</button></span>' +
+      '<span class="kn-rels-legend">细灰线＝编排（目录位置）；带箭头和关系词的线＝知识关系；虚线＝待确认；无箭头＝对比/类比</span>';
+    bar.innerHTML = h;
+    bar.hidden = false;
+    if (keep) {
+      var again = keep.id ? $('[data-act="' + keep.act + '"][data-id="' + cssEsc(keep.id) + '"]', bar) : $('[data-act="' + keep.act + '"]', bar);
+      if (again) again.focus({ preventScroll: true });
+    }
+  }
 
   /* ---- 图：总览（中心发散）与展开（主干收到左侧，子集向右） ---- */
   var GEO = { pad: 18, colW: 184, chipH: 34, chipGap: 8, sibH: 28, sibGap: 4, focusH: 96, childW: 212, childH: 58, childGap: 10,
-    grandW: 196, grandH: 34, grandGap: 6, colGap: 36, portW: 200, portH: 32, ringW: 164, ringH: 86, centerW: 196, centerH: 80 };
+    grandW: 196, grandH: 34, grandGap: 6, colGap: 36, portW: 200, portH: 32, ringW: 188, ringH: 86, centerW: 196, centerH: 80 };
   var LIMIT_KIDS = 12, SHOW_KIDS = 10, LIMIT_GRAND = 8, SHOW_GRAND = 7;
 
   function visibleKids(n, limit, show) {
@@ -948,7 +1054,7 @@
       L.bottomPad = linesH;
       if (Wv < 900 || Hv < 620) {
         g = Object.assign({}, GEO);
-        g.pad = 10; g.ringW = clamp(Wv * .23, 132, 156); g.ringH = 74;
+        g.pad = 10; g.ringW = clamp(Wv * .26, 150, 176); g.ringH = 74;
         g.centerW = clamp(Wv * .26, 158, 184); g.centerH = 72;
       }
       var W0 = Math.max(Wv, 320), H0 = Math.max(Hv - linesH, 280);
@@ -972,15 +1078,74 @@
         /* 先加高（竖向滚动更自然），高到一定程度再加宽 */
         if (ry < 300) ry *= 1.06; else rx *= 1.05;
       }
-      var routeBoxes = [center].concat(boxes);
+      /* 原地展开的一级分支（最多 2 个）：二级节点以小卡片列在该节点外侧——左半边向左、右半边向右、上下边向外；其余主分支不动 */
+      var small = g !== GEO, sw = small ? 128 : 150, sh = small ? 28 : 30, sg = 4, cgap = 18;
+      var cx0 = W0 / 2, cy0 = H0 / 2, placed = [center].concat(boxes), groups = [];
+      ring.forEach(function (c, i) {
+        if (S.exp.indexOf(c.key) < 0 || !c.children.length) return;
+        var b = boxes[i], dx = b.x + b.w / 2 - cx0, dy = b.y + b.h / 2 - cy0;
+        var side = Math.abs(dx) / rx >= Math.abs(dy) / ry ? (dx < 0 ? 'L' : 'R') : (dy < 0 ? 'T' : 'B');
+        var over = c.children.length > LIMIT_GRAND, kids = over ? c.children.slice(0, SHOW_GRAND) : c.children.slice();
+        var k = kids.length + (over ? 1 : 0);
+        var cols = (side === 'T' || side === 'B') && k > 4 ? 2 : 1, rows = Math.ceil(k / cols);
+        var GW = cols * sw + (cols - 1) * cgap, GH = rows * sh + (rows - 1) * sg, grp = null;
+        for (var off = 22; off < 2000; off += 16) {
+          if (side === 'L') grp = { x: b.x - off - GW, y: b.y + b.h / 2 - GH / 2 };
+          else if (side === 'R') grp = { x: b.x + b.w + off, y: b.y + b.h / 2 - GH / 2 };
+          else if (side === 'T') grp = { x: b.x + b.w / 2 - GW / 2, y: b.y - off - GH };
+          else grp = { x: b.x + b.w / 2 - GW / 2, y: b.y + b.h + off };
+          grp.w = GW; grp.h = GH;
+          if (!placed.some(function (r) { return r !== b && overlap(r, grp, 8); })) break;
+        }
+        placed.push(grp);
+        groups.push({ c: c, i: i, side: side, kids: kids, extra: over ? c.children.length - SHOW_GRAND : 0, cols: cols, rows: rows, g: grp });
+      });
+      /* 世界随展开扩大：整体平移到正坐标；渲染层据 shift 补偿手动视口，使原有节点在屏幕上不跳动 */
+      var minX = Math.min.apply(null, placed.map(function (r) { return r.x; })), minY = Math.min.apply(null, placed.map(function (r) { return r.y; }));
+      var maxX = Math.max.apply(null, placed.map(function (r) { return r.x + r.w; })), maxY = Math.max.apply(null, placed.map(function (r) { return r.y + r.h; }));
+      var sx = Math.max(0, g.pad - minX), sy = Math.max(0, g.pad - minY);
+      var mv = function (r) { return { x: r.x + sx, y: r.y + sy, w: r.w, h: r.h }; };
+      center = mv(center); boxes = boxes.map(mv);
+      var W1 = Math.max(W0 + sx, maxX + sx + g.pad), H1 = Math.max(H0 + sy, maxY + sy + g.pad);
+      var subNodes = [], subEdges = [];
+      groups.forEach(function (gp) {
+        var b = boxes[gp.i], G = mv(gp.g), cards = [];
+        for (var j = 0; j < gp.kids.length + (gp.extra ? 1 : 0); j++) {
+          var col = Math.floor(j / gp.rows), row = j % gp.rows;
+          var card = { x: G.x + col * (sw + cgap), y: G.y + row * (sh + sg), w: sw, h: sh, col: col };
+          if (j < gp.kids.length) subNodes.push({ key: gp.kids[j].key, n: gp.kids[j], role: 'sub', x: card.x, y: card.y, w: sw, h: sh, ring: gp.c.key });
+          else subNodes.push({ key: 'submore:' + gp.c.key, n: gp.c, role: 'submore', x: card.x, y: card.y, w: sw, h: sh, extra: gp.extra });
+          cards.push(card);
+        }
+        var mids = cards.map(function (cd) { return cd.y + sh / 2; });
+        if (gp.side === 'L' || gp.side === 'R') {
+          subEdges.push(bracket(gp.side === 'R' ? b.x + b.w : b.x, b.y + b.h / 2, gp.side === 'R' ? G.x : G.x + sw, mids, 'kn-e-grand'));
+        } else {
+          var top = gp.side === 'T', y1 = top ? b.y : b.y + b.h, ym = top ? (G.y + G.h + y1) / 2 : (y1 + G.y) / 2, bx = b.x + b.w / 2;
+          var spines = [];
+          for (var c2 = 0; c2 < gp.cols; c2++) spines.push(G.x + c2 * (sw + cgap) - 9);
+          var d = 'M' + bx + ' ' + y1 + 'V' + ym + 'M' + Math.min.apply(null, spines.concat(bx)) + ' ' + ym + 'H' + Math.max.apply(null, spines.concat(bx));
+          spines.forEach(function (spx, ci) {
+            var cm = cards.filter(function (cd) { return cd.col === ci; }).map(function (cd) { return cd.y + sh / 2; });
+            if (!cm.length) return;
+            d += 'M' + spx + ' ' + ym + 'V' + (top ? Math.min.apply(null, cm) : Math.max.apply(null, cm));
+            cm.forEach(function (yy) { d += 'M' + spx + ' ' + yy + 'H' + (spx + 9); });
+          });
+          subEdges.push({ d: d, cls: 'kn-e-grand' });
+        }
+      });
+      var routeBoxes = [center].concat(boxes, subNodes);
+      var a0 = { x: center.x + center.w / 2, y: center.y + center.h / 2 };
       L.nodes.push({ key: focus.key, n: focus, role: 'center', x: center.x, y: center.y, w: center.w, h: center.h });
       ring.forEach(function (c, i) {
-        var b = boxes[i], a = { x: W0 / 2, y: H0 / 2 }, z = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+        var b = boxes[i], z = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
         var obstacles = routeBoxes.filter(function (r) { return r !== center && r !== b; });
-        L.nodes.push({ key: c.key, n: c, role: 'ring', x: b.x, y: b.y, w: b.w, h: b.h });
-        L.edges.push({ d: orthogonalRoute(a, z, obstacles), cls: 'kn-e-spoke' + (c.id === 'g-topics' ? ' kn-e-dash' : '') });
+        L.nodes.push({ key: c.key, n: c, role: 'ring', x: b.x, y: b.y, w: b.w, h: b.h, expanded: S.exp.indexOf(c.key) >= 0 && c.children.length > 0 });
+        L.edges.push({ d: orthogonalRoute(a0, z, obstacles), cls: 'kn-e-spoke' + (c.id === 'g-topics' ? ' kn-e-dash' : '') });
       });
-      L.w = W0; L.h = H0; L.cx = W0 / 2; L.cy = H0 / 2;
+      L.nodes = L.nodes.concat(subNodes);
+      L.edges = L.edges.concat(subEdges);
+      L.w = W1; L.h = H1; L.cx = a0.x; L.cy = a0.y; L.shift = { x: sx, y: sy };
       return L;
     }
     /* 展开：左列是收拢的主干（根与各级祖先各一个小牌）＋焦点＋同级；子集向右，最多再展开一层 */
@@ -1067,6 +1232,9 @@
     var meta = role === 'sib' || role === 'trunk' ? '' : metaText(tr, n);
     var aria = KIND_LABEL[kind] || '分组';
     var inner = '';
+    if (role === 'submore') {
+      return { cls: 'kn-node kn-r-more kn-r-submore', html: '<button type="button" class="kn-n-main" data-act="focus" data-key="' + esc(n.key) + '" aria-label="' + esc('另有 ' + nd.extra + ' 项：进入「' + name + '」查看全部') + '" title="进入该分支查看全部">另有 ' + nd.extra + ' 项 ▸</button>' };
+    }
     if (role === 'more') {
       var shown = S.more.indexOf(n.key) >= 0;
       return { cls: 'kn-node kn-r-more', html: '<button type="button" class="kn-n-main" data-act="more" data-key="' + esc(n.key) + '">' + (shown ? '收起' : '显示更多（+' + nd.extra + '）') + '</button>' };
@@ -1082,16 +1250,180 @@
     var tag = n.ref ? '<span class="kn-tag">引用</span>' : (fallback ? '<span class="kn-tag kn-tag-fb">未整理</span>' : '');
     if (vis) tag += '<span class="kn-tag kn-tag-vis">访问过</span>';
     if (n.pending) tag += '<span class="kn-tag kn-tag-fb">待确认</span>';
-    inner = '<button type="button" class="kn-n-main" data-act="sel" data-key="' + esc(n.key) + '" aria-pressed="' + (sel ? 'true' : 'false') + '" aria-label="' + esc(aria + '：' + name + (meta ? '（' + meta + '）' : '')) + '">' +
+    inner = '<button type="button" class="kn-n-main" data-act="sel" data-key="' + esc(n.key) + '" aria-pressed="' + (sel ? 'true' : 'false') + '" aria-label="' + esc(aria + '：' + name + (meta ? '（' + meta + '）' : '')) + '"' + (role === 'sub' ? ' title="' + esc(name) + '"' : '') + '>' +
       '<span class="kn-n-kind">' + esc(role === 'center' || role === 'focus' ? aria : '') + '</span>' +
       '<span class="kn-n-name">' + esc(name) + '</span>' + (meta || tag ? '<span class="kn-n-meta">' + tag + esc(meta) + '</span>' : '') + '</button>';
-    if (role === 'child' && n.children.length) {
+    if ((role === 'child' || role === 'ring') && n.children.length) {
       var ex = S.exp.indexOf(n.key) >= 0;
       inner += '<button type="button" class="kn-n-exp" data-act="exp" data-key="' + esc(n.key) + '" aria-expanded="' + (ex ? 'true' : 'false') + '" aria-label="' + (ex ? '收起' : '原地展开') + '：' + esc(name) + '" title="' + (ex ? '收起下一层' : '原地展开下一层') + '">' + (ex ? '◂' : '▸') + '<span>' + n.children.length + '</span></button>';
     }
+    inner += flagsHtml(nd, name);
     /* 选中节点在自身框内浮出"展开 ▸""读讲义 ›"，不遮挡相邻节点 */
     if (sel) { var acts = actionsFor(tr, n, role); if (acts) { inner += '<span class="kn-n-acts">' + acts + '</span>'; cls += ' has-acts'; } }
     return { cls: cls, html: inner };
+  }
+
+  /* =====================================================================
+   * 关系层：只叠加在已排好的节点上，绝不改节点位置
+   * ===================================================================== */
+  /* 关系词标签区宽约 20 个汉字（12px 字）；更长的关系词截断，title 与读屏文本给完整句子 */
+  var REL_LW = 272, LANE = 12, LAST_VIS = [];
+  function relFlag(R, nd, kind, r) { var f = R.flags[nd.n.key] = R.flags[nd.n.key] || { fold: [], out: [] }; if (f[kind].indexOf(r) < 0) f[kind].push(r); }
+  function labelW(text, extra) { return Math.min(REL_LW - 6, Math.max(36, Array.from(text).length * 12.3 + 12 + (extra || 0))); }
+  /* 标签避让：依次尝试候选位置（起点线上方、终点线上方、线下方），都被占用时再向下错开；不与已放标签、节点重叠 */
+  function placeLabels(list, obstacles) {
+    var done = [];
+    function hit(lb) { return done.some(function (o) { return overlap(o, lb, 1); }) || (!lb.zone && obstacles.some(function (o) { return overlap(o, lb, 2); })); }
+    list.sort(function (a, b) { return a.y - b.y || a.x - b.x; }).forEach(function (lb) {
+      var y0 = lb.y, cands = (lb.cands || []).concat([y0]), ok = false;
+      for (var c = 0; c < cands.length && !ok; c++) { lb.y = cands[c]; ok = !hit(lb); }
+      if (!ok) { lb.y = y0; for (var t = 0; t < 60 && hit(lb); t++) lb.y += 20; }
+      done.push(lb);
+    });
+    return done;
+  }
+  /* 局部图：两端可见（焦点、一级、二级）的已开启关系全部画出；一端在折叠分支内则画到该分支并提示；一端在图外则给 ↗ 角标 */
+  function localRelLayer(tr, focus, L) {
+    var R = { edges: [], labels: [], flags: {}, ports: [], vis: [], w: 0, h: 0 };
+    var gn = L.nodes.filter(function (nd) { return nd.role === 'focus' || nd.role === 'child' || nd.role === 'grand'; });
+    var byKey = {}, byId = {};
+    gn.forEach(function (nd) { byKey[nd.n.key] = nd; var o = byId[nd.n.id]; if (!o || (o.n.ref && !nd.n.ref)) byId[nd.n.id] = nd; });
+    var selNd = S.sel ? byKey[S.sel] || null : null;
+    var relMode = S.logic === 'rel';
+    var src = relMode ? M.rels.filter(relOn) : (selNd ? (M.relsOf[selNd.n.id] || []) : []);
+    function rep(id) {
+      if (byId[id]) return { nd: byId[id], exact: true };
+      var list = tr.byId[id] || [];
+      for (var i = 0; i < list.length; i++) {
+        for (var p = list[i].parent; p && p !== focus; p = p.parent) if (byKey[p.key]) return { nd: byKey[p.key], exact: false };
+      }
+      return null;
+    }
+    var draw = [];
+    src.forEach(function (r) {
+      var a = rep(r.from), b = rep(r.to);
+      if (a && b) {
+        if (a.nd === b.nd) return;
+        if (a.exact || b.exact) { draw.push({ r: r, a: a, b: b }); if (!a.exact) relFlag(R, a.nd, 'fold', r); if (!b.exact) relFlag(R, b.nd, 'fold', r); }
+        else { relFlag(R, a.nd, 'fold', r); relFlag(R, b.nd, 'fold', r); }
+      } else if (a || b) { var x = a || b; if (x.exact) relFlag(R, x.nd, 'out', r); }
+    });
+    /* 端点沿节点右缘均分，按对端高低排序以减少交叉 */
+    var ends = {};
+    draw.forEach(function (d, i) {
+      [['a', 'b'], ['b', 'a']].forEach(function (p) { var me = d[p[0]].nd, ot = d[p[1]].nd; (ends[me.n.key] = ends[me.n.key] || []).push({ i: i, side: p[0], oy: ot.y + ot.h / 2 }); });
+    });
+    Object.keys(ends).forEach(function (k) {
+      var nd = byKey[k], list = ends[k].sort(function (u, v) { return u.oy - v.oy; });
+      list.forEach(function (e, j) { draw[e.i][e.side + 'y'] = Math.round(nd.y + nd.h * (j + 1) / (list.length + 1)); });
+    });
+    var rmax = L.nodes.reduce(function (m, nd) { return Math.max(m, nd.x + nd.w); }, 0);
+    function exitClear(nd, y) { return !L.nodes.some(function (o) { return o !== nd && o.x + o.w > nd.x + nd.w + 1 && o.x < rmax + 1 && y > o.y - 3 && y < o.y + o.h + 3; }); }
+    /* 右侧预留：关系词标签区＋竖向通道；短跨度用内侧通道 */
+    var laneX0 = rmax + REL_LW + 14, lanes = [], laneOf = {};
+    draw.map(function (d, i) { return { i: i, lo: Math.min(d.ay, d.by), hi: Math.max(d.ay, d.by) }; })
+      .filter(function (it) { var d = draw[it.i]; return exitClear(d.a.nd, d.ay) && exitClear(d.b.nd, d.by); })
+      .sort(function (u, v) { return (u.hi - u.lo) - (v.hi - v.lo) || u.lo - v.lo; })
+      .forEach(function (it) {
+        for (var l = 0; ; l++) {
+          lanes[l] = lanes[l] || [];
+          if (!lanes[l].some(function (o) { return it.lo < o.hi + 6 && o.lo < it.hi + 6; })) { lanes[l].push(it); laneOf[it.i] = l; break; }
+        }
+      });
+    var hiAny = selNd && draw.some(function (d) { return d.a.nd === selNd || d.b.nd === selNd; });
+    var labels = [];
+    draw.forEach(function (d, i) {
+      var r = d.r, A = { x: d.a.nd.x + d.a.nd.w, y: d.ay }, B = { x: d.b.nd.x + d.b.nd.w, y: d.by }, pts, lb;
+      var text = relLabelText(r), tbd = r.status !== 'site', w = labelW(text, tbd ? 42 : 0);
+      if (laneOf[i] != null) {
+        var lx = laneX0 + laneOf[i] * LANE;
+        pts = [A, { x: lx, y: A.y }, { x: lx, y: B.y }, B];
+        lb = { x: rmax + 6, y: A.y - 19, w: w, h: 18, zone: true, cands: [A.y - 19, B.y - 19, A.y + 2, B.y + 2] };
+      } else {
+        pts = orthogonalPoints(A, B, L.nodes.filter(function (nd) { return nd !== d.a.nd && nd !== d.b.nd; }), 8);
+        var lp = routeLabel(pts);
+        lb = { x: lp.x, y: lp.y - 12, w: w, h: 18, zone: false, cands: [lp.y - 20, lp.y + 2] };
+      }
+      var hi = hiAny && (d.a.nd === selNd || d.b.nd === selNd), dim = hiAny && !hi, gi = gIdx(r);
+      var cls = 'kn-g' + gi + (isSym(r) ? ' kn-rel-sym' : '') + (tbd ? ' kn-rel-tbd' : '') + (dim ? ' is-dim' : '') + (hi ? ' is-hi' : '');
+      R.edges.push({ d: orthogonalD(pts), cls: 'kn-rel ' + cls, mk: isSym(r) ? '' : gi });
+      lb.id = r.id; lb.cls = cls; lb.r = r;
+      labels.push(lb);
+      R.vis.push(visInfo(r, { fromKey: d.a.nd.n.key, toKey: d.b.nd.n.key, folded: !(d.a.exact && d.b.exact), dim: !!dim }));
+    });
+    R.labels = placeLabels(labels, L.nodes);
+    var right = draw.length ? Math.max(rmax + REL_LW, laneX0 + lanes.length * LANE) : rmax;
+    R.w = right + GEO.pad;
+    R.labels.forEach(function (lb) { R.h = Math.max(R.h, lb.y + lb.h + GEO.pad); R.w = Math.max(R.w, lb.x + lb.w + GEO.pad); });
+    /* 选中节点：通向本图之外的端点沿用 port 列出（按已开启的关系组过滤） */
+    if (selNd) {
+      var outs = relMode ? ((R.flags[selNd.n.key] || {}).out || []) : (M.relsOf[selNd.n.id] || []).filter(function (r) { var o = rep(r.from === selNd.n.id ? r.to : r.from); return !o; });
+      var portX = right + (draw.length ? 24 : GEO.colGap), py = selNd.y;
+      outs.slice(0, 6).forEach(function (r, i) {
+        R.ports.push({ key: 'port:' + r.id, r: r, other: r.from === selNd.n.id ? r.to : r.from, x: portX, y: py + i * (GEO.portH + 6), w: GEO.portW, h: GEO.portH });
+      });
+      if (outs.length > 6) R.ports.push({ key: 'port:more', more: outs.length - 6, x: portX, y: py + 6 * (GEO.portH + 6), w: GEO.portW, h: GEO.portH });
+      R.ports.forEach(function (p) {
+        var a = { x: selNd.x + selNd.w, y: selNd.y + selNd.h / 2 }, b = { x: p.x, y: p.y + p.h / 2 };
+        var obstacles = L.nodes.concat(R.ports).filter(function (nd) { return nd !== selNd && nd !== p; });
+        R.edges.push({ d: orthogonalRoute(a, b, obstacles), cls: 'kn-e-port' + (p.r ? ' kn-st-' + p.r.status : '') });
+      });
+      if (R.ports.length) { R.w = Math.max(R.w, portX + GEO.portW + GEO.pad); R.h = Math.max(R.h, R.ports[R.ports.length - 1].y + GEO.portH + GEO.pad); }
+    }
+    if (!relMode) R.flags = {};
+    return R;
+  }
+  /* 总览：端点分属不同一级分支的已开启关系按分支对聚合为一条点划线＋计数；不表示板块之间的因果 */
+  function overviewRelLayer(tr, L) {
+    var R = { edges: [], labels: [], flags: {}, ports: [], vis: [], w: 0, h: 0 };
+    if (S.logic !== 'rel') return R;
+    var ringBy = {};
+    L.nodes.forEach(function (nd) { if (nd.role === 'ring') ringBy[nd.n.key] = nd; });
+    function br(id) {
+      var p = primary(tr, id), cand = (p ? [p] : []).concat(tr.byId[id] || []);
+      for (var i = 0; i < cand.length; i++) { var path = pathOf(cand[i]); if (path[1] && ringBy[path[1].key]) return ringBy[path[1].key]; }
+      return null;
+    }
+    var pairs = {}, order = [];
+    M.rels.filter(relOn).forEach(function (r) {
+      var a = br(r.from), b = br(r.to);
+      if (a && b) {
+        if (a === b) return;
+        var lo = a.n.key < b.n.key ? a : b, hi = lo === a ? b : a, k = lo.n.key + '|' + hi.n.key;
+        if (!pairs[k]) { pairs[k] = { a: lo, b: hi, rels: [] }; order.push(k); }
+        pairs[k].rels.push(r);
+      } else if (a || b) relFlag(R, a || b, 'out', r);
+    });
+    var selHit = S.sel && order.some(function (k) { return pairs[k].a.n.key === S.sel || pairs[k].b.n.key === S.sel; });
+    var labels = [];
+    order.forEach(function (k, pi) {
+      var p = pairs[k], o = ((pi % 5) - 2) * 6;
+      var A = { x: p.a.x + p.a.w / 2 + o, y: p.a.y + p.a.h / 2 + o }, B = { x: p.b.x + p.b.w / 2 + o, y: p.b.y + p.b.h / 2 + o };
+      var pts = orthogonalPoints(A, B, L.nodes.filter(function (nd) { return nd !== p.a && nd !== p.b; }), 8);
+      var hi = selHit && (p.a.n.key === S.sel || p.b.n.key === S.sel), dim = selHit && !hi;
+      R.edges.push({ d: orthogonalD(pts), cls: 'kn-agg' + (dim ? ' is-dim' : '') + (hi ? ' is-hi' : '') });
+      var lp = routeLabel(pts), n = p.rels.length;
+      labels.push({ x: lp.x, y: lp.y - 12, w: labelW(n + ' 条关系'), h: 22, zone: false, agg: p, k: k, dim: dim });
+      p.rels.forEach(function (r) { R.vis.push(visInfo(r, { agg: true, between: [p.a.n.id, p.b.n.id] })); });
+    });
+    R.labels = placeLabels(labels, L.nodes);
+    return R;
+  }
+
+  /* 节点上沿的关系提示：折叠分支内的端点「n 条关系 ▸」、通向本图之外的「↗n」 */
+  function flagsHtml(nd, name) {
+    var f = nd.flags; if (!f) return '';
+    var h = '', k = esc(nd.n.key);
+    if (f.fold.length) {
+      var inPlace = nd.role === 'child' && !nd.expanded;
+      var tip = f.fold.length + ' 条关系的端点在「' + name + '」' + (inPlace ? '的下级中：点击原地展开' : '更深的下级中：点击进入该分支');
+      h += '<button type="button" class="kn-n-flag kn-flag-fold" data-act="' + (inPlace ? 'fold-exp' : 'focus') + '" data-key="' + k + '" aria-label="' + esc(tip) + '" title="' + esc(tip) + '">' + f.fold.length + ' 条关系 ▸</button>';
+    }
+    if (f.out.length) {
+      var t2 = f.out.length + ' 条关系通向本图之外';
+      h += '<button type="button" class="kn-n-flag kn-flag-out" data-act="out" data-key="' + k + '" aria-label="' + esc(t2) + '" title="' + esc(t2 + '：点击选中「' + name + '」查看端点') + '">↗' + f.out.length + '</button>';
+    }
+    return h ? '<span class="kn-n-flags">' + h + '</span>' : '';
   }
 
   function applyGraphView() {
@@ -1106,38 +1438,15 @@
     $$('.kn-empty', refs.nodes).forEach(function (x) { x.remove(); });
     var L = layout(tr, focus, cw, ch);
     var keep = {}, nodesBox = refs.nodes;
-    /* 选中节点的动作条与关系 */
-    var selNd = null;
-    L.nodes.forEach(function (nd) { if (nd.n.key === S.sel && (nd.role === 'child' || nd.role === 'grand' || nd.role === 'focus' || nd.role === 'ring' || nd.role === 'center')) selNd = nd; });
-    var extraEdges = [], ports = [], labels = [];
-    if (selNd && !L.overview) {
-      var visById = {};
-      L.nodes.forEach(function (nd) { if (nd.role === 'child' || nd.role === 'grand' || nd.role === 'focus') (visById[nd.n.id] = visById[nd.n.id] || nd); });
-      var rels = M.relsOf[selNd.n.id] || [], py = selNd.y, hidden = [];
-      rels.forEach(function (r) {
-        var other = r.from === selNd.n.id ? r.to : r.from, ond = visById[other];
-        if (ond && ond !== selNd) {
-          var x1 = selNd.x + selNd.w, y1 = selNd.y + selNd.h / 2, x2 = ond.x + ond.w, y2 = ond.y + ond.h / 2;
-          var points = orthogonalPoints({ x: x1, y: y1 }, { x: x2, y: y2 }, L.nodes.filter(function (nd) { return nd !== selNd && nd !== ond; }));
-          var lp = routeLabel(points);
-          extraEdges.push({ d: orthogonalD(points), cls: 'kn-e-rel kn-st-' + r.status });
-          labels.push({ x: lp.x, y: lp.y, t: r.label });
-        } else if (!ond) hidden.push(r);
-      });
-      hidden.slice(0, 6).forEach(function (r, i) {
-        var other = r.from === selNd.n.id ? r.to : r.from;
-        ports.push({ key: 'port:' + r.id, r: r, other: other, x: L.portX, y: py + i * (GEO.portH + 6), w: GEO.portW, h: GEO.portH });
-      });
-      if (hidden.length > 6) ports.push({ key: 'port:more', more: hidden.length - 6, x: L.portX, y: py + 6 * (GEO.portH + 6), w: GEO.portW, h: GEO.portH });
-      ports.forEach(function (p) {
-        var a = { x: selNd.x + selNd.w, y: selNd.y + selNd.h / 2 }, b = { x: p.x, y: p.y + p.h / 2 };
-        var obstacles = L.nodes.concat(ports).filter(function (nd) { return nd !== selNd && nd !== p; });
-        extraEdges.push({ d: orthogonalRoute(a, b, obstacles), cls: 'kn-e-port' + (p.r ? ' kn-st-' + p.r.status : '') });
-      });
-      if (ports.length) { L.w = Math.max(L.w, L.portX + GEO.portW + GEO.pad); L.h = Math.max(L.h, ports[ports.length - 1].y + GEO.portH + GEO.pad); }
-    }
+    /* 关系层（只读节点位置） */
+    var extraEdges = [], labels = [];
+    var RL = L.overview ? overviewRelLayer(tr, L) : localRelLayer(tr, focus, L);
+    var ports = RL.ports;
+    L.nodes.forEach(function (nd) { nd.flags = (nd.role === 'focus' || nd.role === 'child' || nd.role === 'grand' || nd.role === 'ring') ? RL.flags[nd.n.key] || null : null; });
+    LAST_VIS = RL.vis;
+    if (!L.overview) { L.w = Math.max(L.w, RL.w); L.h = Math.max(L.h, RL.h); }
     /* 主线叠加（学科总览） */
-    var lineChips = '';
+    var lineChips = '<span class="kn-lines-k" aria-hidden="true">主题主线</span>';
     if (L.overview && S.scope === 'bio') {
       var pos = {};
       L.nodes.forEach(function (nd) { if (nd.role === 'ring') pos[nd.n.id] = { x: nd.x + nd.w / 2, y: nd.y + nd.h / 2, nd: nd }; });
@@ -1162,7 +1471,18 @@
     refs.canvas.classList.add('kn-graph-pan');
     var shownW = L.w, shownH = L.h;
     var viewKey = S.scope + '|' + S.logic + '|' + S.focusKey;
-    if (graphView.key !== viewKey) { graphView.key = viewKey; graphView.manual = false; }
+    if (S.restoreGv) {
+      /* 返回某地址：恢复该地址保存的视口 */
+      var rg = S.restoreGv; S.restoreGv = null;
+      graphView.key = viewKey; graphView.manual = !!rg.manual;
+      if (rg.manual && isFinite(rg.x) && isFinite(rg.y) && isFinite(rg.scale) && rg.scale > 0) { graphView.x = rg.x; graphView.y = rg.y; graphView.scale = rg.scale; }
+      else graphView.manual = false;
+    } else if (graphView.key !== viewKey) { graphView.key = viewKey; graphView.manual = false; }
+    else if (graphView.manual && graphGeom && graphGeom.key === viewKey && graphGeom.L.shift && L.shift) {
+      /* 总览原地展开使世界整体平移时，补偿手动视口，原有节点在屏幕上不动 */
+      graphView.x -= (L.shift.x - graphGeom.L.shift.x) * graphView.scale;
+      graphView.y -= (L.shift.y - graphGeom.L.shift.y) * graphView.scale;
+    }
     graphView.fit = Math.max(.01, Math.min(1, cw / L.w, ch / L.h));
     if (L.overview) {
       var availableH = Math.max(1, ch - (L.bottomPad || 0));
@@ -1172,16 +1492,18 @@
         graphView.x = (cw - L.w * graphView.scale) / 2;
         graphView.y = (availableH - L.h * graphView.scale) / 2;
       }
-      graphGeom = { L: L, cw: cw, ch: ch };
+      graphGeom = { L: L, cw: cw, ch: ch, key: viewKey };
       applyGraphView(); shownW = cw; shownH = ch;
     } else {
       /* 展开视图沿用原布局起点；拖动与缩放只改变视口变换，不改节点和连线。 */
       if (!graphView.manual) { graphView.scale = 1; graphView.x = 0; graphView.y = 0; }
-      graphGeom = { L: L, cw: cw, ch: ch };
+      graphGeom = { L: L, cw: cw, ch: ch, key: viewKey };
       applyGraphView();
     }
-    var svg = '';
-    L.edges.concat(extraEdges).forEach(function (e) { if (e.d) svg += '<path d="' + e.d + '" class="' + e.cls + '"/>'; });
+    var svg = '<defs>' + ['0', '1', '2', '3', '4', '5', 'x'].map(function (i) {
+      return '<marker id="kn-mk-' + i + '" class="kn-mk kn-g' + i + '" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0L10 5L0 10z"/></marker>';
+    }).join('') + '</defs>';
+    L.edges.concat(RL.edges, extraEdges).forEach(function (e) { if (e.d) svg += '<path d="' + e.d + '" class="' + e.cls + '"' + (e.mk ? ' marker-end="url(#kn-mk-' + e.mk + ')"' : '') + '/>'; });
     refs.svg.setAttribute('width', L.w); refs.svg.setAttribute('height', L.h);
     refs.svg.style.width = L.w + 'px'; refs.svg.style.height = L.h + 'px';
     refs.svg.setAttribute('viewBox', '0 0 ' + L.w + ' ' + L.h);
@@ -1189,16 +1511,27 @@
     /* 节点：按 key 复用 DOM，位置用 transform，便于过渡；连续点击时直接改目标，不排队 */
     var existing = {};
     $$('.kn-node', nodesBox).forEach(function (el) { existing[el.getAttribute('data-k')] = el; });
-    var items = L.nodes.map(function (nd) { var hh = nodeHtml(tr, nd); return { k: nd.role === 'sib' || nd.role === 'more' ? nd.key : nd.n.key, nd: nd, cls: hh.cls, html: hh.html }; });
+    var items = L.nodes.map(function (nd) { var hh = nodeHtml(tr, nd); return { k: nd.role === 'sib' || nd.role === 'more' || nd.role === 'submore' ? nd.key : nd.n.key, nd: nd, cls: hh.cls, html: hh.html }; });
     ports.forEach(function (p) {
       var html, cls = 'kn-node kn-r-port';
       if (p.more) html = '<button type="button" class="kn-n-main" data-act="card-focus">另有 ' + p.more + ' 条，见信息卡</button>';
       else {
         var o = M.ent[p.other], dir = p.r.from === p.other ? '←' : '→';
         cls += ' kn-st-' + p.r.status;
-        html = '<button type="button" class="kn-n-main" data-act="preview" data-id="' + esc(p.other) + '" data-rel="' + esc(p.r.id) + '" title="' + esc(p.r.label + ' · ' + o.name) + '"><span class="kn-n-name">' + dir + ' ' + esc(o.name) + '</span><span class="kn-n-meta">' + esc(relTypeName(p.r.type)) + (bookOf(p.other) && bookOf(p.other) !== S.scope ? ' · ' + esc(bookName(bookOf(p.other))) : '') + '</span></button>';
+        var wh = whereText(p.other);
+        html = '<button type="button" class="kn-n-main" data-act="preview" data-id="' + esc(p.other) + '" data-rel="' + esc(p.r.id) + '" title="' + esc(relSentence(p.r) + (wh ? '（' + wh + '）' : '')) + '"><span class="kn-n-name">' + dir + ' ' + esc(o.name) + '</span><span class="kn-n-meta">' + esc(relTypeName(p.r.type)) + (wh ? ' · ' + esc(wh) : '') + '</span></button>';
       }
       items.push({ k: p.key, nd: p, cls: cls, html: html });
+    });
+    RL.labels.forEach(function (lb) {
+      if (lb.agg) {
+        var p = lb.agg, n = p.rels.length, an = nodeName(p.a.n), bn = nodeName(p.b.n), target = S.sel === p.a.n.key ? p.b : p.a;
+        var aria = '聚合：「' + an + '」与「' + bn + '」这两个板块内的知识之间有 ' + n + ' 条关系，不表示板块之间的因果。点击选中「' + nodeName(target.n) + '」查看明细';
+        items.push({ k: 'agg:' + lb.k, nd: lb, cls: 'kn-node kn-agg-lab' + (lb.dim ? ' is-dim' : ''), html: '<button type="button" class="kn-agg-btn" data-act="agg" data-key="' + esc(target.n.key) + '" aria-label="' + esc(aria) + '" title="' + esc(aria) + '">' + n + ' 条关系</button>' });
+        return;
+      }
+      var r = lb.r, desc = relDesc(r);
+      items.push({ k: 'rl:' + lb.id, nd: lb, cls: 'kn-node kn-rl ' + lb.cls, html: '<span class="kn-rl-t" title="' + esc(desc) + '" aria-hidden="true">' + (r.status !== 'site' ? '<b class="kn-rl-q">待确认</b>' : '') + esc(relLabelText(r)) + '</span><span class="kn-sr">' + esc(desc) + '</span>' });
     });
     labels.forEach(function (lb, i) { items.push({ k: 'lab:' + i + ':' + lb.t, nd: { x: lb.x, y: lb.y - 10, w: 0, h: 20 }, cls: 'kn-node kn-lab ' + (lb.cls || '') + (lb.id && S.selId === lb.id ? ' is-sel' : ''), html: lb.id ? '<button type="button" data-act="line-label" data-id="' + esc(lb.id) + '" aria-label="查看' + esc(lb.t) + '详情">' + esc(lb.t) + '</button>' : '<span>' + esc(lb.t) + '</span>' }); });
     var activeKey = D.activeElement && D.activeElement.closest && D.activeElement.closest('.kn-node') ? D.activeElement.closest('.kn-node').getAttribute('data-k') : '';
@@ -1221,6 +1554,7 @@
     if (L.overview && S.scope === 'bio' && M.lines.length) {
       if (!lr) { lr = D.createElement('div'); lr.className = 'kn-lines-row'; refs.view.appendChild(lr); }
       lr.innerHTML = lineChips;
+      lr.setAttribute('role', 'group'); lr.setAttribute('aria-label', '主题主线');
     } else if (lr) lr.remove();
     /* 焦点回到原节点；被移除时落到焦点节点 */
     if (activeKey && !keep[activeKey] && root.contains(D.activeElement) === false) {
@@ -1295,6 +1629,7 @@
     h += '<div class="kn-l-head"><div><span class="kn-n-kind">' + esc(KIND_LABEL[fe ? fe.kind : 'group'] || '') + '</span><h2>' + esc(nodeName(focus)) + '</h2><div class="kn-n-meta">' + esc(metaText(tr, focus)) + '</div></div>' +
       '<div class="kn-l-acts">' + (focus.parent ? '<button type="button" data-act="focus" data-key="' + esc(focus.parent.key) + '">↑ 上一级</button>' : '') +
       '<button type="button" data-act="sel" data-key="' + esc(focus.key) + '">信息卡</button></div></div>';
+    h += listRelsHtml(tr, focus);
     if (focus.parent && focus.parent.children.length > 1) {
       h += '<div class="kn-l-sibs" role="group" aria-label="同级"><span class="kn-k">同级</span>' + focus.parent.children.map(function (s) {
         return s === focus ? '<span class="is-cur" aria-current="true">' + esc(nodeName(s)) + '</span>' : '<button type="button" data-act="focus" data-key="' + esc(s.key) + '">' + esc(nodeName(s)) + '</button>';
@@ -1306,6 +1641,21 @@
       h += '<p class="kn-muted">跨册主线在"跨册主线"分组中，可展开查看各站与关系。</p>';
     }
     refs.list.innerHTML = h;
+  }
+  /* 列表形态的等价文本：本范围已开启的关系逐条成句 */
+  function listRelsHtml(tr, focus) {
+    if (S.logic !== 'rel') { LAST_VIS = []; return ''; }
+    var rels = scopeRels(tr, focus).filter(relOn);
+    LAST_VIS = rels.map(function (r) { return visInfo(r, { list: true }); });
+    var stored = sGet('sessionStorage', 'tt-kn-rel-list'), open = typeof stored === 'boolean' ? stored : rels.length <= 12;
+    var link = function (id) { return '<button type="button" class="kn-link" data-act="goto" data-id="' + esc(id) + '">' + esc(entName(id)) + '</button>'; };
+    var body = rels.length ? '<ul>' + rels.map(function (r) {
+      var gi = gIdx(r), tbd = r.status !== 'site';
+      return '<li class="kn-l-rel kn-g' + gi + (tbd ? ' kn-rel-tbd' : '') + (isSym(r) ? ' kn-rel-sym' : '') + '"><span class="kn-l-rel-s">' + link(r.from) + ' <span class="kn-l-rel-w">—' + esc(relLabelText(r)) + (isSym(r) ? '—' : '→') + '</span> ' + link(r.to) + '</span> ' +
+        '<span class="kn-type">' + esc(relTypeName(r.type)) + '</span><span class="kn-badge kn-st-' + esc(r.status) + '">' + esc(STATUS_LABEL[r.status]) + '</span>' +
+        (r.condition ? '<div class="kn-muted">' + esc(r.condition) + '</div>' : '') + '</li>';
+    }).join('') + '</ul>' : '<p class="kn-muted kn-l-rels-none">' + (S.rel.length ? '已开启的关系类型在本范围暂无关系。' : '未开启任何关系类型：用上方“关系类型”按钮选择。') + '</p>';
+    return '<details class="kn-l-rels"' + (open ? ' open' : '') + '><summary>本范围的知识关系（已开启 ' + rels.length + ' 条）</summary>' + body + '</details>';
   }
   function listItems(tr, n, level) {
     var kv = visibleKids(n, level === 1 ? 30 : LIMIT_GRAND, level === 1 ? 28 : SHOW_GRAND), out = '';
@@ -1451,7 +1801,7 @@
     }
     if (b.kind === 'editor') return '<p class="kn-src">编辑判断：' + esc(b.note || '') + '</p>';
     if (b.kind === 'title') return '<p class="kn-src">仅依据考点标题：' + esc(b.ref || '') + '</p>';
-    if (b.kind === 'figure') return '<p class="kn-src">参考图：' + esc(b.note || b.ref || '') + '</p>';
+    if (b.kind === 'figure') return '<p class="kn-src">参考图（教材知识框架）：' + esc(b.note || b.ref || '') + '</p>';
     return '';
   }
   function relRow(r, selfId) {
@@ -1787,11 +2137,19 @@
   /* ---------- 事件 ---------- */
   function bind() {
     on(root, 'click', function (ev) {
+      /* 列表中“本范围的知识关系”折叠状态（跨跳转保留） */
+      var sum = ev.target.closest && ev.target.closest('.kn-l-rels > summary');
+      if (sum) { sSet('sessionStorage', 'tt-kn-rel-list', !sum.parentNode.open); return; }
       var b = ev.target.closest('[data-act]'); if (!b || !root.contains(b)) return;
       var act = b.getAttribute('data-act'), key = b.getAttribute('data-key'), id = b.getAttribute('data-id');
       var tr = T();
       switch (act) {
-        case 'reset-view': graphView.manual = false; render({ keepScroll: true }); break;
+        case 'reset-view': graphView.manual = false; render({ keepScroll: true }); saveView(); break;
+        case 'rel': toggleRel(b.getAttribute('data-id')); break;
+        case 'rel-default': setRel(defaultRel()); break;
+        case 'rel-clear': setRel([]); break;
+        case 'fold-exp': if (S.exp.indexOf(key) < 0) toggleExp(key); break;
+        case 'out': case 'agg': if (tr.byKey[key]) select(key); break;
         case 'sel': select(key); break;
         case 'exp': toggleExp(key); break;
         case 'more': toggleMore(key); break;
@@ -1867,6 +2225,7 @@
     function endPointer(ev) {
       if (!pointers[ev.pointerId]) return;
       delete pointers[ev.pointerId]; pinch = null;
+      if (!pointerPairs().length && S.shown && graphView.manual) saveView();
       try { refs.canvas.releasePointerCapture(ev.pointerId); } catch (e) { /* 已释放 */ }
       var ps = pointerPairs();
       if (ps.length === 1) drag = { id: ps[0].id, x: ps[0].x, y: ps[0].y, tx: graphView.x, ty: graphView.y };
@@ -1882,7 +2241,9 @@
       var scale = clamp(graphView.scale * Math.exp(-ev.deltaY * .0015), graphView.fit * .5, 3);
       graphView.x = x - wx * scale; graphView.y = y - wy * scale; graphView.scale = scale;
       graphView.manual = true; applyGraphView();
+      clearTimeout(whT); whT = setTimeout(function () { if (S.shown) saveView(); }, 250);
     }, { passive: false });
+    var whT = 0;
     var scT = 0;
     on(refs.canvas, 'scroll', function () { if (scT) return; scT = setTimeout(function () { scT = 0; if (S.shown) saveView(scrollPos()); }, 200); }, { passive: true });
     on(refs.list, 'scroll', function () { if (scT) return; scT = setTimeout(function () { scT = 0; if (S.shown) saveView(scrollPos()); }, 200); }, { passive: true });
@@ -1890,6 +2251,12 @@
     on(root, 'keydown', function (ev) {
       if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
       var t = ev.target;
+      /* 新增的关系按钮、角标、计数标签、总览展开按钮：空格按原生按钮触发（先于外壳的播放器空格处理） */
+      if ((ev.key === ' ' || ev.code === 'Space') && !ev.shiftKey && t.matches && t.matches('.kn-rels button, .kn-n-flag, .kn-agg-btn, .kn-r-ring .kn-n-exp, .kn-l-rels > summary')) {
+        ev.preventDefault();
+        if (!ev.repeat) t.click();
+        return;
+      }
       if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') return;
       if (ev.key === 'Escape') {
         if (!refs.report.hidden) { refs.report.hidden = true; ev.preventDefault(); return; }
@@ -1928,7 +2295,7 @@
     var tr = T(), n = tr.byKey[k2];
     var all = $$('.kn-node .kn-n-main', refs.nodes).filter(function (b) { return b.getAttribute('data-act') === 'sel' || b.getAttribute('data-act') === 'focus' || b.getAttribute('data-act') === 'more'; });
     var col = function (r) { return all.filter(function (b) { return b.closest('.kn-node').classList.contains('kn-r-' + r); }); };
-    var role = ['center', 'ring', 'focus', 'child', 'grand', 'trunk', 'sib', 'more'].filter(function (r) { return el.classList.contains('kn-r-' + r); })[0];
+    var role = ['center', 'ring', 'sub', 'focus', 'child', 'grand', 'trunk', 'sib', 'more'].filter(function (r) { return el.classList.contains('kn-r-' + r); })[0];
     var same = role === 'more' ? all : col(role === 'center' ? 'ring' : role);
     var idx = same.indexOf(main);
     if (key === 'ArrowDown' || key === 'ArrowUp') {
@@ -1940,6 +2307,7 @@
     if (key === 'ArrowRight') {
       if (role === 'center') { var r1 = col('ring')[0]; if (r1) r1.focus(); return; }
       if (role === 'ring' && n) { focusNode(n); return; }
+      if (role === 'sub' && n && n.children.length) { focusNode(n); return; }
       if (role === 'focus' || role === 'trunk' || role === 'sib') { var c0 = col('child')[0]; if (c0) c0.focus(); return; }
       if (role === 'child' && n && n.children.length) {
         if (S.exp.indexOf(n.key) < 0) { toggleExp(n.key); }
@@ -1950,6 +2318,7 @@
       return;
     }
     if (key === 'ArrowLeft') {
+      if (role === 'sub' && n && n.parent) { var rp = $('[data-k="' + cssEsc(n.parent.key) + '"] .kn-n-main', refs.nodes); if (rp) rp.focus(); return; }
       if (role === 'grand' && n && n.parent) { var pe = $('[data-k="' + cssEsc(n.parent.key) + '"] .kn-n-main', refs.nodes); if (pe) pe.focus(); return; }
       if (role === 'child') { var fe = $('.kn-r-focus .kn-n-main', refs.nodes); if (fe) fe.focus(); return; }
       if (role === 'focus' || role === 'ring') { var cn = cur(); if (cn.parent) focusNode(cn.parent); else if (role === 'ring') { var ce = $('.kn-r-center .kn-n-main', refs.nodes); if (ce) ce.focus(); } return; }
@@ -1966,7 +2335,8 @@
       if (WIN.console) console.error('[思维导图] 手工数据无法解析，已只用站点数据生成索引：', e);
       RAW = {}; M = buildModel({}); M.issues.push({ level: 'error', msg: '手工数据无法解析：' + (e && e.message) });
     }
-    TREES = {}; STAT = {};
+    TREES = {}; STAT = {}; SCOPE_RELS = {};
+    setupGroups(); S.rel = loadRel();
     if (!buildDom()) return false;
     bind(); buildTop(); buildEntries();
     var r = report();
@@ -1984,7 +2354,10 @@
     report: function () { return M ? report() : null; },
     tree: function (s, l) { return tree(s, l || 'rel'); },
     model: function () { return M; },
-    state: function () { return { scope: S.scope, logic: S.logic, focus: cur().id, focusKey: S.focusKey, sel: S.sel, selId: S.selId, exp: S.exp.slice(), url: S.url, notice: S.notice, form: form() }; },
+    state: function () { return { scope: S.scope, logic: S.logic, focus: cur().id, focusKey: S.focusKey, sel: S.sel, selId: S.selId, exp: S.exp.slice(), url: S.url, notice: S.notice, form: form(), rel: S.rel.slice(), view: { x: graphView.x, y: graphView.y, scale: graphView.scale, fit: graphView.fit, manual: graphView.manual, key: graphView.key } }; },
+    /* 当前图（或列表）上呈现的关系：{ id, from, to, type, group, dashed, arrow, … }；总览聚合的成员带 agg:true */
+    visibleRels: function () { return LAST_VIS.map(function (x) { var o = {}; for (var k in x) o[k] = x[k]; return o; }); },
+    relGroups: function () { return REL_GROUPS.map(function (g) { return { id: g.id, name: g.name, types: g.types.slice(), default: g.def }; }); },
     tab: function () { return TAB; }
   };
 })();
