@@ -279,6 +279,7 @@ mark.hl-green { color: var(--green); font-weight: 600; background: linear-gradie
   position: fixed; top: 0; bottom: var(--player-h); left: var(--side-w); width: 7px; z-index: 45;
   cursor: col-resize; touch-action: none; background: transparent; border-left: 1px solid transparent;
 }
+body.no-player .side-resizer { bottom: 0; }
 .side-resizer:hover, .side-resizer.dragging, .side-resizer:focus-visible { background: var(--accent-hl); border-left-color: var(--accent-line); outline: none; }
 body.nav-resizing { cursor: col-resize; user-select: none; }
 .nav-tools { display: flex; gap: 6px; padding: 0 20px 8px; }
