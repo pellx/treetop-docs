@@ -296,6 +296,31 @@ window.KN_DATA = {
     /* 分隔：保持本行不变，便于各册并行合并 */
 
     /* ==== 选必1 · 概念整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* ---- 选必1 · 内环境与稳态（参考第14讲知识框架图） ---- */
+    { id: 'k-body-fluids', name: '体液的组成', targets: [{ ref: 'xb1-01/p1', t: '体液的组成' }],
+      brief: '体液分为两部分：存在于细胞内的细胞内液，约占三分之二；存在于细胞外的细胞外液，约占三分之一。', briefRef: 'xb1-01/p1' },
+    { id: 'k-internal-env', name: '内环境（细胞外液）', alias: ['内环境', '细胞外液'], targets: [{ ref: 'xb1-01/p2', t: '内环境与三者关系' }],
+      brief: '由细胞外液构成的液体环境叫作内环境。注意，内环境就是细胞外液，不包括细胞内液。', briefRef: 'xb1-01/p2' },
+    { id: 'k-ie-osmotic', name: '内环境的渗透压', alias: ['渗透压'], targets: [{ ref: 'xb1-01/p6', t: '渗透压' }],
+      brief: '血浆渗透压的大小主要与无机盐和蛋白质的含量有关；细胞外液渗透压的90%以上来源于Na+和Cl-。', briefRef: 'xb1-01/p6' },
+    { id: 'k-ie-ph', name: '血浆的酸碱度', alias: ['酸碱度'], targets: [{ ref: 'xb1-01/p7', t: '酸碱度' }],
+      brief: '正常人血浆的pH为7.35～7.45，能保持稳定，与其中的HCO3-、H2CO3等物质有关。', briefRef: 'xb1-01/p7' },
+    { id: 'k-ie-exchange', name: '内环境是物质交换的媒介', targets: [{ ref: 'xb1-01/p9', t: '物质交换的媒介' }],
+      brief: '内环境是细胞与外界环境进行物质交换的媒介。', briefRef: 'xb1-01/p9' },
+    { id: 'k-edema-cause', name: '组织水肿的成因', targets: [{ ref: 'xb1-01/p10', t: '组织水肿的成因' }],
+      brief: '所有原因都可以归结为：血浆渗透压降低，或组织液渗透压升高，水分从血浆流向组织液。', briefRef: 'xb1-01/p10' },
+    { id: 'k-ph-buffer-exp', name: '模拟生物体维持pH稳定的实验', targets: [{ ref: 'xb1-02/p1', t: '模拟pH稳定的实验' }],
+      brief: '结论：生物材料的性质类似于缓冲液而不同于自来水，说明生物材料内含有缓冲物质，能维持pH的相对稳定。', briefRef: 'xb1-02/p1' },
+    { id: 'k-ie-homeostasis', name: '内环境稳态', alias: ['稳态'], targets: [{ ref: 'xb1-02/p2', t: '稳态的概念' }],
+      brief: '正常机体通过调节作用，使各个器官、系统协调活动，共同维持内环境的相对稳定状态，叫作稳态。', briefRef: 'xb1-02/p2' },
+    { id: 'k-homeo-regnet', name: '神经—体液—免疫调节网络', alias: ['稳态的调节机制'], targets: [{ ref: 'xb1-02/p3', t: '稳态的调节机制' }],
+      brief: '目前普遍认为，神经—体液—免疫调节网络是机体维持稳态的主要调节机制。', briefRef: 'xb1-02/p3' },
+    { id: 'k-homeo-limit', name: '稳态调节能力有限度', targets: [{ ref: 'xb1-02/p4', t: '调节能力有限度' }],
+      brief: '当外界环境的变化过于剧烈，或者人体自身的调节功能出现障碍时，内环境稳态就会遭到破坏。', briefRef: 'xb1-02/p4' },
+    { id: 'k-homeo-disorder', name: '稳态失调与疾病', targets: [{ ref: 'xb1-02/p5', t: '稳态失调与疾病' }],
+      brief: '给出一种病症，判断是哪种成分或哪种理化性质失调。', briefRef: 'xb1-02/p5' },
+    { id: 'k-homeo-levels', name: '稳态概念的发展（各层次的稳态）', targets: [{ ref: 'xb1-02/p7', t: '稳态概念的发展' }],
+      brief: '稳态已经成为生命科学的一大基本概念，在生命系统的各个层次都普遍存在。', briefRef: 'xb1-02/p7' },
     /* （选必1 整理区结束） */
     /* 分隔：保持本行不变，便于各册并行合并 */
 
@@ -513,6 +538,35 @@ window.KN_DATA = {
     /* 分隔：保持本行不变，便于各册并行合并 */
 
     /* ==== 选必1 · 关系整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* 选必1 · 内环境与稳态（参考第14讲知识框架图，逐条核对讲义原文） */
+    { id: 'r-ecf-bodyfluid', from: 'k-internal-env', to: 'k-body-fluids', type: 'compose', label: '细胞外液（内环境）是体液的一部分', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb1-01/p1', quote: '存在于细胞外的细胞外液，约占三分之一。' },
+        { kind: 'site', ref: 'xb1-01/p2', quote: '内环境就是细胞外液，不包括细胞内液。' }] },
+    { id: 'r-osmotic-edema', from: 'k-ie-osmotic', to: 'k-edema-cause', type: 'cause', label: '血浆渗透压降低或组织液渗透压升高→水肿', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb1-01/p10', quote: '所有原因都可以归结为：血浆渗透压降低，或组织液渗透压升高，水分从血浆流向组织液。' }] },
+    { id: 'r-buffer-ph', from: 'k-ph-buffer-exp', to: 'k-ie-ph', type: 'instance', label: '实验依据：生物材料含缓冲物质', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb1-02/p1', quote: '说明生物材料内含有缓冲物质，能维持pH的相对稳定。' },
+        { kind: 'site', ref: 'xb1-01/p7', quote: '能保持稳定，与其中的HCO3-、H2CO3等物质有关。' }] },
+    { id: 'r-osmotic-homeo', from: 'k-ie-osmotic', to: 'k-ie-homeostasis', type: 'compose', label: '稳态内容之一：理化性质相对稳定', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb1-01/p6', quote: '内环境的三个理化性质：渗透压、酸碱度和温度。' },
+        { kind: 'site', ref: 'xb1-02/p2', quote: '内环境的化学成分和理化性质都在一定范围内波动。' },
+        { kind: 'figure', ref: 'IMG_20261115_225515.jpg', note: '教材知识框架第14讲：内环境稳态 → 化学成分、理化性质（渗透压、酸碱度、温度）。' }] },
+    { id: 'r-ph-homeo', from: 'k-ie-ph', to: 'k-ie-homeostasis', type: 'compose', label: '稳态内容之一：理化性质相对稳定', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb1-01/p6', quote: '内环境的三个理化性质：渗透压、酸碱度和温度。' },
+        { kind: 'site', ref: 'xb1-02/p2', quote: '内环境的化学成分和理化性质都在一定范围内波动。' },
+        { kind: 'figure', ref: 'IMG_20261115_225515.jpg', note: '教材知识框架第14讲：内环境稳态 → 化学成分、理化性质（渗透压、酸碱度、温度）。' }] },
+    { id: 'r-regnet-homeo', from: 'k-homeo-regnet', to: 'k-ie-homeostasis', type: 'cause', label: '是维持稳态的主要调节机制', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb1-02/p3', quote: '神经—体液—免疫调节网络是机体维持稳态的主要调节机制。' },
+        { kind: 'figure', ref: 'IMG_20261115_225515.jpg', note: '教材知识框架第14讲：内环境稳态 —"调节机制"→ 神经调节、体液调节、免疫调节（三者之间双向箭头）。' }] },
+    { id: 'r-exchange-homeo', from: 'k-ie-exchange', to: 'k-ie-homeostasis', type: 'cause', label: '消化、呼吸、循环、泌尿系统直接参与维持', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb1-02/p3', quote: '直接参与维持内环境稳态的，有消化、呼吸、循环、泌尿四大系统' },
+        { kind: 'site', ref: 'xb1-01/p9', quote: '营养物质经消化系统吸收进入内环境' },
+        { kind: 'figure', ref: 'IMG_20261115_225515.jpg', note: '教材知识框架第14讲：内环境 ↔ 外界环境，旁注"消化、呼吸、循环、泌尿系统参与"。' }] },
+    { id: 'r-limit-disorder', from: 'k-homeo-limit', to: 'k-homeo-disorder', type: 'cause', label: '超出调节能力→稳态遭破坏', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb1-02/p4', quote: '当外界环境的变化过于剧烈，或者人体自身的调节功能出现障碍时，内环境稳态就会遭到破坏。' }] },
+    { id: 'r-homeo-levels', from: 'k-ie-homeostasis', to: 'k-homeo-levels', type: 'scale', label: '稳态推广到生命系统各个层次', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb1-02/p7', quote: '稳态已经成为生命科学的一大基本概念，在生命系统的各个层次都普遍存在。' },
+        { kind: 'site', ref: 'xb1-02/p7', quote: '“稳态只存在于人体内环境中”，这种说法是错的。' }] },
     /* （选必1 整理区结束） */
     /* 分隔：保持本行不变，便于各册并行合并 */
 
