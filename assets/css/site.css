@@ -469,7 +469,7 @@ th { background: var(--bg-soft); font-weight: 600; white-space: nowrap; }
 .quiz-q > span:nth-child(2) { flex: 1; }
 .quiz-n { font-family: var(--mono); font-size: 12.5px; font-weight: 700; color: var(--fg-dim); border: 1px solid var(--line); width: 24px; height: 24px; display: inline-grid; place-items: center; flex: none; margin-top: 2px; }
 .quiz-btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0 34px; }
-.quiz-btns button { min-width: 64px; height: 32px; padding: 0 12px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; }
+.quiz-btns button { min-width: 64px; min-height: 32px; height: auto; padding: 4px 12px; line-height: 1.45; border: 1px solid var(--line); background: var(--surface); font-size: 14px; }
 .quiz-btns button:hover { border-color: var(--accent); }
 .quiz-btns button.right { background: var(--green-bg); border-color: var(--green); color: var(--green); font-weight: 600; }
 .quiz-btns button.wrong { background: var(--red-bg); border-color: var(--red); color: var(--red); font-weight: 600; }
