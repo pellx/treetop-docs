@@ -45,8 +45,10 @@
 .para-body mark.hl-orange { background: linear-gradient(transparent 55%, var(--hl-orange-band) 0); }
 .para-body mark.hl-green { background: linear-gradient(transparent 55%, var(--hl-green-band) 0); }
 .para-body > div { margin: 4px 0; }
-/* 元素方块：转换脚本把它单独成段时，固定为小方块并沿一列排列，不随正文撑满。 */
-.para-body > .rm-el { width: 68px; height: 68px; box-sizing: border-box; flex: none; }
+/* 元素方块：每段一个时横向排成一行并自动换行；同组只保留标签行的播放按钮。 */
+.para:has(> .para-body > .rm-el) { display: inline-flex; margin: 3px 4px 3px 0; padding: 0; vertical-align: top; }
+.para:has(> .para-body > .rm-el) > .play-btn { display: none; }
+.para-body .rm-el { width: 68px; height: 68px; box-sizing: border-box; flex: none; }
 .tip-body mark { background: none; }
 
 /* 嵌在块内（未被提升为 .tip）的提示框：与 .tip 同一套变量 */
