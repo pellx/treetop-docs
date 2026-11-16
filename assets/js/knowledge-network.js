@@ -428,6 +428,15 @@
     return bits.filter(Boolean).join(' · ');
   }
 
+  /* 期的整理状态：none＝没有考点整理成概念；part＝部分考点已整理；all＝全部考点已整理 */
+  function epState(id) {
+    var pts = (M.ent[id] && M.ent[id].pts) || [], k = pts.filter(function (p) { return (M.ptConcepts[p] || []).length; }).length;
+    return { done: k, total: pts.length, s: !pts.length || !k ? 'none' : k < pts.length ? 'part' : 'all' };
+  }
+  function epTag(id) {
+    var st = epState(id);
+    return st.s === 'none' ? '<span class="kn-tag kn-tag-fb">未整理</span>' : st.s === 'part' ? '<span class="kn-tag kn-tag-part" title="' + st.done + ' / ' + st.total + ' 个考点已整理成概念">部分整理</span>' : '';
+  }
   /* 覆盖与校验报告：索引覆盖（可达考点 / 当前考点总数）与"关系已整理"（概念数、关系数）分开给出 */
   function report() {
     var out = { books: [], points: 0, reachable: 0, concepts: 0, relations: { total: M.rels.length, site: 0, editor: 0, title: 0 }, issues: M.issues.slice(), evidence: M.evidence.length };
@@ -441,8 +450,9 @@
         if (e.kind === 'concept') e.targets.forEach(function (t) { if (t.pid && M.ent[t.pid].book === bk) reach[t.pid] = 1; });
       });
       var nc = Object.keys(M.ent).filter(function (id) { var e = M.ent[id]; return e.kind === 'concept' && e.book === bk && e.home; }).length;
-      var r = Object.keys(reach).length;
-      out.books.push({ book: bk, name: M.ent[bk].name, eps: M.ent[bk].eps.length, points: all, reachable: r, concepts: nc, parts: M.ent[bk].parts.length, units: Object.keys(M.ent).filter(function (id) { return M.ent[id].kind === 'unit' && M.ent[id].book === bk; }).length });
+      var r = Object.keys(reach).length, es = { none: 0, part: 0, all: 0 };
+      M.ent[bk].eps.forEach(function (ep) { es[epState(ep).s]++; });
+      out.books.push({ epAll: es.all, epPart: es.part, epNone: es.none, book: bk, name: M.ent[bk].name, eps: M.ent[bk].eps.length, points: all, reachable: r, concepts: nc, parts: M.ent[bk].parts.length, units: Object.keys(M.ent).filter(function (id) { return M.ent[id].kind === 'unit' && M.ent[id].book === bk; }).length });
       out.points += all; out.reachable += r; out.concepts += nc;
     });
     return out;
@@ -1226,7 +1236,7 @@
     var n = nd.n, e = M.ent[n.id] || { kind: 'group' }, kind = e.kind, role = nd.role;
     var name = nodeName(n), sel = S.sel === n.key && role !== 'sib' && role !== 'trunk';
     var vis = visited().indexOf(n.id) >= 0;
-    var fallback = (kind === 'point' && !n.ref) || (kind === 'ep');
+    var fallback = (kind === 'point' && !n.ref) || (kind === 'ep' && epState(n.id).s === 'none');
     var cls = 'kn-node kn-r-' + role + ' kn-k-' + kind + (n.ref ? ' kn-ref' : '') + (fallback ? ' kn-fb' : '') + (sel ? ' is-sel' : '') + (nd.current ? ' is-cur' : '') + (nd.expanded ? ' is-exp' : '') + (n.pending ? ' kn-pending' : '');
     if (kind === 'group' || kind === 'topic' || kind === 'tgroup') cls += ' kn-dashed';
     var meta = role === 'sib' || role === 'trunk' ? '' : metaText(tr, n);
@@ -1247,7 +1257,7 @@
       inner = '<button type="button" class="kn-n-main" ' + (nd.current ? 'aria-current="true" data-act="none"' : 'data-act="focus"') + ' data-key="' + esc(n.key) + '" title="' + esc(name) + '"><span class="kn-n-name">' + esc(name) + '</span></button>';
       return { cls: cls, html: inner };
     }
-    var tag = n.ref ? '<span class="kn-tag">引用</span>' : (fallback ? '<span class="kn-tag kn-tag-fb">未整理</span>' : '');
+    var tag = n.ref ? '<span class="kn-tag">引用</span>' : kind === 'ep' ? epTag(n.id) : (fallback ? '<span class="kn-tag kn-tag-fb">未整理</span>' : '');
     if (vis) tag += '<span class="kn-tag kn-tag-vis">访问过</span>';
     if (n.pending) tag += '<span class="kn-tag kn-tag-fb">待确认</span>';
     inner = '<button type="button" class="kn-n-main" data-act="sel" data-key="' + esc(n.key) + '" aria-pressed="' + (sel ? 'true' : 'false') + '" aria-label="' + esc(aria + '：' + name + (meta ? '（' + meta + '）' : '')) + '"' + (role === 'sub' ? ' title="' + esc(name) + '"' : '') + '>' +
@@ -1662,12 +1672,12 @@
     kv.list.forEach(function (c) {
       var e = M.ent[c.id] || { kind: 'group' }, ex = S.exp.indexOf(c.key) >= 0 && c.children.length;
       var sel = S.sel === c.key, tg = targetsOf(c.id), vis = visited().indexOf(c.id) >= 0;
-      var fallback = (e.kind === 'point' && !c.ref) || e.kind === 'ep';
+      var fallback = (e.kind === 'point' && !c.ref) || (e.kind === 'ep' && epState(c.id).s === 'none');
       out += '<li role="treeitem" aria-level="' + level + '"' + (c.children.length ? ' aria-expanded="' + (ex ? 'true' : 'false') + '"' : '') + ' aria-selected="' + (sel ? 'true' : 'false') + '" class="kn-li' + (c.ref ? ' kn-ref' : '') + (fallback ? ' kn-fb' : '') + (sel ? ' is-sel' : '') + '">' +
         '<div class="kn-row">' +
         (c.children.length ? '<button type="button" class="kn-l-tog" data-act="exp" data-key="' + esc(c.key) + '" aria-label="' + (ex ? '收起' : '展开') + '：' + esc(nodeName(c)) + '">' + (ex ? '▾' : '▸') + '</button>' : '<span class="kn-l-tog kn-l-leaf" aria-hidden="true"></span>') +
         '<button type="button" class="kn-l-main" data-act="sel" data-key="' + esc(c.key) + '"><span class="kn-n-name">' + esc(nodeName(c)) + '</span><span class="kn-n-meta">' +
-          (c.ref ? '<span class="kn-tag">引用</span>' : fallback ? '<span class="kn-tag kn-tag-fb">未整理</span>' : '') + (vis ? '<span class="kn-tag kn-tag-vis">访问过</span>' : '') + esc(metaText(tr, c)) + '</span></button>' +
+          (c.ref ? '<span class="kn-tag">引用</span>' : e.kind === 'ep' ? epTag(c.id) : fallback ? '<span class="kn-tag kn-tag-fb">未整理</span>' : '') + (vis ? '<span class="kn-tag kn-tag-vis">访问过</span>' : '') + esc(metaText(tr, c)) + '</span></button>' +
         '<span class="kn-l-go">' + (c.children.length ? '<button type="button" data-act="focus" data-key="' + esc(c.key) + '" aria-label="以「' + esc(nodeName(c)) + '」为焦点展开">展开 ▸</button>' : '') +
           (tg.length === 1 ? '<button type="button" data-act="read" data-pid="' + esc(tg[0].pid || '') + '" data-href="' + esc(tg[0].href) + '" aria-label="读讲义：' + esc(nodeName(c)) + '">读讲义 ›</button>' : '') + '</span>' +
         '</div>' +
@@ -1751,7 +1761,7 @@
       var s = stat(tr, n);
       var fbNote = '';
       if (e.kind === 'part' && !n.children.some(function (c) { return M.ent[c.id] && M.ent[c.id].kind === 'unit'; })) fbNote = '<p class="kn-c-fb">单元未整理：下面按讲义顺序列出各期与考点，样式较素。</p>';
-      if (e.kind === 'ep') fbNote = '<p class="kn-c-fb">按讲义顺序 · 未整理关系。</p>';
+      if (e.kind === 'ep') { var est = epState(n.id); fbNote = est.s === 'none' ? '<p class="kn-c-fb">未整理：本期考点都还没有整理成概念，按讲义顺序列出。</p>' : est.s === 'part' ? '<p class="kn-c-fb">部分整理：' + est.done + ' / ' + est.total + ' 个考点已整理成概念，其余按讲义顺序列出。</p>' : '<p class="kn-muted">本期 ' + est.total + ' 个考点都已整理成概念。</p>'; }
       h += sec('覆盖', '<p>' + esc(metaText(tr, n)) + '</p><p class="kn-muted">考点数按站点现有讲义计；"已整理"是人工整理的概念数，不等于考点数。</p>' + fbNote);
     }
     /* 本视图中的步骤或方法组备注 */
@@ -1995,15 +2005,15 @@
   function renderReport() {
     var r = report();
     var rows = r.books.map(function (b) {
-      return '<tr><td>' + esc(b.name) + '</td><td class="num">' + b.parts + '</td><td class="num">' + (b.units || '—') + '</td><td class="num">' + b.eps + '</td><td class="num">' + b.points + '</td><td class="num">' + b.reachable + ' / ' + b.points + '</td><td class="num">' + b.concepts + '</td></tr>';
+      return '<tr><td>' + esc(b.name) + '</td><td class="num">' + b.parts + '</td><td class="num">' + (b.units || '—') + '</td><td class="num">' + b.eps + '</td><td class="num">' + b.points + '</td><td class="num">' + b.reachable + ' / ' + b.points + '</td><td class="num">' + b.concepts + '</td><td class="num">' + b.epAll + ' / ' + b.epPart + ' / ' + b.epNone + '</td></tr>';
     }).join('');
     var types = Object.keys(M.relTypes).map(function (k) { return '<li><b>' + esc(M.relTypes[k].name) + '</b>：' + esc(M.relTypes[k].note || '') + '</li>'; }).join('');
     refs.report.innerHTML = '<div class="kn-rep-in"><div class="kn-c-top"><h2>覆盖与说明</h2><button type="button" class="kn-c-close" data-act="report-close" aria-label="关闭">×</button></div>' +
       '<section class="kn-c-sec"><h3>两种覆盖，分开统计</h3>' +
-      '<p><b>索引覆盖</b>：能从所在册思维导图到达的现有考点 <b>' + r.reachable + ' / ' + r.points + '</b>。未整理的部分按"期 → 考点"自动列出，所以不会比目录少。</p>' +
+      '<p><b>索引覆盖</b>：能从所在册思维导图到达的现有考点 <b>' + r.reachable + ' / ' + r.points + '</b>。未整理的部分按"期 → 考点"自动列出，所以不会比目录少。期节点的标签按其考点整理情况标注：没有考点整理成概念的标"未整理"，部分考点已整理的标"部分整理"，全部整理的不标。</p>' +
       '<p><b>关系已整理</b>：人工整理的概念 <b>' + r.concepts + '</b> 个；关系 <b>' + r.relations.total + '</b> 条，其中原文可查 ' + (r.relations.site || 0) + ' 条、编辑判断待确认 ' + (r.relations.editor || 0) + ' 条' + (r.relations.title ? '、仅据标题 ' + r.relations.title + ' 条' : '') + '。没有定义"全部关系"的总量，所以不给完成百分比。</p>' +
       '<p class="kn-muted">考点数不等于概念数：一个概念可以挂多个讲义位置（如"生物多样性的三个层次"），一个考点也可以拆成多个概念（如"防治与渔业"）。"原文可查"只说明讲义原文这样写，不代表另经专家审定。</p></section>' +
-      '<section class="kn-c-sec"><h3>各册</h3><div class="table-wrap"><table><thead><tr><th>册</th><th class="num">部分</th><th class="num">单元</th><th class="num">期</th><th class="num">考点</th><th class="num">索引覆盖</th><th class="num">已整理概念</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>' +
+      '<section class="kn-c-sec"><h3>各册</h3><div class="table-wrap"><table><thead><tr><th>册</th><th class="num">部分</th><th class="num">单元</th><th class="num">期</th><th class="num">考点</th><th class="num">索引覆盖</th><th class="num">已整理概念</th><th class="num">期：全部 / 部分 / 未整理</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>' +
       '<section class="kn-c-sec"><h3>题型证据</h3><p>分四级：无、讲义线索、个人经验、逐题记录。当前逐题记录 ' + r.evidence + ' 条，因此全站不显示比例或"高频"。讲义线索取自旁白中的考法提示，只说明讲义讲到了怎么考。</p></section>' +
       '<section class="kn-c-sec"><h3>关系类型</h3><ul class="kn-c-list">' + types + '</ul></section></div>';
   }
