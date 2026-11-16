@@ -211,12 +211,15 @@
     topLine.className = 'pl-topline'; topLine.hidden = true;
     var topText = D.createElement('span');
     topText.className = 'pl-topline-text'; topText.setAttribute('aria-live', 'polite');
-    topLine.appendChild(topText);
+    var capBox = D.createElement('span');
+    capBox.className = 'pl-topline-box';
+    capBox.appendChild(topText);
     var capClose = D.createElement('button');
     capClose.type = 'button'; capClose.className = 'pl-topline-close';
     capClose.setAttribute('aria-label', '关闭字幕'); capClose.title = '关闭字幕';
     capClose.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-    topLine.appendChild(capClose);
+    capBox.appendChild(capClose);
+    topLine.appendChild(capBox);
     D.body.appendChild(topLine);
     var capOpen = D.createElement('button');
     capOpen.type = 'button'; capOpen.className = 'pl-topline-open'; capOpen.hidden = true;
