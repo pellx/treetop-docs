@@ -35,7 +35,7 @@
 |---|---|
 | `assets/js/knowledge-network-data.js` | **手工维护**的数据（`window.KN_DATA`），不由 build.py 生成 |
 | `assets/js/knowledge-network.js` | 模型、兜底补全、校验、布局、渲染、导航状态 |
-| `assets/css/knowledge-network.css` | 样式，只引用 `site.css` 的颜色变量，全部直角 |
+| `assets/css/knowledge-network.css` | 样式，沿用站点颜色变量并定义能量主线蓝色，全部直角 |
 | `assets/js/app.js` | 外壳路由增加 `#/map/…` 分支；网络页显示时忽略隐藏讲义的滚动消息、不跟随跨期翻页；滚动改写地址时保留 `history.state` |
 | `index.html` | 只增加 1 个样式表和 2 个脚本引用；入口在运行时插入 |
 
