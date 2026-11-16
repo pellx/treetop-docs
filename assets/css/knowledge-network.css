@@ -68,10 +68,15 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-rel-sw { flex: none; width: 24px; height: 10px; overflow: visible; }
 .kn-rel-sw path { fill: none; stroke: var(--kn-c); stroke-width: 2.2; }
 .kn-rel-sw .kn-sw-head { fill: var(--kn-c); stroke: none; }
-.kn-rel-sw .kn-sw-sym { stroke-dasharray: 2 3; stroke-width: 2.6; }
+.kn-rel-sw .kn-sw-sym { stroke-dasharray: 0 4.5; stroke-linecap: round; stroke-width: 2.8; }
+.kn-rel-sw .kn-sw-tbd { stroke-dasharray: 4 2.5; }
 .kn-rels-op { height: 30px; padding: 0 9px; border: 1px dashed var(--line-strong); background: none; color: var(--accent-text); font-size: 13px; white-space: nowrap; }
 .kn-rels-op:hover { border-style: solid; border-color: var(--accent); }
-.kn-rels-legend { flex: 1 1 280px; min-width: 0; font-size: 12px; color: var(--fg-dim); line-height: 1.4; }
+.kn-rels-legend { flex: 1 1 280px; min-width: 0; font-size: 12px; color: var(--fg-dim); line-height: 1.4; display: flex; flex-wrap: wrap; gap: 2px 12px; }
+.kn-lg { display: inline-flex; align-items: center; gap: 4px; }
+.kn-lg .kn-rel-sw { --kn-c: var(--fg-dim); }
+.kn-lg-sw { flex: none; width: 24px; height: 10px; }
+.kn-lg-arr { fill: none; stroke: var(--line-strong); stroke-width: 1.4; }
 .kn-is-list .kn-rels-legend { display: none; }
 
 /* ---------- 主体：图／列表 + 信息卡 ---------- */
@@ -98,7 +103,7 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 /* 语义关系线：加粗、带箭头（对比/类比无箭头、点线）；待确认为虚线 */
 .kn-edges .kn-rel { stroke: var(--kn-c); stroke-width: 2.2; transition: opacity .2s ease; }
 .kn-edges .kn-rel.kn-rel-tbd { stroke-dasharray: 7 4; }
-.kn-edges .kn-rel.kn-rel-sym { stroke-dasharray: 1.5 4.5; stroke-width: 2.6; }
+.kn-edges .kn-rel.kn-rel-sym { stroke-dasharray: 0 5; stroke-linecap: round; stroke-width: 3; }
 .kn-edges .kn-rel.is-hi { stroke-width: 3; }
 .kn-edges .is-dim { opacity: .15; }
 .kn-edges .kn-mk path { fill: var(--kn-c); }
@@ -174,7 +179,8 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 /* 关系词标签：可截断，title 与读屏文本给完整句子 */
 .kn-rl { pointer-events: none; z-index: 2; transition: transform .26s ease, opacity .2s ease; }
 .kn-rl-t { pointer-events: auto; display: inline-block; max-width: 100%; height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; line-height: 16px; padding: 0 4px; background: var(--surface); border: 1px solid var(--kn-c); color: var(--kn-c); cursor: default; }
-.kn-rl.kn-rel-tbd .kn-rl-t, .kn-rl.kn-rel-sym .kn-rl-t { border-style: dashed; }
+.kn-rl.kn-rel-sym .kn-rl-t { border-style: dotted; }
+.kn-rl.kn-rel-tbd .kn-rl-t { border-style: dashed; }
 .kn-rl-q { font-weight: 700; margin-right: 3px; padding-right: 3px; border-right: 1px dashed currentColor; }
 .kn-rl.is-hi .kn-rl-t { font-weight: 700; border-width: 2px; line-height: 14px; }
 .kn-rl.is-dim, .kn-agg-lab.is-dim { opacity: .2; }
@@ -250,7 +256,8 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-l-rels ul { list-style: none; margin: 0; padding: 0 10px 8px; }
 .kn-l-rels-none { margin: 0; padding: 0 10px 8px; }
 .kn-l-rel { margin: 4px 0; padding: 5px 0 5px 10px; border-left: 3px solid var(--kn-c); background: var(--surface-2); font-size: 14px; }
-.kn-l-rel.kn-rel-tbd, .kn-l-rel.kn-rel-sym { border-left-style: dashed; }
+.kn-l-rel.kn-rel-sym { border-left-style: dotted; }
+.kn-l-rel.kn-rel-tbd { border-left-style: dashed; }
 .kn-l-rel-s { margin-right: 6px; }
 .kn-l-rel-w { color: var(--kn-c); font-weight: 600; }
 .kn-l-rel .kn-type { margin-left: 2px; }
@@ -343,7 +350,7 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
   .kn-rels-btns, .kn-rels-ops { flex-wrap: nowrap; flex: none; }
   .kn-rels-k { flex: none; }
   .kn-rel-btn, .kn-rels-op { height: 32px; }
-  .kn-rels-legend { flex: none; white-space: nowrap; }
+  .kn-rels-legend { flex: none; flex-wrap: nowrap; white-space: nowrap; }
   .kn-n-flag { height: 24px; line-height: 22px; }
   .kn-n-flags { top: -12px; }
   .kn-list { padding: 10px 10px 32px; }

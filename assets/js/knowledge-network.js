@@ -575,7 +575,7 @@
   function relSentence(r) { return entName(r.from) + ' —' + r.label + (isSym(r) ? '— ' : '→ ') + entName(r.to); }
   function relDesc(r) { var g = TYPE_GROUP[r.type]; return relSentence(r) + '（' + relTypeName(r.type) + (g ? ' · ' + g.name : '') + ' · ' + STATUS_LABEL[r.status] + '）'; }
   function visInfo(r, extra) {
-    var o = { id: r.id, from: r.from, to: r.to, type: r.type, group: TYPE_GROUP[r.type] ? TYPE_GROUP[r.type].id : '', status: r.status, dashed: isSym(r) || r.status !== 'site', arrow: !isSym(r), label: r.label };
+    var o = { id: r.id, from: r.from, to: r.to, type: r.type, group: TYPE_GROUP[r.type] ? TYPE_GROUP[r.type].id : '', status: r.status, dashed: r.status !== 'site', dotted: isSym(r), line: isSym(r) ? 'dotted' : r.status !== 'site' ? 'dashed' : 'solid', arrow: !isSym(r), label: r.label };
     if (extra) for (var k in extra) o[k] = extra[k];
     return o;
   }
@@ -938,9 +938,10 @@
     var t = trail(), last = t[t.length - 1];
     refs.from.innerHTML = last ? '<button type="button" data-act="trail" title="回到这次跳转前的位置">↩ ' + esc(last.label) + '</button>' : '';
   }
-  /* 关系类型按钮组：图与列表两种形态都显示；数量为当前范围（焦点子树）内可用的关系数 */
-  function relSwatch(sym) {
-    return '<svg class="kn-rel-sw" viewBox="0 0 24 10" aria-hidden="true">' + (sym ? '<path class="kn-sw-sym" d="M2 5H22"/>' : '<path d="M1 5H15"/><path class="kn-sw-head" d="M14 1L22 5L14 9z"/>') + '</svg>';
+  /* 关系类型按钮组：图与列表两种形态都显示；数量为当前范围（焦点子树）内可用的关系数
+   * 线型约定（不只靠颜色）：实线＋箭头＝原文可查的有向关系；虚线＝待确认（关系词前另标"待确认"）；点线、无箭头＝对比/类比 */
+  function relSwatch(sym, tbd) {
+    return '<svg class="kn-rel-sw" viewBox="0 0 24 10" aria-hidden="true">' + (sym ? '<path class="kn-sw-sym" d="M2 5H22"/>' : '<path' + (tbd ? ' class="kn-sw-tbd"' : '') + ' d="M1 5H15"/><path class="kn-sw-head" d="M14 1L22 5L14 9z"/>') + '</svg>';
   }
   function renderRels(tr, focus) {
     var bar = refs.rels;
@@ -956,7 +957,10 @@
         relSwatch(sym) + '<span class="kn-rel-name">' + esc(g.name) + '</span><span class="kn-rel-n">' + (n ? n : '暂无') + '</span></button>';
     });
     h += '</span><span class="kn-rels-ops"><button type="button" class="kn-rels-op" data-act="rel-default">恢复默认</button><button type="button" class="kn-rels-op" data-act="rel-clear">清除</button></span>' +
-      '<span class="kn-rels-legend">细灰线＝编排（目录位置）；带箭头和关系词的线＝知识关系；虚线＝待确认；无箭头＝对比/类比</span>';
+      '<span class="kn-rels-legend"><span class="kn-lg"><svg class="kn-lg-sw" viewBox="0 0 24 10" aria-hidden="true"><path class="kn-lg-arr" d="M1 5H23"/></svg>细灰线＝编排（目录位置）</span>' +
+      '<span class="kn-lg">' + relSwatch(false) + '实线箭头＋关系词＝知识关系</span>' +
+      '<span class="kn-lg">' + relSwatch(false, true) + '虚线、词前标"待确认"＝待确认</span>' +
+      '<span class="kn-lg">' + relSwatch(true) + '点线、无箭头＝对比/类比</span></span>';
     bar.innerHTML = h;
     bar.hidden = false;
     if (keep) {
