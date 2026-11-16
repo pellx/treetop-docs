@@ -861,7 +861,6 @@
     return { list: kids.slice(0, show), extra: kids.length - show };
   }
   function overlap(a, b, m) { return a.x < b.x + b.w + m && b.x < a.x + a.w + m && a.y < b.y + b.h + m && b.y < a.y + a.h + m; }
-  function layout(tr, focus, Wv, Hv) {
 
   /* 电路板式正交寻路：以节点外缘为障碍，在候选横竖通道上做 A*；同等条件下先水平、少拐弯。 */
   function orthogonalPoints(a, b, obstacles, margin) {
@@ -939,6 +938,7 @@
   }
 
     var L = { nodes: [], edges: [], w: 0, h: 0, overview: false };
+  function layout(tr, focus, Wv, Hv) {
     var g = GEO;
     if (focus === tr.root && S.logic === 'rel') {
       /* 总览：中心向外发散，第一圈之外只给数量角标；半径按"互不重叠"自动加大，超出视口时可滚动 */
@@ -969,11 +969,13 @@
       }
       L.nodes.push({ key: focus.key, n: focus, role: 'center', x: center.x, y: center.y, w: center.w, h: center.h });
       ring.forEach(function (c, i) {
-        var b = boxes[i];
+        var b = boxes[i], a = { x: W0 / 2, y: H0 / 2 }, z = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+        var obstacles = routeBoxes.filter(function (r) { return r !== center && r !== b; });
         L.nodes.push({ key: c.key, n: c, role: 'ring', x: b.x, y: b.y, w: b.w, h: b.h });
-        L.edges.push({ d: 'M' + (W0 / 2) + ' ' + (H0 / 2) + 'L' + (b.x + b.w / 2) + ' ' + (b.y + b.h / 2), cls: 'kn-e-spoke' + (c.id === 'g-topics' ? ' kn-e-dash' : '') });
+        L.edges.push({ d: orthogonalRoute(a, z, obstacles), cls: 'kn-e-spoke' + (c.id === 'g-topics' ? ' kn-e-dash' : '') });
       });
       L.w = W0; L.h = H0 + linesH; L.cx = W0 / 2; L.cy = H0 / 2;
+      var routeBoxes = [center].concat(boxes);
       if (hasLines) L.linesY = H0;
       return L;
     }
