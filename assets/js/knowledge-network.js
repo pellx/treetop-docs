@@ -551,7 +551,6 @@
         '<div class="kn-logic" role="tablist" aria-label="组织逻辑">' +
           Object.keys(LOGICS).map(function (l) { return '<button type="button" role="tab" data-act="logic" data-v="' + l + '">' + LOGICS[l] + '</button>'; }).join('') + '</div>' +
         '<div class="kn-form" role="group" aria-label="呈现形式"><button type="button" data-act="form" data-v="graph" aria-pressed="false">图</button><button type="button" data-act="form" data-v="list" aria-pressed="false">列表</button></div>' +
-        '<div class="kn-find"><input type="search" class="kn-find-q" placeholder="在网络中查找概念、考点…" aria-label="在知识网络中查找" autocomplete="off"><div class="kn-find-res" role="listbox" hidden></div></div>' +
         '<button type="button" class="kn-info-btn" data-act="report">覆盖与说明</button>' +
       '</div>' +
       '<div class="kn-sub"><nav class="kn-crumbs" aria-label="在结构中的位置"></nav><div class="kn-from"></div></div>' +
@@ -571,7 +570,7 @@
       scopeBtn: $('.kn-scope-btn', root), menu: $('.kn-menu', root), crumbs: $('.kn-crumbs', root), from: $('.kn-from', root),
       notice: $('.kn-notice', root), hint: $('.kn-hint', root), canvas: $('.kn-canvas', root), world: $('.kn-world', root),
       svg: $('.kn-edges', root), nodes: $('.kn-nodes', root), list: $('.kn-list', root), card: $('.kn-card', root),
-      q: $('.kn-find-q', root), res: $('.kn-find-res', root), report: $('.kn-report', root)
+      report: $('.kn-report', root)
     };
     return true;
   }
@@ -1458,43 +1457,42 @@
     });
   }
   var KIND_RANK = { concept: 0, unit: 1, part: 2, domain: 3, topic: 4, line: 5, task: 6, method: 7, point: 8, ep: 9, step: 10, tgroup: 11, book: 12 };
-  var findSel = -1, findCur = [];
-  function runFind() {
+  var findCur = [];
+  function searchActive() { return !!(S.shown && root && !root.hidden); }
+  function search(query) {
     if (!IDX) buildIndex();
-    var v = refs.q.value.trim().toLowerCase();
-    if (!v) { refs.res.hidden = true; refs.res.innerHTML = ''; findCur = []; return; }
+    var v = String(query || '').trim().toLowerCase();
+    if (!v) { findCur = []; return []; }
     var terms = v.split(/\s+/).filter(Boolean);
     var res = IDX.filter(function (x) { return terms.every(function (t) { return x.k.indexOf(t) >= 0; }); });
     res.sort(function (a, b) {
       var ia = inBook(a.id, S.scope) || S.scope === 'bio' ? 0 : 1, ib = inBook(b.id, S.scope) || S.scope === 'bio' ? 0 : 1;
       return ia - ib || (a.name.toLowerCase().indexOf(terms[0]) === 0 ? 0 : 1) - (b.name.toLowerCase().indexOf(terms[0]) === 0 ? 0 : 1) || (KIND_RANK[a.kind] - KIND_RANK[b.kind]);
     });
-    findCur = res.slice(0, 30); findSel = findCur.length ? 0 : -1;
-    if (!findCur.length) { refs.res.innerHTML = '<div class="kn-find-empty">没有找到"' + esc(refs.q.value) + '"</div>'; refs.res.hidden = false; return; }
-    refs.res.innerHTML = findCur.map(function (x, i) {
+    findCur = res.slice(0, 30);
+    return findCur.map(function (x) {
       var e = M.ent[x.id], to = placeId(x.id), mapped = to !== x.id;
       var pos = positions(to)[0];
       var curated = e.kind === 'point' ? (mapped ? '已整理为概念「' + M.ent[to].name + '」' : '未整理') : (e.kind === 'ep' ? (mapped ? '整理为单元「' + M.ent[to].name + '」' : '按讲义顺序') : '');
       if (pos && mapped) pos = { label: pos.label + ' › ' + M.ent[to].name };
       if (e.kind === 'point') pos = { label: (pos ? pos.label + ' · ' : '') + '讲义 ' + M.ent[e.ep].code + '/' + e.a };
       var out = !(inBook(x.id, S.scope) || S.scope === 'bio' || !bookOf(x.id));
-      return '<div class="kn-find-item' + (i === findSel ? ' sel' : '') + '" role="option" id="kn-opt-' + i + '" aria-selected="' + (i === findSel ? 'true' : 'false') + '" data-i="' + i + '">' +
-        '<div><span class="kn-find-k">' + esc(KIND_LABEL[e.kind]) + '</span><b>' + esc(e.name) + '</b>' + (bookOf(x.id) ? ' <span class="kn-muted">' + esc(bookName(bookOf(x.id))) + '</span>' : '') + (curated ? ' <span class="kn-tag' + (curated === '未整理' ? ' kn-tag-fb' : '') + '">' + esc(curated) + '</span>' : '') + '</div>' +
-        (pos ? '<div class="kn-muted">' + esc(pos.label) + (out ? ' · 不在当前范围，将扩大到学科' : '') + '</div>' : '') + '</div>';
-    }).join('');
-    refs.res.hidden = false;
-    refs.q.setAttribute('aria-activedescendant', findSel >= 0 ? 'kn-opt-' + findSel : '');
+      return {
+        title: e.name,
+        kind: KIND_LABEL[e.kind],
+        subtitle: [bookOf(x.id) ? bookName(bookOf(x.id)) : '', curated].filter(Boolean).join(' · '),
+        detail: (pos ? pos.label : '') + (out ? (pos ? ' · ' : '') + '不在当前范围，将扩大到学科' : '')
+      };
+    });
   }
-  function chooseFind(i) {
+  function chooseSearch(i) {
     var x = findCur[i]; if (!x) return;
-    refs.res.hidden = true; refs.q.value = ''; refs.q.blur();
     var logic = S.logic, e = M.ent[x.id];
     if (e.kind === 'task' || e.kind === 'step') logic = 'task';
     else if (e.kind === 'method') logic = 'method';
     else { var to = placeId(x.id); if (!pickInstance(tree(S.scope, logic), to, '') && !pickInstance(tree('bio', logic), to, '')) logic = 'rel'; }
     goEntity(x.id, { logic: logic, selectSelf: CONTAINER[e.kind] ? false : true });
   }
-  function markFind() { $$('.kn-find-item', refs.res).forEach(function (el, i) { el.classList.toggle('sel', i === findSel); el.setAttribute('aria-selected', i === findSel ? 'true' : 'false'); if (i === findSel) el.scrollIntoView({ block: 'nearest' }); }); refs.q.setAttribute('aria-activedescendant', findSel >= 0 ? 'kn-opt-' + findSel : ''); }
 
   /* ---------- 覆盖与说明 ---------- */
   function renderReport() {
@@ -1674,16 +1672,7 @@
         case 'card-focus': if (narrow()) openDrawer(true); refs.card.focus(); var tl = $('.kn-c-targets', refs.card); if (tl) tl.scrollIntoView({ block: 'nearest' }); break;
       }
     });
-    on(D, 'click', function (ev) { if (refs.menu && !refs.menu.hidden && !ev.target.closest('.kn-scope')) toggleMenu(false); if (refs.res && !refs.res.hidden && !ev.target.closest('.kn-find')) refs.res.hidden = true; });
-    on(refs.q, 'input', runFind);
-    on(refs.q, 'focus', function () { if (refs.q.value.trim()) runFind(); });
-    on(refs.q, 'keydown', function (ev) {
-      if (ev.key === 'ArrowDown') { ev.preventDefault(); if (findCur.length) { findSel = (findSel + 1) % findCur.length; markFind(); } }
-      else if (ev.key === 'ArrowUp') { ev.preventDefault(); if (findCur.length) { findSel = (findSel - 1 + findCur.length) % findCur.length; markFind(); } }
-      else if (ev.key === 'Enter') { ev.preventDefault(); chooseFind(findSel < 0 ? 0 : findSel); }
-      else if (ev.key === 'Escape') { refs.res.hidden = true; refs.q.blur(); }
-    });
-    on(refs.res, 'click', function (ev) { var it = ev.target.closest('.kn-find-item'); if (it) chooseFind(+it.getAttribute('data-i')); });
+    on(D, 'click', function (ev) { if (refs.menu && !refs.menu.hidden && !ev.target.closest('.kn-scope')) toggleMenu(false); });
     var scT = 0;
     on(refs.canvas, 'scroll', function () { if (scT) return; scT = setTimeout(function () { scT = 0; if (S.shown) saveView(scrollPos()); }, 200); }, { passive: true });
     on(refs.list, 'scroll', function () { if (scT) return; scT = setTimeout(function () { scT = 0; if (S.shown) saveView(scrollPos()); }, 200); }, { passive: true });
@@ -1716,11 +1705,6 @@
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].indexOf(ev.key) < 0) return;
       ev.preventDefault();
       moveFocus(t, ev.key);
-    });
-    on(D, 'keydown', function (ev) {
-      if (!S.shown || ev.ctrlKey || ev.metaKey || ev.altKey) return;
-      var t = ev.target, typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
-      if (ev.key === '/' && !typing) { ev.preventDefault(); refs.q.focus(); }
     });
     var rzT = 0;
     on(WIN, 'resize', function () { clearTimeout(rzT); rzT = setTimeout(function () { if (S.shown) render({ keepScroll: true }); }, 150); });
@@ -1801,7 +1785,7 @@
     return true;
   }
 
-  WIN.TreetopKN = { init: init, show: show, hide: hide, onView: onView };
+  WIN.TreetopKN = { init: init, show: show, hide: hide, onView: onView, searchActive: searchActive, search: search, chooseSearch: chooseSearch };
   /* 供自动化测试读取 */
   WIN.__kn = {
     report: function () { return M ? report() : null; },
