@@ -528,7 +528,7 @@
    * 四、页面状态与渲染
    * ===================================================================== */
   var api = null, root = null, refs = {};
-  var S = { scope: 'bio', logic: 'rel', focusKey: '', sel: '', selId: '', exp: [], more: [], url: '', notice: '', shown: false, lines: [], preview: '' };
+  var S = { scope: 'bio', logic: 'rel', focusKey: '', sel: '', selId: '', exp: [], more: [], url: '', notice: '', shown: false, lines: [], preview: '', cardClosed: false, cardId: '' };
   var gen = 0;
 
   function T() { return tree(S.scope, S.logic); }
@@ -624,6 +624,7 @@
     if (S.pendingNotice) { notes.unshift(S.pendingNotice); S.pendingNotice = ''; }
     S.notice = notes.join(' ');
     S.preview = '';
+    S.cardId = '';
     /* 刚从讲义回来时，回执的地址与当前一致就清掉"来路"末项 */
     var tl = trail(); if (tl.length && tl[tl.length - 1].url === url) { tl.pop(); sSet('sessionStorage', 'tt-kn-trail', tl); }
     sSet('localStorage', 'tt-kn-last', { url: url, label: placeLabel() });
@@ -764,12 +765,12 @@
   function select(key) {
     var tr = T(), n = tr.byKey[key];
     if (!n) return;
-    S.sel = key; S.selId = n.id; S.preview = '';
+    S.sel = key; S.selId = n.id; S.preview = ''; S.cardClosed = false; S.cardId = '';
     saveView(); syncUrl();
     render({ keepScroll: true });
     if (narrow()) openDrawer(true);
   }
-  function selectId(id) { S.sel = ''; S.selId = id; S.preview = ''; saveView(); syncUrl(); render({ keepScroll: true }); if (narrow()) openDrawer(true); }
+  function selectId(id) { S.sel = ''; S.selId = id; S.preview = ''; S.cardClosed = false; S.cardId = ''; saveView(); syncUrl(); render({ keepScroll: true }); if (narrow()) openDrawer(true); }
   function toggleExp(key) {
     var i = S.exp.indexOf(key);
     if (i >= 0) S.exp.splice(i, 1);
@@ -816,6 +817,7 @@
     refs.notice.innerHTML = S.notice ? '<span>' + esc(S.notice) + '</span><button type="button" data-act="notice-close" aria-label="关闭提示">×</button>' : '';
     refs.hint.hidden = !!sGet('localStorage', 'tt-kn-hint');
     root.classList.toggle('kn-is-list', f === 'list');
+    root.classList.toggle('kn-card-closed', S.cardClosed);
     refs.canvas.hidden = f === 'list'; refs.list.hidden = f !== 'list';
     if (f === 'graph') renderGraph(tr, focus, opts);
     else {
@@ -1202,13 +1204,20 @@
 
   /* ---- 信息卡：同一实体在任何范围、逻辑、形态下内容相同；只有"本视图中的位置"随视图变化 ---- */
   function renderCard() {
-    var tr = T(), n = S.sel ? tr.byKey[S.sel] : null;
-    var id = n ? n.id : (S.selId || cur().id);
-    var e = M.ent[id];
-    var c = refs.card;
+    var tr = T(), selected = S.sel ? tr.byKey[S.sel] : null, focus = cur(), items = [];
+    var selectedId = selected ? selected.id : S.selId;
+    if (selectedId && M.ent[selectedId]) items.push({ id: selectedId, name: selected ? nodeName(selected) : M.ent[selectedId].name, n: selected });
+    if (!items.length || focus.id !== items[0].id) items.push({ id: focus.id, name: nodeName(focus), n: focus });
+    var chosen = items[0];
+    if (S.cardId) items.forEach(function (item) { if (item.id === S.cardId) chosen = item; });
+    if (!chosen) { refs.card.innerHTML = ''; return; }
+    var n = chosen.n, id = chosen.id, e = M.ent[id], c = refs.card;
     if (!e) { c.innerHTML = ''; return; }
-    var h = '<div class="kn-c-top"><span class="kn-n-kind">' + esc(KIND_LABEL[e.kind] || '') + (n && n.ref ? ' · 引用' : '') + '</span>' +
-      '<button type="button" class="kn-c-close" data-act="card-close" aria-label="关闭信息卡">×</button></div>' +
+    var switcher = items.length > 1 ? '<select class="kn-card-switch" data-act="card-entity" aria-label="切换详情信息">' + items.map(function (item) {
+      return '<option value="' + esc(item.id) + '"' + (item === chosen ? ' selected' : '') + '>' + esc(item.name) + '</option>';
+    }).join('') + '</select>' : '<span class="kn-card-current">' + esc(chosen.name) + '</span>';
+    var h = '<div class="kn-c-top">' + switcher +
+      '<button type="button" class="kn-c-close" data-act="card-close" aria-label="隐藏详情侧栏">×</button></div>' +
       '<h2 class="kn-c-name">' + esc(n ? nodeName(n) : e.name) + '</h2>';
     if (!n && S.selId && !(tr.byId[id] || []).length) h += '<p class="kn-c-warn">不在当前视图（' + esc(scopeLabel(S.scope) + ' · ' + LOGICS[S.logic]) + '）中。</p>';
     var books = e.kind === 'concept' ? e.books : (e.book ? [e.book] : []);
@@ -1668,9 +1677,15 @@
         case 'report-close': refs.report.hidden = true; $('.kn-info-btn', root).focus(); break;
         case 'notice-close': S.notice = ''; refs.notice.hidden = true; break;
         case 'hint-close': sSet('localStorage', 'tt-kn-hint', 1); refs.hint.hidden = true; break;
-        case 'card-close': openDrawer(false); if (!narrow()) { S.sel = ''; S.selId = ''; saveView(); syncUrl(); render({ keepScroll: true }); } break;
+        case 'card-close': S.cardClosed = true; openDrawer(false); render({ keepScroll: true }); break;
         case 'card-focus': if (narrow()) openDrawer(true); refs.card.focus(); var tl = $('.kn-c-targets', refs.card); if (tl) tl.scrollIntoView({ block: 'nearest' }); break;
       }
+    });
+    on(root, 'change', function (ev) {
+      var select = ev.target.closest('[data-act="card-entity"]');
+      if (!select || !root.contains(select)) return;
+      S.cardId = select.value;
+      renderCard();
     });
     on(D, 'click', function (ev) { if (refs.menu && !refs.menu.hidden && !ev.target.closest('.kn-scope')) toggleMenu(false); });
     var scT = 0;
