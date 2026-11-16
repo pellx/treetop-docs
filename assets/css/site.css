@@ -534,7 +534,7 @@ body.no-player .stage { bottom: 0; }
 .player.is-on .pl-main .i-pause { display: grid; }
 .player.is-on .pl-main .i-play { display: none; }
 .pl-main span { display: grid; place-items: center; }
-.pl-info { flex: 1; min-width: 0; line-height: 1.4; }
+.pl-info { flex: 1; min-width: 0; line-height: 1.4; display: flex; flex-direction: column; justify-content: center; }
 .pl-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pl-sub { font-size: 12.5px; color: var(--pl-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pl-hint { flex: none; font-size: 12px; color: var(--pl-dim); white-space: nowrap; display: flex; align-items: center; gap: 4px; }
@@ -550,6 +550,49 @@ body.no-player .stage { bottom: 0; }
 .pl-rate-menu button { background: none; border: 0; color: var(--pl-rate-fg); font-size: 12.5px; font-family: var(--mono); text-align: left; padding: 5px 10px; }
 .pl-rate-menu button:hover { background: var(--pl-btn-hover-bg); color: var(--pl-hover-fg); }
 .pl-rate-menu button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
+
+/* 播放栏标题：名称在左，两个句序计数靠右；四段都可点击，弹出同级快速跳转 */
+.pl-title { display: flex; align-items: baseline; gap: 10px; }
+.pl-title-main { flex: 0 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 6px; overflow: hidden; }
+.pl-title-main .pl-jump { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pl-title-main .pl-sep { flex: none; }
+.pl-title-nums { flex: none; display: flex; align-items: baseline; gap: 6px; margin-left: auto; }
+/* 正在朗读的整句：像歌词一样浮在文档之上，无底色、黄色文字；桌面在播放栏上方，手机在顶栏下方 */
+.pl-topline { position: fixed; left: var(--side-w, 0px); right: 0; bottom: calc(var(--player-h) + 10px); z-index: 45; padding: 8px 46px 8px 20px; text-align: center; font-size: 18px; font-weight: 700; line-height: 1.5; color: #a06a00; font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", "宋体", serif; text-shadow: 0 1px 3px rgba(0, 0, 0, .45); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+:root[data-theme="dark"] .pl-topline { color: #ffcc33; }
+.pl-topline-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* 关闭按钮：电脑端悬停到歌词上才出现在右上角；手机端长按歌词唤出 */
+.pl-topline-close { position: absolute; right: 6px; top: 4px; width: 26px; height: 26px; display: grid; place-items: center; border: 0; background: none; color: var(--fg-dim); cursor: pointer; text-shadow: none; opacity: 0; pointer-events: none; transition: opacity .12s ease; }
+.pl-topline:hover .pl-topline-close, .pl-topline.show-close .pl-topline-close { opacity: 1; pointer-events: auto; }
+@media (hover: none) { .pl-topline:hover .pl-topline-close { opacity: 0; pointer-events: none; } .pl-topline.show-close .pl-topline-close { opacity: 1; pointer-events: auto; } }
+.pl-topline-close svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; }
+.pl-topline-open { position: fixed; bottom: calc(var(--player-h) + 12px); right: 12px; z-index: 46; width: 32px; height: 26px; display: grid; place-items: center; border: 1px solid var(--line); background: var(--surface); color: var(--fg-dim); cursor: pointer; box-shadow: 0 4px 14px var(--shadow); }
+.pl-topline-open:hover { background: var(--bg-soft); color: var(--fg); }
+.pl-topline-open svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.pl-topline[hidden], body.no-player .pl-topline, .pl-topline-open[hidden], body.no-player .pl-topline-open { display: none; }
+.pl-jump { font: inherit; color: inherit; background: none; border: 0; padding: 0 1px; cursor: pointer; white-space: nowrap; }
+.pl-jump:hover, .pl-jump:focus-visible, .pl-jump[aria-expanded="true"] { background: var(--pl-btn-hover-bg); color: var(--pl-hover-fg); }
+.pl-jump.num { font-family: var(--mono); font-size: .92em; opacity: .8; }
+.pl-jump.num:hover, .pl-jump.num:focus-visible, .pl-jump.num[aria-expanded="true"] { opacity: 1; }
+.pl-sep { margin: 0 5px; opacity: .55; }
+.pl-jump-menu { position: absolute; bottom: calc(100% + 10px); left: 12px; z-index: 20; min-width: 220px; max-width: min(440px, calc(100vw - 24px)); max-height: min(50vh, 360px); overflow: auto; padding: 6px; background: var(--pl-bg); border: 1px solid var(--pl-edge); box-shadow: 0 12px 30px var(--shadow); }
+.pl-jump-menu[hidden] { display: none; }
+.pl-jump-menu button { display: block; width: 100%; text-align: left; background: none; border: 0; color: var(--pl-fg); font: inherit; font-size: 12.5px; line-height: 1.5; padding: 5px 9px; white-space: normal; }
+.pl-jump-menu button:hover, .pl-jump-menu button:focus-visible { background: var(--pl-btn-hover-bg); color: var(--pl-hover-fg); }
+.pl-jump-menu button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
+.pl-jump-menu .jm-n { font-family: var(--mono); opacity: .8; margin-right: 7px; }
+/* 进度条：整期所有句子共用一条，按知识点分段、句间打刻度；悬停/拖动时只有对应小节加粗 */
+.pl-seek { height: 3px; cursor: pointer; touch-action: none; }
+.pl-seek::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 16px; }
+.pl-seek .pl-bar { display: none; }
+.pl-seek-marks { position: absolute; top: 0; left: 0; right: 0; height: 100%; pointer-events: none; }
+.pl-seek-seg { position: absolute; bottom: 0; height: 100%; pointer-events: auto; transition: height .12s ease; }
+.pl-seek-seg:hover, .pl-seek-seg.is-hot { height: 8px; background: var(--pl-track); }
+.pl-seek-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0; background: var(--accent); }
+.pl-seek-tick { position: absolute; top: 0; height: 100%; width: 1px; background: var(--fg-dim); opacity: .5; }
+.pl-seek-gap { position: absolute; top: 0; height: 100%; width: 2px; margin-left: -1px; background: var(--pl-bg); }
+.pl-seek-tip { position: absolute; bottom: calc(100% + 9px); transform: translateX(-50%); padding: 3px 8px; background: var(--pl-bg); color: var(--pl-fg); border: 1px solid var(--pl-edge); font-size: 12px; white-space: nowrap; pointer-events: none; box-shadow: 0 8px 20px var(--shadow); z-index: 2; }
+.pl-seek-tip[hidden] { display: none; }
 
 /* ---------- 嵌入（外壳 iframe 内） ---------- */
 html.embedded .sidebar, html.embedded .topbar, html.embedded .overlay, html.embedded .player, html.embedded .only-standalone { display: none !important; }
@@ -588,6 +631,16 @@ html.embedded .orig-list li { scroll-margin-top: 40px; }
   .pl-btn { width: 32px; height: 32px; }
   .pl-main { width: 38px; height: 38px; }
   .pl-rate-btn { padding: 4px 6px; font-size: 11.5px; }
+  .pl-title { gap: 4px; }
+  .pl-title-main { gap: 3px; }
+  .pl-sep { margin: 0 2px; }
+  /* 移动端加粗进度条，方便手指点按 */
+  .pl-seek { height: 6px; }
+  .pl-seek::before { height: 22px; }
+  .pl-seek-seg:hover, .pl-seek-seg.is-hot { height: 10px; }
+  /* 手机上的歌词放在顶栏下方，字号再大一点，横向铺满全宽 */
+  .pl-topline { top: var(--top-h, 56px); bottom: auto; left: 0; font-size: 18px; padding: 7px 40px 7px 16px; }
+  .pl-topline-open { top: calc(var(--top-h, 56px) + 6px); bottom: auto; right: 10px; }
   .ep-table .ep-pts { display: none; }
   .ep-table th:nth-child(2), .ep-table td:nth-child(2) { display: none; }
 }

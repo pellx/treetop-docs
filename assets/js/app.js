@@ -171,7 +171,7 @@
   Player.prototype.setRate = function (r) { this.rate = r; this.audio.defaultPlaybackRate = r; this.audio.playbackRate = r; store('bio-rate', String(r)); };
 
   /* ---------- 播放器界面 ---------- */
-  function bindPlayerUI(player, scope) {
+  function bindPlayerUI(player, scope, jumpHook) {
     var box = $('#player'); if (!box) return;
     var bar = $('#plBar'), title = $('#plTitle'), sub = $('#plSub');
     on($('#plPlay'), 'click', function () { player.toggle(); });
@@ -205,26 +205,372 @@
       ev.preventDefault(); openRate(false); rateBtn.focus();
     });
     markRate();
+
+    /* 正在朗读的整句移到页面最上方，底栏只留居中的小节/知识点信息；可关闭，移动端用字幕按钮再打开 */
+    var topLine = D.createElement('div');
+    topLine.className = 'pl-topline'; topLine.hidden = true;
+    var topText = D.createElement('span');
+    topText.className = 'pl-topline-text'; topText.setAttribute('aria-live', 'polite');
+    topLine.appendChild(topText);
+    var capClose = D.createElement('button');
+    capClose.type = 'button'; capClose.className = 'pl-topline-close';
+    capClose.setAttribute('aria-label', '关闭字幕'); capClose.title = '关闭字幕';
+    capClose.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    topLine.appendChild(capClose);
+    D.body.appendChild(topLine);
+    var capOpen = D.createElement('button');
+    capOpen.type = 'button'; capOpen.className = 'pl-topline-open'; capOpen.hidden = true;
+    capOpen.setAttribute('aria-label', '显示字幕'); capOpen.title = '显示字幕';
+    capOpen.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="1"/><path d="M7 10h4M7 14h4M13 10h4M13 14h4"/></svg>';
+    D.body.appendChild(capOpen);
+    var captionOpen = true, captionPress = 0;
+    on(capClose, 'click', function () {
+      captionOpen = false; topLine.hidden = true; capOpen.hidden = false;
+      topLine.classList.remove('show-close');
+    });
+    on(capOpen, 'click', function () {
+      captionOpen = true; capOpen.hidden = true;
+      if (player.cur()) topLine.hidden = false;
+    });
+    /* 手机没有悬停：长按歌词唤出右上角关闭按钮 */
+    on(topLine, 'pointerdown', function (ev) {
+      if (ev.pointerType === 'mouse') return;
+      clearTimeout(captionPress);
+      captionPress = setTimeout(function () { topLine.classList.add('show-close'); }, 450);
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (t) {
+      on(topLine, t, function () { clearTimeout(captionPress); });
+    });
+    on(D, 'pointerdown', function (ev) {
+      if (!topLine.contains(ev.target)) topLine.classList.remove('show-close');
+    });
+
+    /* ---------- 进度条：整期所有句子共用一条，按知识点分段，可点击/拖动定位 ---------- */
+    var track = bar ? bar.parentNode : null;
+    var marks = null, seekTip = null, seekList = [], seekSecs = [], seekRanges = [], seekTotal = 0, seekEp = '';
+    if (track) {
+      track.classList.add('pl-seek');
+      track.setAttribute('role', 'slider');
+      track.setAttribute('aria-label', '本节播放进度，可拖动定位');
+      track.setAttribute('aria-valuemin', '0');
+      track.setAttribute('aria-valuemax', '100');
+      track.setAttribute('aria-valuenow', '0');
+      marks = D.createElement('div'); marks.className = 'pl-seek-marks'; marks.setAttribute('aria-hidden', 'true');
+      track.appendChild(marks);
+      seekTip = D.createElement('div'); seekTip.className = 'pl-seek-tip'; seekTip.hidden = true;
+      track.appendChild(seekTip);
+    }
+    function buildSeek(it) {
+      seekEp = it.ep;
+      seekList = player.items.filter(function (x) { return x.ep === it.ep; });
+      seekSecs = seekList.map(function (x) { return x.sec || 0; });
+      seekTotal = seekSecs.reduce(function (s, v) { return s + v; }, 0);
+      seekRanges = [];
+      if (!marks) return;
+      marks.textContent = '';
+      if (!seekTotal) return;
+      var e = EPS[it.ep] || {}, acc = 0;
+      seekList.forEach(function (x, i) {
+        var rg = seekRanges[seekRanges.length - 1];
+        if (!rg || rg.p !== x.p) { rg = { p: x.p, start: acc, dur: 0, secs: [] }; seekRanges.push(rg); }
+        rg.dur += seekSecs[i]; rg.secs.push(seekSecs[i]);
+        acc += seekSecs[i];
+      });
+      seekRanges.forEach(function (rg, ri) {
+        var seg = D.createElement('span'); seg.className = 'pl-seek-seg';
+        seg.style.left = (rg.start / seekTotal * 100) + '%';
+        seg.style.width = (rg.dur / seekTotal * 100) + '%';
+        seg.title = pointLabel(rg.p, e);
+        var fill = D.createElement('span'); fill.className = 'pl-seek-fill';
+        seg.appendChild(fill); rg.fill = fill;
+        var local = 0;
+        rg.secs.forEach(function (s, si) {
+          if (si > 0) {
+            var tick = D.createElement('span'); tick.className = 'pl-seek-tick';
+            tick.style.left = (local / rg.dur * 100) + '%';
+            seg.appendChild(tick);
+          }
+          local += s;
+        });
+        marks.appendChild(seg);
+        if (ri > 0) {
+          var gap = D.createElement('span'); gap.className = 'pl-seek-gap';
+          gap.style.left = (rg.start / seekTotal * 100) + '%';
+          marks.appendChild(gap);
+        }
+      });
+    }
+    function seekPos() {
+      var it = player.cur(); if (!it || !seekTotal) return 0;
+      var acc = 0;
+      for (var i = 0; i < seekList.length; i++) {
+        if (seekList[i] === it) return acc + (player.audio.currentTime || 0);
+        acc += seekSecs[i] || 0;
+      }
+      return 0;
+    }
+    function paintSeek(r) {
+      if (!bar) return;
+      r = Math.max(0, Math.min(1, r));
+      var target = r * seekTotal;
+      seekRanges.forEach(function (rg) {
+        if (!rg.fill) return;
+        var f = rg.dur ? Math.max(0, Math.min(1, (target - rg.start) / rg.dur)) : 0;
+        rg.fill.style.width = (f * 100) + '%';
+      });
+      bar.style.width = '0';
+      if (track) track.setAttribute('aria-valuenow', String(Math.round(r * 100)));
+    }
+    function paintNow() { paintSeek(seekTotal ? seekPos() / seekTotal : 0); }
+    function markHot(r) {
+      if (!marks) return;
+      var target = Math.max(0, Math.min(1, r)) * seekTotal;
+      $$('.pl-seek-seg', marks).forEach(function (seg, i) {
+        var rg = seekRanges[i];
+        seg.classList.toggle('is-hot', !!rg && target >= rg.start && target < rg.start + rg.dur);
+      });
+    }
+    function seekLabel(r) {
+      if (!seekTotal || !seekList.length) return '';
+      var target = Math.max(0, Math.min(1, r)) * seekTotal, acc = 0, k = 0;
+      for (; k < seekList.length; k++) { var s = seekSecs[k]; if (target < acc + s) break; acc += s; }
+      if (k >= seekList.length) { k = seekList.length - 1; acc = Math.max(0, seekTotal - seekSecs[k]); }
+      var x = seekList[k];
+      return sceneLabel(x) + ' · ' + (k + 1) + '/' + seekList.length + ' · ' + mmss(Math.round(target)) + ' / ' + mmss(Math.round(seekTotal));
+    }
+    function showTip(r) {
+      if (!seekTip) return;
+      if (!seekTotal) { seekTip.hidden = true; return; }
+      seekTip.textContent = seekLabel(r);
+      seekTip.hidden = false;
+      /* 靠近左右边缘时向内挤，保证小预览卡片完整可见 */
+      var tw = track.clientWidth, w = seekTip.offsetWidth;
+      var x = w >= tw - 8 ? tw / 2 : Math.max(w / 2 + 4, Math.min(tw - w / 2 - 4, r * tw));
+      seekTip.style.left = x + 'px';
+    }
+    function hideTip() { if (seekTip) seekTip.hidden = true; }
+    var seekDrag = false, seekRatio = 0, seekWasPlaying = false;
+    function ratioAt(x) {
+      if (!track) return 0;
+      var rect = track.getBoundingClientRect();
+      return rect.width ? (x - rect.left) / rect.width : 0;
+    }
+    function commitSeek(r) {
+      if (!seekTotal || !seekList.length) return;
+      r = Math.max(0, Math.min(1, r));
+      var target = r * seekTotal, acc = 0, k = 0;
+      for (; k < seekList.length; k++) { if (target < acc + seekSecs[k]) break; acc += seekSecs[k]; }
+      if (k >= seekList.length) k = seekList.length - 1;
+      /* 点击/拖动只定位到对应句子的开头，句子内部不做截取 */
+      var abs = player.items.indexOf(seekList[k]); if (abs < 0) return;
+      var wasPlaying = seekWasPlaying;
+      player.playAt(abs);
+      if (!wasPlaying) player.audio.pause(); /* 本来就没在播：只挪位置，不自动出声 */
+      paintNow();
+    }
+    if (track) {
+      on(track, 'pointerdown', function (ev) {
+        if (!seekTotal || !seekList.length || (ev.button !== undefined && ev.button !== 0)) return;
+        ev.preventDefault();
+        seekDrag = true; seekWasPlaying = player.playing(); seekRatio = ratioAt(ev.clientX);
+        track.classList.add('is-drag');
+        try { track.setPointerCapture(ev.pointerId); } catch (e) {}
+        paintSeek(seekRatio); showTip(seekRatio); markHot(seekRatio);
+      });
+      on(track, 'pointermove', function (ev) {
+        if (!seekTotal || !seekList.length) return;
+        var r = ratioAt(ev.clientX);
+        if (seekDrag) { seekRatio = r; paintSeek(r); }
+        showTip(r); markHot(r);
+      });
+      var endSeek = function (ev) {
+        if (!seekDrag) return;
+        seekDrag = false; track.classList.remove('is-drag');
+        try { track.releasePointerCapture(ev.pointerId); } catch (e) {}
+        hideTip(); commitSeek(seekRatio);
+      };
+      on(track, 'pointerup', endSeek);
+      on(track, 'pointercancel', endSeek);
+      on(track, 'pointerleave', function () {
+        if (seekDrag) return;
+        hideTip();
+        if (marks) $$('.pl-seek-seg.is-hot', marks).forEach(function (s) { s.classList.remove('is-hot'); });
+      });
+    }
+
+    /* ---------- 小节名 / 句序 / 知识点名 / 句序：点击弹出同级列表快速跳转 ---------- */
+    var jumpMenu = D.createElement('div');
+    jumpMenu.className = 'pl-jump-menu'; jumpMenu.id = 'plJumpMenu';
+    jumpMenu.setAttribute('role', 'listbox'); jumpMenu.hidden = true;
+    box.appendChild(jumpMenu);
+    var jumpAnchor = null;
+    function pointLabel(p, e) {
+      if (p === 0) return '导读';
+      if (p === 'review') return '易错速查';
+      return '考点' + p + ' ' + ((e.points && e.points[p - 1]) || '');
+    }
+    function jumpRows(kind, it) {
+      var rows = [], same = player.items.filter(function (x) { return x.ep === it.ep; });
+      if (kind === 'ep') {
+        var seen = {};
+        player.items.forEach(function (x, k) {
+          if (seen[x.ep]) return; seen[x.ep] = 1;
+          var e = EPS[x.ep] || {};
+          rows.push({ k: k, num: e.code || x.n, text: e.full || e.sec || x.n, sel: x.ep === it.ep });
+        });
+      } else if (kind === 'epNum') {
+        same.forEach(function (x) {
+          rows.push({ k: player.items.indexOf(x), num: (same.indexOf(x) + 1) + '/' + same.length, text: x.t, sel: x === it });
+        });
+      } else if (kind === 'pt') {
+        var last = null, e2 = EPS[it.ep] || {};
+        same.forEach(function (x) {
+          if (last !== null && x.p === last) return; last = x.p;
+          rows.push({ k: player.items.indexOf(x), num: '', text: pointLabel(x.p, e2), sel: x.p === it.p });
+        });
+      } else {
+        var sc = same.filter(function (x) { return x.p === it.p; });
+        sc.forEach(function (x) {
+          rows.push({ k: player.items.indexOf(x), num: (sc.indexOf(x) + 1) + '/' + sc.length, text: x.t, sel: x === it });
+        });
+      }
+      return rows;
+    }
+    function closeJump(restore) {
+      var a = jumpAnchor;
+      jumpMenu.hidden = true; jumpAnchor = null;
+      if (a) a.setAttribute('aria-expanded', 'false');
+      if (restore && a) a.focus();
+    }
+    function jumpTo(k) { closeJump(); var it = player.items[k]; if (!it) return; if (jumpHook) jumpHook(it, k); else player.playAt(k); }
+    function openJump(kind, anchor, it) {
+      var rows = jumpRows(kind, it); if (!rows.length) return;
+      jumpMenu.textContent = '';
+      rows.forEach(function (row) {
+        var b = D.createElement('button'); b.type = 'button'; b.setAttribute('role', 'option');
+        b.setAttribute('aria-selected', row.sel ? 'true' : 'false');
+        if (row.num) { var n = D.createElement('span'); n.className = 'jm-n'; n.textContent = row.num; b.appendChild(n); }
+        b.appendChild(D.createTextNode(row.text));
+        on(b, 'click', function () { jumpTo(row.k); });
+        jumpMenu.appendChild(b);
+      });
+      jumpAnchor = anchor; anchor.setAttribute('aria-expanded', 'true');
+      jumpMenu.hidden = false;
+      var boxRect = box.getBoundingClientRect(), aRect = anchor.getBoundingClientRect();
+      var left = aRect.left - boxRect.left, width = jumpMenu.offsetWidth || 320;
+      if (left + width > boxRect.width - 12) left = Math.max(12, boxRect.width - width - 12);
+      jumpMenu.style.left = left + 'px';
+      var sel = jumpMenu.querySelector('[aria-selected="true"]') || jumpMenu.querySelector('button');
+      if (sel) sel.focus();
+    }
+    function jumpBtn(kind, text, tip) {
+      var b = D.createElement('button'); b.type = 'button';
+      b.className = 'pl-jump' + (kind === 'epNum' || kind === 'ptNum' ? ' num' : '');
+      b.setAttribute('data-jump', kind); b.setAttribute('aria-haspopup', 'listbox');
+      b.setAttribute('aria-expanded', 'false'); b.title = tip; b.textContent = text;
+      return b;
+    }
+    function truncateTo(b) {
+      var full = b._full || '';
+      b.textContent = full;
+      if (b.scrollWidth <= b.clientWidth + 1) return;
+      var lo = 0, hi = full.length;
+      while (lo < hi) {
+        var mid = Math.ceil((lo + hi) / 2);
+        b.textContent = full.slice(0, mid) + '..';
+        if (b.scrollWidth <= b.clientWidth) lo = mid; else hi = mid - 1;
+      }
+      b.textContent = full.slice(0, lo) + '..';
+    }
+    function fitTitle() {
+      if (!titleRefs) return;
+      var main = title.querySelector('.pl-title-main'); if (!main) return;
+      if (!main.clientWidth) return; /* 播放栏隐藏时不量宽度，等可见后下一次更新再算 */
+      var bs = [titleRefs.ep, titleRefs.pt];
+      main.style.gap = '';
+      bs.forEach(function (b) { b.textContent = b._full; b.style.flex = '0 0 auto'; });
+      var gap = parseFloat(getComputedStyle(main).columnGap) || 0;
+      var total = bs[0].offsetWidth + bs[1].offsetWidth + gap;
+      if (total <= main.clientWidth + 1) { bs.forEach(function (b) { b.style.flex = '0 1 auto'; }); return; }
+      /* 放不下时按完整文字的比例分空间，两个名称都保留，各自用 .. 收尾 */
+      var avail = Math.max(56, main.clientWidth - gap);
+      var natural = bs.map(function (b) { return Math.max(28, b.offsetWidth); });
+      var w1 = Math.max(28, Math.round(avail * natural[0] / (natural[0] + natural[1])));
+      bs[0].style.flex = '0 0 ' + w1 + 'px';
+      bs[1].style.flex = '0 0 ' + (avail - w1) + 'px';
+      main.style.gap = '2px';
+      bs.forEach(truncateTo);
+    }
+    function renderTitle(it) {
+      var e = EPS[it.ep] || {};
+      var same = player.items.filter(function (x) { return x.ep === it.ep; });
+      var inEp = same.indexOf(it) + 1;
+      var sc = same.filter(function (x) { return x.p === it.p; }), inSc = sc.indexOf(it) + 1;
+      title.textContent = '';
+      var main = D.createElement('span'); main.className = 'pl-title-main';
+      var epBtn = jumpBtn('ep', e.full || e.sec || it.n, '点击切换小节');
+      epBtn._full = e.full || e.sec || it.n;
+      main.appendChild(epBtn);
+      var sep = D.createElement('span'); sep.className = 'pl-sep'; sep.textContent = '·'; main.appendChild(sep);
+      var ptBtn = jumpBtn('pt', sceneLabel(it), '点击切换知识点');
+      ptBtn._full = sceneLabel(it);
+      main.appendChild(ptBtn);
+      var nums = D.createElement('span'); nums.className = 'pl-title-nums';
+      var epNum = jumpBtn('epNum', inEp + '/' + same.length, '点击选择本节任意一句');
+      var ptNum = jumpBtn('ptNum', inSc + '/' + sc.length, '点击选择本知识点任意一句');
+      nums.appendChild(epNum); nums.appendChild(ptNum);
+      title.appendChild(main); title.appendChild(nums);
+      titleRefs = { ep: epBtn, pt: ptBtn, epNum: epNum, ptNum: ptNum };
+      titleEp = it.ep; titleP = it.p;
+      fitTitle();
+    }
+    on(title, 'click', function (ev) {
+      var b = ev.target.closest ? ev.target.closest('[data-jump]') : null; if (!b) return;
+      var it = player.cur(); if (!it) return;
+      if (!jumpMenu.hidden && jumpAnchor === b) { closeJump(); return; }
+      openJump(b.getAttribute('data-jump'), b, it);
+    });
+    on(D, 'click', function (ev) {
+      if (jumpMenu.hidden || jumpMenu.contains(ev.target) || title.contains(ev.target)) return;
+      closeJump();
+    });
+    on(D, 'keydown', function (ev) {
+      if (ev.key === 'Escape' && !jumpMenu.hidden) { ev.preventDefault(); closeJump(true); }
+    });
+
+    var titleRefs = null, titleEp = '', titleP = null;
     var oldState = player.hooks.onState, oldTime = player.hooks.onTime, oldErr = player.hooks.onError;
     player.hooks.onState = function (playing, it, k) {
       box.classList.toggle('is-on', playing);
       $('#plPlay').setAttribute('aria-label', playing ? '暂停' : '播放');
       if (it) {
-        var e = EPS[it.ep] || {};
+        if (seekEp !== it.ep) buildSeek(it);
+        /* 只有换期或换知识点才重建标题；同一知识点内只改右侧计数，打开的跳转菜单不会被顶掉 */
         var same = player.items.filter(function (x) { return x.ep === it.ep; });
-        var inEp = same.indexOf(it) + 1;
-        var sc = same.filter(function (x) { return x.p === it.p; }); var inSc = sc.indexOf(it) + 1;
-        /* 上行：小节名（本期第几句/总句数）· 知识点名（本知识点第几句/总数）；下行只放正在朗读的文本。 */
-        title.textContent = (e.full || e.sec || it.n) + ' ' + inEp + '/' + same.length + ' · ' + sceneLabel(it) + ' ' + inSc + '/' + sc.length;
-        sub.textContent = it.t;
-        sub.title = it.t;
+        var sc = same.filter(function (x) { return x.p === it.p; });
+        if (!titleRefs || titleEp !== it.ep || titleP !== it.p) { closeJump(); renderTitle(it); }
+        else {
+          titleRefs.epNum.textContent = (same.indexOf(it) + 1) + '/' + same.length;
+          titleRefs.ptNum.textContent = (sc.indexOf(it) + 1) + '/' + sc.length;
+          fitTitle();
+        }
+        paintNow();
+        topText.textContent = it.t;
+        topText.title = it.t;
+        if (captionOpen) topLine.hidden = false;
+        capOpen.hidden = captionOpen;
+        sub.textContent = '';
       } else if (k < 0) {
-        bar.style.width = '0';
+        paintSeek(0);
+        topLine.hidden = true;
+        capOpen.hidden = true;
         if (title.textContent !== '未开始播放') sub.textContent = scope === 'all' ? '已播放到本册最后一期，连播结束' : '本期播放完毕';
       }
       if (oldState) oldState(playing, it, k);
     };
-    player.hooks.onTime = function (t, d) { bar.style.width = (d ? Math.min(100, t / d * 100) : 0) + '%'; if (oldTime) oldTime(t, d); };
+    player.hooks.onTime = function (t, d) { if (seekTotal && !seekDrag) paintNow(); if (oldTime) oldTime(t, d); };
+    var fitRaf = 0;
+    on(window, 'resize', function () { cancelAnimationFrame(fitRaf); fitRaf = requestAnimationFrame(fitTitle); });
     player.hooks.onError = function (it) { sub.textContent = '音频加载失败，已跳过：' + (it ? it.n + '/' + it.id : ''); if (oldErr) oldErr(it); };
   }
 
@@ -757,7 +1103,13 @@
       if (ep) { var k = player.items.findIndex(function (x) { return x.ep === ep; }); if (k >= 0) return k; }
       return 0;
     };
-    bindPlayerUI(player, 'all');
+    bindPlayerUI(player, 'all', function (it) {
+      // 播放栏快速跳转：同册直接定位；跨期先换页，语音紧随其后
+      usePlaylist(BOOK_OF[it.ep]);
+      var k = player.indexOf(it.ep, it.id); if (k < 0) return;
+      if (view === 'frame' && frameKind === 'ep' && frameEp === it.ep) player.playAt(k);
+      else { location.hash = '#/' + it.ep + (it.a && it.a !== 'intro' ? '/' + it.a : ''); player.playAt(k); }
+    });
     initSidebar();
     initSearch(function (x) {
       var r = '#/' + x.ep + (x.a ? '/' + x.a : '');
