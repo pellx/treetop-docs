@@ -862,6 +862,82 @@
   }
   function overlap(a, b, m) { return a.x < b.x + b.w + m && b.x < a.x + a.w + m && a.y < b.y + b.h + m && b.y < a.y + a.h + m; }
   function layout(tr, focus, Wv, Hv) {
+
+  /* 电路板式正交寻路：以节点外缘为障碍，在候选横竖通道上做 A*；同等条件下先水平、少拐弯。 */
+  function orthogonalPoints(a, b, obstacles, margin) {
+    var m = margin == null ? 10 : margin;
+    var rects = (obstacles || []).map(function (r) { return { l: r.x - m, r: r.x + r.w + m, t: r.y - m, b: r.y + r.h + m }; });
+    function coords(values) {
+      values.sort(function (x, y) { return x - y; });
+      return values.filter(function (v, i) { return !i || v !== values[i - 1]; });
+    }
+    var xs = coords([a.x, b.x].concat(rects.reduce(function (v, r) { return v.concat(r.l, r.r); }, [])));
+    var ys = coords([a.y, b.y].concat(rects.reduce(function (v, r) { return v.concat(r.t, r.b); }, [])));
+    var nx = xs.length, start = ys.indexOf(a.y) * nx + xs.indexOf(a.x), goal = ys.indexOf(b.y) * nx + xs.indexOf(b.x);
+    function xy(p) { return { x: xs[p % nx], y: ys[Math.floor(p / nx)] }; }
+    function blocked(p) {
+      var q = xy(p);
+      return rects.some(function (r) { return q.x > r.l && q.x < r.r && q.y > r.t && q.y < r.b; });
+    }
+    function segmentBlocked(p, q) {
+      var u = xy(p), v = xy(q), x = (u.x + v.x) / 2, y = (u.y + v.y) / 2;
+      return rects.some(function (r) { return x > r.l && x < r.r && y > r.t && y < r.b; });
+    }
+    function heuristic(p) { var q = xy(p); return Math.abs(q.x - b.x) + Math.abs(q.y - b.y); }
+    var dirs = [{ dx: 1, dy: 0, axis: 1 }, { dx: -1, dy: 0, axis: 1 }, { dx: 0, dy: 1, axis: 2 }, { dx: 0, dy: -1, axis: 2 }];
+    var total = nx * ys.length * 3, best = new Float64Array(total), came = new Int32Array(total), open = [];
+    for (var i = 0; i < total; i++) { best[i] = Infinity; came[i] = -1; }
+    var sk = start * 3; best[sk] = 0; open.push({ p: start, axis: 0, g: 0, f: heuristic(start) });
+    var found = -1;
+    while (open.length) {
+      var bi = 0;
+      for (i = 1; i < open.length; i++) if (open[i].f < open[bi].f || (open[i].f === open[bi].f && open[i].g < open[bi].g)) bi = i;
+      var cur = open.splice(bi, 1)[0], ck = cur.p * 3 + cur.axis;
+      if (cur.g !== best[ck]) continue;
+      if (cur.p === goal) { found = ck; break; }
+      var cx = cur.p % nx, cy = Math.floor(cur.p / nx);
+      dirs.forEach(function (d) {
+        var xx = cx + d.dx, yy = cy + d.dy;
+        if (xx < 0 || xx >= nx || yy < 0 || yy >= ys.length) return;
+        var np = yy * nx + xx;
+        if (blocked(np) || segmentBlocked(cur.p, np)) return;
+        var step = Math.abs(xs[xx] - xs[cx]) + Math.abs(ys[yy] - ys[cy]);
+        var ng = cur.g + step + (cur.axis && cur.axis !== d.axis ? 18 : 0) + (!cur.axis && d.axis === 2 ? 10 : 0);
+        var nk = np * 3 + d.axis;
+        if (ng >= best[nk]) return;
+        best[nk] = ng; came[nk] = ck;
+        open.push({ p: np, axis: d.axis, g: ng, f: ng + heuristic(np) });
+      });
+    }
+    var points = [];
+    if (found >= 0) {
+      for (var k = found; k >= 0; k = came[k]) { points.push(xy(Math.floor(k / 3))); if (k === sk) break; }
+      points.reverse();
+    } else points = [a, { x: b.x, y: a.y }, b];
+    return points.filter(function (p, i) {
+      if (!i || i === points.length - 1) return true;
+      var u = points[i - 1], v = points[i + 1];
+      return !((u.x === p.x && p.x === v.x) || (u.y === p.y && p.y === v.y));
+    });
+  }
+  function orthogonalD(points) {
+    return points.map(function (p, i) {
+      var x = Math.round(p.x * 100) / 100, y = Math.round(p.y * 100) / 100;
+      if (!i) return 'M' + x + ' ' + y;
+      var prev = points[i - 1];
+      return p.y === prev.y ? 'H' + x : (p.x === prev.x ? 'V' + y : 'L' + x + ' ' + y);
+    }).join('');
+  }
+  function orthogonalRoute(a, b, obstacles, margin) { return orthogonalD(orthogonalPoints(a, b, obstacles, margin)); }
+  function routeLabel(points) {
+    var best = null;
+    for (var i = 1; i < points.length; i++) {
+      var a = points[i - 1], b = points[i], len = Math.abs(b.x - a.x) + Math.abs(b.y - a.y);
+      if (!best || (a.x === b.x && (best.a.x !== best.b.x || len > best.len)) || (best.a.x !== best.b.x && a.y === b.y && len > best.len)) best = { a: a, b: b, len: len };
+    }
+    return best ? { x: (best.a.x + best.b.x) / 2 + 6, y: (best.a.y + best.b.y) / 2 - 6 } : { x: 0, y: 0 };
+  }
+
     var L = { nodes: [], edges: [], w: 0, h: 0, overview: false };
     var g = GEO;
     if (focus === tr.root && S.logic === 'rel') {
@@ -1022,9 +1098,10 @@
         var other = r.from === selNd.n.id ? r.to : r.from, ond = visById[other];
         if (ond && ond !== selNd) {
           var x1 = selNd.x + selNd.w, y1 = selNd.y + selNd.h / 2, x2 = ond.x + ond.w, y2 = ond.y + ond.h / 2;
-          var bx = Math.max(x1, x2) + 46;
-          extraEdges.push({ d: 'M' + x1 + ' ' + y1 + 'C' + bx + ' ' + y1 + ' ' + bx + ' ' + y2 + ' ' + x2 + ' ' + y2, cls: 'kn-e-rel kn-st-' + r.status });
-          labels.push({ x: bx - 4, y: (y1 + y2) / 2, t: r.label });
+          var points = orthogonalPoints({ x: x1, y: y1 }, { x: x2, y: y2 }, L.nodes.filter(function (nd) { return nd !== selNd && nd !== ond; }));
+          var lp = routeLabel(points);
+          extraEdges.push({ d: orthogonalD(points), cls: 'kn-e-rel kn-st-' + r.status });
+          labels.push({ x: lp.x, y: lp.y, t: r.label });
         } else if (!ond) hidden.push(r);
       });
       hidden.slice(0, 6).forEach(function (r, i) {
@@ -1032,14 +1109,18 @@
         ports.push({ key: 'port:' + r.id, r: r, other: other, x: L.portX, y: py + i * (GEO.portH + 6), w: GEO.portW, h: GEO.portH });
       });
       if (hidden.length > 6) ports.push({ key: 'port:more', more: hidden.length - 6, x: L.portX, y: py + 6 * (GEO.portH + 6), w: GEO.portW, h: GEO.portH });
-      ports.forEach(function (p) { extraEdges.push({ d: 'M' + (selNd.x + selNd.w) + ' ' + (selNd.y + selNd.h / 2) + 'C' + (p.x - 20) + ' ' + (selNd.y + selNd.h / 2) + ' ' + (p.x - 24) + ' ' + (p.y + p.h / 2) + ' ' + p.x + ' ' + (p.y + p.h / 2), cls: 'kn-e-port' + (p.r ? ' kn-st-' + p.r.status : '') }); });
+      ports.forEach(function (p) {
+        var a = { x: selNd.x + selNd.w, y: selNd.y + selNd.h / 2 }, b = { x: p.x, y: p.y + p.h / 2 };
+        var obstacles = L.nodes.concat(ports).filter(function (nd) { return nd !== selNd && nd !== p; });
+        extraEdges.push({ d: orthogonalRoute(a, b, obstacles), cls: 'kn-e-port' + (p.r ? ' kn-st-' + p.r.status : '') });
+      });
       if (ports.length) { L.w = Math.max(L.w, L.portX + GEO.portW + GEO.pad); L.h = Math.max(L.h, ports[ports.length - 1].y + GEO.portH + GEO.pad); }
     }
     /* 主线叠加（学科总览） */
     var lineChips = '';
     if (L.overview && S.scope === 'bio') {
       var pos = {};
-      L.nodes.forEach(function (nd) { if (nd.role === 'ring') pos[nd.n.id] = { x: nd.x + nd.w / 2, y: nd.y + nd.h / 2 }; });
+      L.nodes.forEach(function (nd) { if (nd.role === 'ring') pos[nd.n.id] = { x: nd.x + nd.w / 2, y: nd.y + nd.h / 2, nd: nd }; });
       M.lines.forEach(function (lid, li) {
         var on1 = S.lines.indexOf(lid) >= 0;
         lineChips += '<button type="button" class="kn-line-chip kn-line-' + (li % 4) + '" data-act="line" data-id="' + lid + '" aria-pressed="' + (on1 ? 'true' : 'false') + '"><i aria-hidden="true"></i>' + esc(M.ent[lid].name) + '</button>';
@@ -1049,8 +1130,13 @@
         var pts = doms.map(function (d) { return pos[d]; }).filter(Boolean);
         if (pts.length < 2) return;
         var off = (li - 1.5) * 7;
-        extraEdges.push({ d: pts.map(function (p, i) { return (i ? 'L' : 'M') + (p.x + off) + ' ' + (p.y + off); }).join(''), cls: 'kn-e-line kn-line-' + (li % 4) });
-        labels.push({ x: pts[0].x + off + 8, y: pts[0].y + off - GEO.ringH / 2 - 8, t: '主线：' + M.ent[lid].name, cls: 'kn-line-lab kn-line-' + (li % 4) });
+        for (var pi = 1; pi < pts.length; pi++) {
+          var pa = pts[pi - 1], pb = pts[pi];
+          var a = { x: pa.x + off, y: pa.y + off }, b = { x: pb.x + off, y: pb.y + off };
+          var obstacles = L.nodes.filter(function (nd) { return nd !== pa.nd && nd !== pb.nd; });
+          extraEdges.push({ d: orthogonalRoute(a, b, obstacles), cls: 'kn-e-line kn-line-' + (li % 4) });
+        }
+        labels.push({ x: pts[0].x + off + 8, y: pts[0].y + off - pts[0].nd.h / 2 - 8, t: '主线：' + M.ent[lid].name, cls: 'kn-line-lab kn-line-' + (li % 4), id: lid });
       });
     }
     refs.world.style.width = L.w + 'px'; refs.world.style.height = L.h + 'px';
