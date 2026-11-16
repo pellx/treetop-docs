@@ -396,18 +396,18 @@
     var e = M.ent[n.id] || { kind: 'group' }, s = stat(T, n), bits = [];
     switch (e.kind) {
       case 'bio': bits.push(s.kids + ' 项', s.pts + ' 考点'); break;
-      case 'book': bits.push(e.parts.length + ' 部分', s.pts + ' 考点'); if (s.concepts) bits.push('已整理 ' + s.concepts + ' 概念'); break;
+      case 'book': bits.push(e.parts.length + ' 部分', s.pts + ' 考点'); break;
       case 'domain':
-        if (T.logic === 'rel') { bits.push(e.parts.length + ' 部分', s.pts + ' 考点'); bits.push(s.concepts ? '已整理 ' + s.concepts + ' 概念' : '未整理'); }
+        if (T.logic === 'rel') bits.push(e.parts.length + ' 部分', s.pts + ' 考点');
         else bits.push(n.children.length ? n.children.length + ' 个任务' : '任务 0 · 尚未整理');
         break;
       case 'part':
         var units = n.children.filter(function (c) { return M.ent[c.id] && M.ent[c.id].kind === 'unit'; }).length;
         bits.push(units ? units + ' 单元' : n.children.length + ' 期 · 单元未整理');
-        bits.push(s.pts + ' 考点'); if (s.concepts) bits.push('已整理 ' + s.concepts + ' 概念');
+        bits.push(s.pts + ' 考点');
         break;
-      case 'unit': bits.push(s.pts + ' 考点', s.concepts ? '已整理 ' + s.concepts + ' 概念' : '未整理'); break;
-      case 'ep': bits.push(e.code, s.pts + ' 考点'); bits.push(s.concepts ? '已整理 ' + s.concepts + ' 概念' : '按讲义顺序'); break;
+      case 'unit': bits.push(s.pts + ' 考点'); break;
+      case 'ep': bits.push(e.code, s.pts + ' 考点'); break;
       case 'point': bits.push(bookName(e.book) + ' ' + M.ent[e.ep].code + '/' + e.a); if (!n.ref) bits.push('未整理'); break;
       case 'concept':
         bits.push('概念'); if (e.targets.length > 1) bits.push(e.targets.length + ' 处讲义');
