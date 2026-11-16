@@ -888,7 +888,7 @@
   function form() {
     var p = sGet('localStorage', 'tt-kn-form');
     if (p === 'graph' || p === 'list') return p;
-    return narrow() ? 'list' : 'graph';
+    return 'graph'; /* 默认一律为图：局部图直接展示关系；手机上也可切换到列表，选择会记住 */
   }
   function render(opts) {
     opts = opts || {};
