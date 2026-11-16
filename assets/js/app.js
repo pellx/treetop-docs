@@ -152,6 +152,11 @@
     if (this.i < 0) { this.playAt(this.startIndex ? this.startIndex() : 0); return; }
     if (this.audio.paused) { var p = this.audio.play(); if (p && p.catch) p.catch(function () {}); } else this.audio.pause();
   };
+  // 离开讲义时停声：同时取消已排队的“下一句”，避免隐藏后自动续播
+  Player.prototype.stop = function () {
+    clearTimeout(this.gapTimer);
+    if (this.i >= 0 && !this.audio.paused) this.audio.pause();
+  };
   Player.prototype.next = function () { if (this.i < 0) return this.toggle(); if (this.i + 1 < this.items.length) this.playAt(this.i + 1); };
   Player.prototype.prev = function () {
     if (this.i < 0) return this.toggle();
@@ -849,6 +854,7 @@
       var lecture = view === 'frame' && frameKind === 'ep';
       playerBox.hidden = !lecture;
       D.body.classList.toggle('no-player', !lecture);
+      if (!lecture) player.stop(); /* 底栏消失后无法操作播放，随即停止声音 */
     }
     function route() {
       routeView();
