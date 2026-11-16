@@ -119,8 +119,9 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; }
 .kn-r-child.has-acts .kn-n-main { padding-right: 132px; }
 .kn-r-child.has-acts:has(.kn-n-exp) .kn-n-main { padding-right: 96px; }
 .kn-lab { pointer-events: none; z-index: 2; height: auto !important; }
-.kn-lab span { display: inline-block; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; padding: 0 5px; background: var(--surface); border: 1px solid var(--orange); color: var(--orange); }
-.kn-lab.kn-line-lab span { border-color: currentColor; }
+.kn-lab span, .kn-lab button { display: inline-block; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; padding: 0 5px; background: var(--surface); border: 1px solid var(--orange); color: var(--orange); }
+.kn-lab.kn-line-lab span, .kn-lab.kn-line-lab button { border-color: currentColor; color: inherit; }
+.kn-lab.kn-line-lab button { pointer-events: auto; cursor: pointer; }
 
 /* 主线配色（四条，取全站已有强调色） */
 .kn-line-0 { color: var(--kn-energy); }

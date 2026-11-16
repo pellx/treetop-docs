@@ -1162,7 +1162,7 @@
       }
       items.push({ k: p.key, nd: p, cls: cls, html: html });
     });
-    labels.forEach(function (lb, i) { items.push({ k: 'lab:' + i + ':' + lb.t, nd: { x: lb.x, y: lb.y - 10, w: 0, h: 20 }, cls: 'kn-node kn-lab ' + (lb.cls || ''), html: '<span>' + esc(lb.t) + '</span>' }); });
+    labels.forEach(function (lb, i) { items.push({ k: 'lab:' + i + ':' + lb.t, nd: { x: lb.x, y: lb.y - 10, w: 0, h: 20 }, cls: 'kn-node kn-lab ' + (lb.cls || ''), html: lb.id ? '<button type="button" data-act="line-label" data-id="' + esc(lb.id) + '" aria-label="查看' + esc(lb.t) + '详情">' + esc(lb.t) + '</button>' : '<span>' + esc(lb.t) + '</span>' }); });
     var activeKey = D.activeElement && D.activeElement.closest && D.activeElement.closest('.kn-node') ? D.activeElement.closest('.kn-node').getAttribute('data-k') : '';
     var activeAct = D.activeElement && D.activeElement.getAttribute ? D.activeElement.getAttribute('data-act') : '';
     items.forEach(function (it) {
@@ -1759,7 +1759,8 @@
         case 'scope': toggleMenu(false); setScope(b.getAttribute('data-v')); break;
         case 'logic': setLogic(b.getAttribute('data-v')); break;
         case 'form': sSet('localStorage', 'tt-kn-form', b.getAttribute('data-v')); render(); break;
-        case 'line': var li = S.lines.indexOf(id); if (li >= 0) S.lines.splice(li, 1); else S.lines.push(id); selectId(id); break;
+        case 'line': var li = S.lines.indexOf(id); if (li >= 0) S.lines.splice(li, 1); else S.lines.push(id); render({ keepScroll: true }); break;
+        case 'line-label': selectId(id); break;
         case 'trail': var t = trail(), last = t.pop(); sSet('sessionStorage', 'tt-kn-trail', t); if (last) go(last.url); break;
         case 'report': renderReport(); refs.report.hidden = false; var cl = $('.kn-c-close', refs.report); if (cl) cl.focus(); break;
         case 'report-close': refs.report.hidden = true; $('.kn-info-btn', root).focus(); break;
