@@ -558,7 +558,7 @@ body.no-player .stage { bottom: 0; }
 .pl-title-main .pl-sep { flex: none; }
 .pl-title-nums { flex: none; display: flex; align-items: baseline; gap: 6px; margin-left: auto; }
 /* 正在朗读的整句：像歌词一样浮在文档之上，无底色、黄色文字；桌面在播放栏上方，手机在顶栏下方 */
-.pl-topline { position: fixed; left: var(--side-w, 0px); right: 0; bottom: calc(var(--player-h) + 10px); z-index: 45; display: flex; justify-content: center; padding: 8px 20px; text-align: center; font-size: 20px; font-weight: 700; line-height: 1.5; color: #a06a00; font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", "宋体", serif; text-shadow: 0 1px 3px rgba(0, 0, 0, .45); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.pl-topline { position: fixed; left: var(--side-w, 0px); right: 0; bottom: calc(var(--player-h) + 10px); z-index: 45; display: flex; justify-content: center; padding: 8px 20px; text-align: center; font-size: 20px; font-weight: 700; line-height: 1.5; color: #a06a00; font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", "宋体", serif; -webkit-text-stroke: 1px #fff; paint-order: stroke fill; text-shadow: 0 1px 3px rgba(0, 0, 0, .45); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 :root[data-theme="dark"] .pl-topline { color: #ffcc33; }
 .pl-topline-box { position: relative; display: inline-block; max-width: 100%; padding-right: 28px; }
 .pl-topline-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
