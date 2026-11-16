@@ -1,6 +1,7 @@
 /* 树梢文档 —— 知识网络样式。只引用 site.css 中的颜色变量；全部直角；深浅主题随 html[data-theme] 切换。 */
 
-.kn { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); color: var(--fg); font-size: 14.5px; line-height: 1.5; }
+.kn { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); color: var(--fg); font-size: 14.5px; line-height: 1.5; --kn-energy: #1769aa; }
+html[data-theme="dark"] .kn { --kn-energy: #79bfff; }
 .kn[hidden] { display: none; }
 .kn button { border-radius: 0; }
 .kn-muted { color: var(--fg-dim); font-size: 13px; }
@@ -131,10 +132,14 @@
 .kn-lab.kn-line-lab span { border-color: currentColor; }
 
 /* 主线配色（四条，取全站已有强调色） */
-.kn-line-0 { color: var(--accent-text); stroke: var(--accent-strong); }
-.kn-line-1 { color: var(--orange); stroke: var(--orange); }
-.kn-line-2 { color: var(--red); stroke: var(--red); }
-.kn-line-3 { color: var(--method); stroke: var(--method); }
+.kn-line-0 { color: var(--kn-energy); }
+.kn-line-1 { color: var(--orange); }
+.kn-line-2 { color: var(--red); }
+.kn-line-3 { color: var(--method); }
+.kn-edges .kn-e-line.kn-line-0 { stroke: var(--kn-energy); }
+.kn-edges .kn-e-line.kn-line-1 { stroke: var(--orange); }
+.kn-edges .kn-e-line.kn-line-2 { stroke: var(--red); }
+.kn-edges .kn-e-line.kn-line-3 { stroke: var(--method); }
 .kn-lines-row { position: absolute; left: 0; right: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 8px; padding: 6px 16px; }
 .kn-lines-k { width: 100%; text-align: center; font-size: 12.5px; color: var(--fg-dim); }
 .kn-line-chip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border: 1px solid var(--line-strong); background: var(--surface); font-size: 13.5px; }
