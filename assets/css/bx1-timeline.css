@@ -1,14 +1,15 @@
 /* 仅 BX1-01 考点1（细胞学说的建立）引用：把源场景 History.tsx 的 6 张横向时间线卡片还原为有顺序的网页卡片组。
    颜色取自 site.css 变量；直角边框；不改 site.css / remotion.css。 */
-.bx1-tl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 8px 0 12px; counter-reset: tl; }
+.bx1-tl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 8px 0 12px; counter-reset: tl; }
 .bx1-tl > .para { margin: 0; padding: 0; min-width: 0; }
-.bx1-tl > .para > .play-btn { position: absolute; top: 8px; right: 8px; z-index: 1; }
+.bx1-tl > .para > .play-btn { position: absolute; top: 6px; right: 6px; z-index: 1; }
 .bx1-tl > .para { position: relative; }
 .bx1-tl .para-body { padding: 0; }
-.tl-card { position: relative; box-sizing: border-box; height: 100%; min-height: 11em; border: 2px solid var(--tl, var(--line)); background: var(--surface); padding: 14px 16px 14px 56px; text-align: left; }
-.tl-n { position: absolute; left: 12px; top: 12px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: var(--tl, var(--fg-dim)); color: #fff; font-weight: 900; font-size: 18px; }
-.tl-who { font-weight: 900; font-size: 1.25em; color: var(--tl, var(--fg)); padding-right: 30px; }
-.tl-when { font-weight: 700; font-size: 14px; color: var(--fg-dim); margin-top: 2px; }
-.tl-what { font-weight: 700; margin-top: 10px; line-height: 1.6; }
-@media (max-width: 900px) { .bx1-tl { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 600px) { .bx1-tl { grid-template-columns: 1fr; } }
+.tl-card { position: relative; box-sizing: border-box; height: 100%; min-height: 8.5em; border: 2px solid var(--tl, var(--line)); background: var(--surface); padding: 10px 12px 10px 46px; text-align: left; }
+.tl-n { position: absolute; left: 10px; top: 10px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: var(--tl, var(--fg-dim)); color: #fff; font-weight: 900; font-size: 15px; }
+.tl-who { font-weight: 900; font-size: 1.15em; color: var(--tl, var(--fg)); padding-right: 26px; }
+.tl-when { font-weight: 700; font-size: 13px; color: var(--fg-dim); margin-top: 1px; }
+.tl-what { font-weight: 700; margin-top: 7px; line-height: 1.5; }
+/* 保持一行三个；更窄时降到两列，手机才单列 */
+@media (max-width: 700px) { .bx1-tl { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .bx1-tl { grid-template-columns: 1fr; } }
