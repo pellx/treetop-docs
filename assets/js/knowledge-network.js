@@ -1503,7 +1503,6 @@
       return '<tr><td>' + esc(b.name) + '</td><td class="num">' + b.parts + '</td><td class="num">' + (b.units || '—') + '</td><td class="num">' + b.eps + '</td><td class="num">' + b.points + '</td><td class="num">' + b.reachable + ' / ' + b.points + '</td><td class="num">' + b.concepts + '</td></tr>';
     }).join('');
     var types = Object.keys(M.relTypes).map(function (k) { return '<li><b>' + esc(M.relTypes[k].name) + '</b>：' + esc(M.relTypes[k].note || '') + '</li>'; }).join('');
-    var iss = r.issues.length ? '<ul class="kn-c-list">' + r.issues.map(function (x) { return '<li class="kn-iss-' + x.level + '">' + (x.level === 'error' ? '错误' : '提醒') + '：' + esc(x.msg) + '</li>'; }).join('') + '</ul>' : '<p>没有发现问题。</p>';
     refs.report.innerHTML = '<div class="kn-rep-in"><div class="kn-c-top"><h2>覆盖与说明</h2><button type="button" class="kn-c-close" data-act="report-close" aria-label="关闭">×</button></div>' +
       '<section class="kn-c-sec"><h3>两种覆盖，分开统计</h3>' +
       '<p><b>索引覆盖</b>：能从所在册网络到达的现有考点 <b>' + r.reachable + ' / ' + r.points + '</b>。未整理的部分按"期 → 考点"自动列出，所以不会比目录少。</p>' +
@@ -1511,8 +1510,7 @@
       '<p class="kn-muted">考点数不等于概念数：一个概念可以挂多个讲义位置（如"生物多样性的三个层次"），一个考点也可以拆成多个概念（如"防治与渔业"）。"原文可查"只说明讲义原文这样写，不代表另经专家审定。</p></section>' +
       '<section class="kn-c-sec"><h3>各册</h3><div class="table-wrap"><table><thead><tr><th>册</th><th class="num">部分</th><th class="num">单元</th><th class="num">期</th><th class="num">考点</th><th class="num">索引覆盖</th><th class="num">已整理概念</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>' +
       '<section class="kn-c-sec"><h3>题型证据</h3><p>分四级：无、讲义线索、个人经验、逐题记录。当前逐题记录 ' + r.evidence + ' 条，因此全站不显示比例或"高频"。讲义线索取自旁白中的考法提示，只说明讲义讲到了怎么考。</p></section>' +
-      '<section class="kn-c-sec"><h3>关系类型</h3><ul class="kn-c-list">' + types + '</ul><p class="kn-muted">学科领域的排列顺序是编辑安排，不是严格的尺度序列；主线是一组跨册联系，不表示连续因果。</p></section>' +
-      '<section class="kn-c-sec"><h3>数据校验</h3>' + iss + '</section></div>';
+      '<section class="kn-c-sec"><h3>关系类型</h3><ul class="kn-c-list">' + types + '</ul></section></div>';
   }
 
   /* ---------- 讲义顶栏的"网络"按钮与小浮层 ---------- */
