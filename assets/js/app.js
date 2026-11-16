@@ -286,12 +286,13 @@
         seg.title = pointLabel(rg.p, e);
         var fill = D.createElement('span'); fill.className = 'pl-seek-fill';
         seg.appendChild(fill); rg.fill = fill;
+        rg.ticks = [];
         var local = 0;
         rg.secs.forEach(function (s, si) {
           if (si > 0) {
             var tick = D.createElement('span'); tick.className = 'pl-seek-tick';
             tick.style.left = (local / rg.dur * 100) + '%';
-            seg.appendChild(tick);
+            seg.appendChild(tick); rg.ticks.push(tick);
           }
           local += s;
         });
@@ -320,6 +321,10 @@
         if (!rg.fill) return;
         var f = rg.dur ? Math.max(0, Math.min(1, (target - rg.start) / rg.dur)) : 0;
         rg.fill.style.width = (f * 100) + '%';
+        /* 已播到的部分底色变绿，句子分割线要转黑才看得清 */
+        (rg.ticks || []).forEach(function (t) {
+          t.classList.toggle('is-played', parseFloat(t.style.left) <= f * 100 + 0.01);
+        });
       });
       bar.style.width = '0';
       if (track) track.setAttribute('aria-valuenow', String(Math.round(r * 100)));
