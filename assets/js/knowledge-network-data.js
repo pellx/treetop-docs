@@ -1,4 +1,4 @@
-/* 知识网络：手工维护的数据（不由 build.py 生成，可直接编辑；格式与维护方法见 docs/knowledge-network.md）。
+/* 思维导图：手工维护的数据（不由 build.py 生成，可直接编辑；格式与维护方法见 docs/knowledge-network.md）。
  *
  * 只记录人工整理的内容：领域、部分（每期登记到唯一部分）、单元、概念、关系、专题、主线、大题任务、推导方法、题型记录。
  * 没有整理到的期和考点，由 knowledge-network.js 在运行时根据 SITE（site-data.js）自动生成"按讲义顺序"的兜底节点，

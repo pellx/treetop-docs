@@ -81,7 +81,7 @@
     var summary = $('#siteSummary');
     if (summary) {
       var cn = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
-      summary.textContent = '共' + (cn[SITE_STATS.books] || SITE_STATS.books) + '册，' + SITE_STATS.eps + '期，' + SITE_STATS.points + '个考点。支持考点检索、知识网络、语音讲解与连续播放。';
+      summary.textContent = '共' + (cn[SITE_STATS.books] || SITE_STATS.books) + '册，' + SITE_STATS.eps + '期，' + SITE_STATS.points + '个考点。支持考点检索、思维导图、语音讲解与连续播放。';
     }
     $$('#books tr[data-book]').forEach(function (row) {
       var stats = BOOK_STATS[row.getAttribute('data-book')]; if (!stats) return;
@@ -712,7 +712,7 @@
     syncHomeStats();
     var frame = $('#frame'), home = $('#home'), topTitle = $('#topTitle'), playerBox = $('#player');
     var frameEp = '', frameKind = '', frameReady = false, pendingGoto = null;
-    // 当前显示的是哪一层：'home'（总索引/本册目录）、'frame'（讲义或使用说明）、'map'（知识网络，见 knowledge-network.js）
+    // 当前显示的是哪一层：'home'（总索引/本册目录）、'frame'（讲义或使用说明）、'map'（思维导图，见 knowledge-network.js）
     var view = 'home';
     var KN = window.TreetopKN && typeof window.TreetopKN.init === 'function' ? window.TreetopKN : null;
     var follow = true; // 跨期续播时，若正文停留在刚播完的那一期，则跟随翻页
@@ -831,20 +831,20 @@
         try { frame.contentWindow.location.replace(file); } catch (e) { frame.src = file; }
       }
     }
-    // 知识网络：#/map/<范围>/<逻辑>/<焦点>；网络页显示时 iframe 保留但隐藏，播放不中断
+    // 思维导图：#/map/<范围>/<逻辑>/<焦点>；网络页显示时 iframe 保留但隐藏，播放不中断
     function showMap(args) {
       var r = KN.show(args);
       setBook(r.book);
       home.hidden = true; frame.hidden = true; view = 'map';
       var titles = r.title.split(' · '), crumbs = [];
       if (r.book) crumbs.push({ t: BOOK_BY[r.book].full, h: '#/' + r.book });
-      crumbs.push({ t: r.book ? '知识网络' : '学科知识网络', h: titles.length > 2 ? '#/map/' + (r.book || 'bio') : '' });
+      crumbs.push({ t: r.book ? '思维导图' : '学科思维导图', h: titles.length > 2 ? '#/map/' + (r.book || 'bio') : '' });
       if (titles.length > 2) crumbs.push({ t: titles.slice(2).join(' · ') });
       setTopCrumbs(crumbs);
       D.title = r.title + ' · ' + SITE.title;
       setNav('', '', 'read'); markSpecial('map');
     }
-    /* 播放器只属于具体讲义；目录、使用说明和知识网络不显示，也不保留底部占位。 */
+    /* 播放器只属于具体讲义；目录、使用说明和思维导图不显示，也不保留底部占位。 */
     function syncPlayerVisibility() {
       var lecture = view === 'frame' && frameKind === 'ep';
       playerBox.hidden = !lecture;
@@ -910,7 +910,7 @@
         if (m.ep && m.ep === frameEp && view === 'frame') {
           setNav(m.ep, m.a, 'read');
           var want = '#/' + m.ep + (m.a ? '/' + m.a : '');
-          // 保留 history.state（知识网络的返回凭据记在这里）
+          // 保留 history.state（思维导图的返回凭据记在这里）
           if (location.hash !== want) history.replaceState(history.state, '', want);
         }
       } else if (m.t === 'key') {
@@ -946,7 +946,7 @@
           route: route,
           current: function () { return { view: view, ep: view === 'frame' && frameKind === 'ep' ? frameEp : '', a: navState.ep === frameEp ? navState.a : '', book: curBook }; }
         })) KN = null;
-      } catch (e) { KN = null; if (window.console) console.error('[知识网络] 初始化失败，原站功能不受影响：', e); }
+      } catch (e) { KN = null; if (window.console) console.error('[思维导图] 初始化失败，原站功能不受影响：', e); }
     }
     on(window, 'hashchange', route);
     route();
