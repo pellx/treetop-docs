@@ -1,6 +1,10 @@
 # 知识网络：使用、数据维护与校验
 
-知识网络是外壳 `index.html` 里的一种页面，与总索引、本册目录、讲义并列，作为原站的智能索引；讲义、目录、搜索、播放器保持原样。方案背景见 [plans/knowledge-network-book-subject-fable.md](plans/knowledge-network-book-subject-fable.md) 与 [plans/knowledge-network-review.md](plans/knowledge-network-review.md)。
+知识网络是外壳 `index.html` 里的一种页面，与总索引、本册目录、讲义并列，作为原站的智能索引。方案背景见 [plans/knowledge-network-book-subject-fable.md](plans/knowledge-network-book-subject-fable.md) 与 [plans/knowledge-network-review.md](plans/knowledge-network-review.md)。
+
+在网络页面使用顶栏搜索可查找网络中的概念、考点和其他条目；选择结果会定位到网络中的对应节点，离开网络后搜索恢复原有的全站范围。总览图支持拖动空白处平移、滚轮缩放和触屏双指缩放，左上角“回正”恢复居中。底部主线按钮只控制相应连线的显示，可同时叠加；点击图中主线标签查看详情。能量主线为蓝色，其他主线沿用各自颜色。
+
+详情侧栏右上角的关闭按钮会隐藏侧栏；再选择节点或主线标签可重新打开。顶部有多个可选详情时可用下拉菜单切换，只有一个选项时显示其名称。手机上详情显示为底部抽屉。
 
 ## 地址与入口
 
@@ -44,7 +48,7 @@
 
 考点数不等于概念数：一个概念可以挂多个讲义位置（如"生物多样性的三个层次"挂在必修2与选必2），一个考点也可以拆成多个概念（如"防治与渔业"拆成防治、渔业两个）。
 
-界面上的"覆盖与说明"面板与浏览器控制台（有问题时）给出同样的报告。
+界面的“覆盖与说明”展示覆盖统计与关系类型。数据校验仍在内部执行，发现问题时写入浏览器控制台；自动化测试可通过 `window.__kn.report()` 检查完整报告。
 
 ## 当前整理范围（2026-11-15）
 
