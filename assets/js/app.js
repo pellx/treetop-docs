@@ -211,11 +211,12 @@
       $('#plPlay').setAttribute('aria-label', playing ? '暂停' : '播放');
       if (it) {
         var e = EPS[it.ep] || {};
-        title.textContent = it.n + ' · ' + sceneLabel(it);
         var same = player.items.filter(function (x) { return x.ep === it.ep; });
         var inEp = same.indexOf(it) + 1;
         var sc = same.filter(function (x) { return x.p === it.p; }); var inSc = sc.indexOf(it) + 1;
-        sub.textContent = '第 ' + inSc + '/' + sc.length + ' 句 · 本期 ' + inEp + '/' + same.length + (scope === 'all' ? ' · ' + (e.short || '') : '') + ' —— ' + it.t;
+        /* 上行：小节名（本期第几句/总句数）· 知识点名（本知识点第几句/总数）；下行只放正在朗读的文本。 */
+        title.textContent = (e.full || e.sec || it.n) + ' ' + inEp + '/' + same.length + ' · ' + sceneLabel(it) + ' ' + inSc + '/' + sc.length;
+        sub.textContent = it.t;
         sub.title = it.t;
       } else if (k < 0) {
         bar.style.width = '0';
