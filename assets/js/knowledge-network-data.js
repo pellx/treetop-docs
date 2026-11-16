@@ -288,6 +288,41 @@ window.KN_DATA = {
       brief: '思路与中心法则方向相反；因为密码子的简并，推出的脱氧核苷酸序列不是唯一的', briefRef: 'xb3-16/p2' },
 
     /* ==== 必修1 · 概念整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* ---- 必修1 · 组成细胞的分子（参考第1讲知识框架图） ---- */
+    { id: 'k-carbon-core', name: '碳是生命的核心元素', targets: [{ ref: 'bx1-03/p3', t: '核心元素与含量' }],
+      brief: '生物大分子以碳链为基本骨架，所以说碳是生命的核心元素。', briefRef: 'bx1-03/p3' },
+    { id: 'k-reducing-sugar-test', name: '检测还原糖（斐林试剂）', targets: [{ ref: 'bx1-03/p5', t: '检测还原糖' }],
+      brief: '葡萄糖、果糖、麦芽糖等还原糖，与斐林试剂发生作用，生成砖红色沉淀。', briefRef: 'bx1-03/p5' },
+    { id: 'k-protein-test', name: '检测蛋白质（双缩脲试剂）', targets: [{ ref: 'bx1-03/p7', t: '检测蛋白质' }],
+      brief: '蛋白质与双缩脲试剂发生作用，产生紫色反应。', briefRef: 'bx1-03/p7' },
+    { id: 'k-water-ratio', name: '自由水与结合水的比值', targets: [{ ref: 'bx1-04/p4', t: '比值与代谢抗逆' }],
+      brief: '比值越高，细胞代谢越旺盛。', briefRef: 'bx1-04/p4' },
+    { id: 'k-salt-compound', name: '无机盐组成复杂化合物', targets: [{ ref: 'bx1-04/p5', t: '无机盐组成化合物' }],
+      brief: '有些无机盐是复杂化合物的重要组成成分：Mg是叶绿素的组成成分，Fe是血红素的组成成分。', briefRef: 'bx1-04/p5' },
+    { id: 'k-polysaccharide', name: '多糖', targets: [{ ref: 'bx1-05/p4', t: '多糖' }],
+      brief: '淀粉、糖原、纤维素的基本单位都是葡萄糖，但葡萄糖的连接方式不同，所以性质不同。', briefRef: 'bx1-05/p4' },
+    { id: 'k-lipid-kinds', name: '脂质的种类与功能', targets: [{ ref: 'bx1-05/p5', t: '脂质的种类与功能' }],
+      brief: '磷脂是构成细胞膜和多种细胞器膜的重要成分。', briefRef: 'bx1-05/p5' },
+    { id: 'k-sugar-vs-fat', name: '糖类与脂肪的比较', targets: [{ ref: 'bx1-05/p7', t: '糖类与脂肪比较' }],
+      brief: '所以等质量的脂肪氧化分解时，消耗的氧气多，释放的能量多，产生的水也多。', briefRef: 'bx1-05/p7' },
+    { id: 'k-protein-func', name: '蛋白质的功能', targets: [{ ref: 'bx1-06/p1', t: '蛋白质的功能' }],
+      brief: '一切生命活动都离不开蛋白质，蛋白质是生命活动的主要承担者。', briefRef: 'bx1-06/p1' },
+    { id: 'k-amino-acid-struct', name: '氨基酸的结构', targets: [{ ref: 'bx1-06/p2', t: '氨基酸结构通式' }],
+      brief: '各种氨基酸之间的区别，在于R基的不同。', briefRef: 'bx1-06/p2' },
+    { id: 'k-dehydration', name: '脱水缩合与肽键', targets: [{ ref: 'bx1-06/p4', t: '脱水缩合与肽键' }],
+      brief: '一个氨基酸的羧基和另一个氨基酸的氨基相连接，同时脱去一分子水。', briefRef: 'bx1-06/p4' },
+    { id: 'k-protein-diversity', name: '蛋白质结构的多样性', targets: [{ ref: 'bx1-06/p7', t: '结构多样性' }],
+      brief: '结构的多样性决定了功能的多样性，体现了结构与功能相适应。', briefRef: 'bx1-06/p7' },
+    { id: 'k-protein-denature', name: '蛋白质变性', targets: [{ ref: 'bx1-06/p8', t: '蛋白质变性' }],
+      brief: '在高温、过酸、过碱或重金属盐等作用下，蛋白质的空间结构被破坏，失去生物活性。', briefRef: 'bx1-06/p8' },
+    { id: 'k-nucleotide-unit', name: '核苷酸的组成', targets: [{ ref: 'bx1-07/p2', t: '核苷酸的组成' }],
+      brief: '一分子核苷酸由一分子磷酸、一分子五碳糖和一分子含氮碱基组成。', briefRef: 'bx1-07/p2' },
+    { id: 'k-genetic-material-kinds', name: '生物的遗传物质', targets: [{ ref: 'bx1-07/p5', t: '生物的遗传物质' }],
+      brief: '细胞生物，无论真核还是原核，遗传物质都是DNA。', briefRef: 'bx1-07/p5' },
+    { id: 'k-nucleic-acid-func', name: '核酸的功能', targets: [{ ref: 'bx1-07/p6', t: '核酸的功能' }],
+      brief: '遗传信息储存在核苷酸的排列顺序中；对DNA来说，就是脱氧核苷酸的排列顺序。', briefRef: 'bx1-07/p6' },
+    { id: 'k-monomer-polymer', name: '单体与多聚体', alias: ['生物大分子'], targets: [{ ref: 'bx1-07/p7', t: '单体与多聚体' }],
+      brief: '多糖的单体是单糖，蛋白质的单体是氨基酸，核酸的单体是核苷酸。', briefRef: 'bx1-07/p7' },
     /* （必修1 整理区结束） */
     /* 分隔：保持本行不变，便于各册并行合并 */
 
@@ -505,6 +540,28 @@ window.KN_DATA = {
       basis: [{ kind: 'site', ref: 'xb3-13/p7', quote: '起始密码子和终止密码子，位于mRNA上，控制的是翻译的开始和结束。' }] },
 
     /* ==== 必修1 · 关系整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* ---- 必修1 · 组成细胞的分子（参考第1讲知识框架图，逐条核对讲义原文） ---- */
+    { id: 'r-monomer-carbon', from: 'k-monomer-polymer', to: 'k-carbon-core', type: 'basis', label: '依据：单体以碳链为骨架', status: 'site',
+      basis: [{ kind: 'site', ref: 'bx1-07/p7', quote: '每个单体都以若干个相连的碳原子构成的碳链为基本骨架，所以说“碳是生命的核心元素”。' },
+        { kind: 'site', ref: 'bx1-03/p3', quote: '生物大分子以碳链为基本骨架，所以说碳是生命的核心元素。' }] },
+    { id: 'r-amino-dehydration', from: 'k-amino-acid-struct', to: 'k-dehydration', type: 'seq', label: '脱水缩合连接成肽链', status: 'site',
+      basis: [{ kind: 'site', ref: 'bx1-06/p4', quote: '两个氨基酸形成二肽，多个氨基酸形成多肽，多肽通常呈链状，叫肽链。' },
+        { kind: 'figure', ref: 'IMG_20261115_225351.jpg', note: '教材知识框架第1讲：蛋白质下 C、H、O、N → 氨基酸 → 多肽 → 蛋白质（向下箭头）。' }] },
+    { id: 'r-pdiversity-func', from: 'k-protein-diversity', to: 'k-protein-func', type: 'cause', label: '结构多样性决定功能多样性', status: 'site',
+      basis: [{ kind: 'site', ref: 'bx1-06/p7', quote: '结构的多样性决定了功能的多样性，体现了结构与功能相适应。' }] },
+    { id: 'r-biuret-denature', from: 'k-protein-test', to: 'k-protein-denature', type: 'measure', label: '肽键未断，变性后仍显紫色', status: 'site',
+      condition: '双缩脲试剂检出的是肽键，不能据此判断蛋白质是否仍有活性。',
+      basis: [{ kind: 'site', ref: 'bx1-06/p8', quote: '变性时肽键没有断裂，所以变性后的蛋白质仍能与双缩脲试剂发生紫色反应。' }] },
+    { id: 'r-amino-monomer', from: 'k-amino-acid-struct', to: 'k-monomer-polymer', type: 'instance', label: '蛋白质的单体是氨基酸', status: 'site',
+      basis: [{ kind: 'site', ref: 'bx1-07/p7', quote: '多糖的单体是单糖，蛋白质的单体是氨基酸，核酸的单体是核苷酸。' }] },
+    { id: 'r-nucleotide-monomer', from: 'k-nucleotide-unit', to: 'k-monomer-polymer', type: 'instance', label: '核酸的单体是核苷酸', status: 'site',
+      basis: [{ kind: 'site', ref: 'bx1-07/p7', quote: '多糖的单体是单糖，蛋白质的单体是氨基酸，核酸的单体是核苷酸。' },
+        { kind: 'figure', ref: 'IMG_20261115_225351.jpg', note: '教材知识框架第1讲：核酸下 C、H、O、N、P → 核苷酸 → 核酸（遗传信息的携带者）。' }] },
+    { id: 'r-polysac-monomer', from: 'k-polysaccharide', to: 'k-monomer-polymer', type: 'instance', label: '多糖的单体都是葡萄糖', status: 'site',
+      condition: '淀粉、糖原、纤维素单体相同，连接方式不同；脂肪不是生物大分子。',
+      basis: [{ kind: 'site', ref: 'bx1-07/p7', quote: '淀粉、糖原、纤维素的单体都是葡萄糖。' }] },
+    { id: 'r-nucleotide-info', from: 'k-nucleotide-unit', to: 'k-nucleic-acid-func', type: 'basis', label: '排列顺序储存遗传信息', status: 'site',
+      basis: [{ kind: 'site', ref: 'bx1-07/p6', quote: '核苷酸虽然只有4种，但数量多、排列顺序千变万化，所以DNA能储存大量的遗传信息。' }] },
     /* （必修1 整理区结束） */
     /* 分隔：保持本行不变，便于各册并行合并 */
 
