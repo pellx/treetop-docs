@@ -18,8 +18,8 @@
  *       图片依据不算站内核验——只有图片依据的关系 status 必须是 'editor'；status:'site' 仍须有可逐字查到的 site 引文。
  *       图上模糊的细箭头（如第18讲信息传递旁、第16讲植物调节）不据此写确定关系；确需引用时标 editor，并在 note 中写明终点待核对。
  *
- * relGroups：思维导图"关系类型"按钮组（顺序即显示顺序）。每个关系类型（arrange、collect 除外）只归入一个组；
- *   default:true 的组在首次打开时启用。按钮组只控制叠加显示哪些关系，与"主题主线"（lines）是不同的维度。
+ * maps：模块的"知识关系图"（手工绘制、自由布局，复刻教材"知识框架"图）。格式见文件末尾 maps 前的注释与
+ *   docs/knowledge-network.md。总览只展示索引结构；进入模块（部分、领域）后显示这里绘制的关系图。
  */
 window.KN_DATA = {
   version: 1,
@@ -40,16 +40,6 @@ window.KN_DATA = {
     apply: { name: '原理→应用', note: '后者应用前者的原理' },
     measure: { name: '方法·表征', note: '一方是调查、测定或表征另一方的方法，不是因果' }
   },
-
-  /* 关系类型按钮组（见文件头说明）。 */
-  relGroups: [
-    { id: 'rg-compose', name: '组成与基础', types: ['compose', 'basis'], default: true },
-    { id: 'rg-cause', name: '因果与影响', types: ['cause'], default: true },
-    { id: 'rg-seq', name: '过程与顺序', types: ['seq'], default: true },
-    { id: 'rg-contrast', name: '对比与类比', types: ['contrast', 'analogy'], default: false },
-    { id: 'rg-apply', name: '实例与应用', types: ['instance', 'apply', 'measure'], default: true },
-    { id: 'rg-scale', name: '跨尺度联系', types: ['scale'], default: false }
-  ],
 
   /* 学科图第一圈。顺序是编辑安排（大致从细胞到个体、群体再到技术），不是严格的尺度序列。 */
   domains: [
@@ -657,5 +647,177 @@ window.KN_DATA = {
   ],
 
   /* 题型证据：逐题记录。每条需写年份、地区卷别、题号、题型、涉及概念。当前没有任何记录。 */
-  evidence: []
+  evidence: [],
+
+  /* ===================================================================
+   * 知识关系图（自由布局，复刻教材"知识框架"图）。进入模块后显示；总览只显示索引结构。
+   *
+   * { id, name, anchors: [实体 ID…]（哪些领域/部分进入后显示本图；路径上最近的锚点生效）, source: 来源说明,
+   *   nodes:  [{ id, t: '文字（\n 换行）', x: 中心横坐标 | lx: 左缘横坐标, y: 中心纵坐标,
+   *              go: '期/锚点'（如 'xb2-01/p1'）或 '期'（如 'xb2-04'）——点击直接打开讲义；省略则不可点,
+   *              s: 'main'（加粗的主干节点）, w/h: 可选，覆盖自动尺寸 }],
+   *   groups: [{ id, of: [节点 ID…], style: 'dash'（虚线框）| 'join'（成员一侧加括线并合为一个端点，side: 'l'|'r'）| 'none'（只合成端点） }],
+   *   edges:  连线 { from, to, arrow: 'end'|'start'|'both'（省略为无箭头）, label: 关系词, lp: [x, y] 标签中心, lv: true 竖排标签,
+   *                  via: [[x, y]…] 折点, fs/ts: 起点/终点所在边 'l'|'r'|'t'|'b', straight: true 斜直线, note: 说明（悬停显示） }
+   *           分类括线 { fork: 上级 ID, to: [下级 ID…], dir: 'l'|'r'|'t'|'b', at: 竖（横）线位置, label: 主干上的文字, arrow: true 各分支带箭头 }
+   *   texts:  [{ t, x, y, lv }] 独立文字（括线分支说明等） }
+   * 端点可以是节点或分组。坐标单位为 px，节点文字 14px；画布大小由内容自动决定。
+   * =================================================================== */
+  maps: [
+    {
+      id: 'm-eco', name: '种群、群落与生态系统',
+      anchors: ['d-eco', 'xb2-pop', 'xb2-comm', 'xb2-eco', 'xb2-human'],
+      source: '参照教材第17讲（种群与群落）、第18讲（生态系统及生态工程）知识框架图合并；"群落 → 生态系统"一线为合并时补充',
+      nodes: [
+        /* ---- 种群（第17讲上半） ---- */
+        { id: 'indiv', t: '个体', x: 528, y: 72 },
+        { id: 'pop', t: '种群', x: 528, y: 196, s: 'main', go: 'xb2-01' },
+        { id: 'popfac', t: '影响种群数量\n变化的因素', x: 648, y: 84, go: 'xb2-03' },
+        { id: 'abiotic', t: '非生物因素', lx: 760, y: 66, go: 'xb2-03/p1' },
+        { id: 'biotic', t: '生物因素', lx: 760, y: 104, go: 'xb2-03/p2' },
+        { id: 'jcurve', t: '“J”形增长', lx: 760, y: 144, go: 'xb2-02/p2' },
+        { id: 'scurve', t: '“S”形增长', lx: 760, y: 180, go: 'xb2-02/p3' },
+        { id: 'fluct', t: '波动', lx: 760, y: 216, go: 'xb2-02/p6' },
+        { id: 'decline', t: '下降', lx: 760, y: 252, go: 'xb2-02/p6' },
+        { id: 'model', t: '建立数学模型', lx: 950, y: 162, go: 'xb2-02/p1' },
+        { id: 'density', t: '种群密度', x: 304, y: 107, go: 'xb2-01/p1' },
+        { id: 'quadrat', t: '样方法', lx: 55, y: 86, go: 'xb2-01/p2' },
+        { id: 'mark', t: '标记重捕法', lx: 55, y: 128, go: 'xb2-01/p3' },
+        { id: 'immig', t: '迁入率', x: 184, y: 196, go: 'xb2-01/p5' },
+        { id: 'emig', t: '迁出率', x: 268, y: 196, go: 'xb2-01/p5' },
+        { id: 'birth', t: '出生率', x: 184, y: 248, go: 'xb2-01/p5' },
+        { id: 'death', t: '死亡率', x: 268, y: 248, go: 'xb2-01/p5' },
+        { id: 'age', t: '年龄结构', x: 152, y: 322, go: 'xb2-01/p6' },
+        { id: 'sex', t: '性别比例', x: 268, y: 322, go: 'xb2-01/p7' },
+
+        /* ---- 群落（第17讲下半） ---- */
+        { id: 'comm', t: '群落', x: 528, y: 412, s: 'main', go: 'xb2-04' },
+        { id: 'commtype', t: '群落的\n主要类型', x: 402, y: 412, go: 'xb2-05/p1' },
+        { id: 'desert', t: '荒漠生物群落', lx: 200, y: 376, go: 'xb2-05/p2' },
+        { id: 'grass', t: '草原生物群落', lx: 200, y: 412, go: 'xb2-05/p3' },
+        { id: 'forest', t: '森林生物群落', lx: 200, y: 448, go: 'xb2-05/p4' },
+        { id: 'commstruct', t: '群落的结构', x: 670, y: 412, go: 'xb2-04' },
+        { id: 'species', t: '物种组成', lx: 755, y: 324, go: 'xb2-04/p1' },
+        { id: 'richness', t: '物种丰富度', lx: 872, y: 302, go: 'xb2-04/p1' },
+        { id: 'inter', t: '种间关系', lx: 872, y: 344, go: 'xb2-04/p3' },
+        { id: 'coop', t: '原始合作', lx: 995, y: 262, go: 'xb2-04/p3' },
+        { id: 'mutual', t: '互利共生', lx: 995, y: 300, go: 'xb2-04/p3' },
+        { id: 'compete', t: '种间竞争', lx: 995, y: 338, go: 'xb2-04/p3' },
+        { id: 'predation', t: '捕食', lx: 995, y: 376, go: 'xb2-04/p3' },
+        { id: 'parasit', t: '寄生', lx: 995, y: 414, go: 'xb2-04/p3' },
+        { id: 'spatial', t: '空间结构', lx: 755, y: 412, go: 'xb2-04/p5' },
+        { id: 'vertical', t: '垂直结构', lx: 872, y: 394, go: 'xb2-04/p5' },
+        { id: 'horizontal', t: '水平结构', lx: 872, y: 432, go: 'xb2-04/p5' },
+        { id: 'season', t: '季节性', lx: 755, y: 466, go: 'xb2-04/p6' },
+        { id: 'niche', t: '生态位', lx: 755, y: 510, go: 'xb2-04/p7' },
+        { id: 'succ', t: '群落的演替', x: 420, y: 530, go: 'xb2-06/p1' },
+        { id: 'primary', t: '初生演替', lx: 250, y: 512, go: 'xb2-06/p2' },
+        { id: 'secondary', t: '次生演替', lx: 250, y: 548, go: 'xb2-06/p3' },
+
+        /* ---- 生态系统（第18讲） ---- */
+        { id: 'eco', t: '生态系统', x: 528, y: 760, s: 'main', go: 'xb2-07/p1' },
+        { id: 'struct', t: '结构', x: 388, y: 760, go: 'xb2-07' },
+        { id: 'trophic', t: '营养\n结构', x: 268, y: 690, go: 'xb2-07/p5' },
+        { id: 'components', t: '组成\n成分', x: 268, y: 828, go: 'xb2-07/p2' },
+        { id: 'chain', t: '食物链', x: 140, y: 648, go: 'xb2-07/p5' },
+        { id: 'web', t: '食物网', x: 140, y: 714, go: 'xb2-07/p6' },
+        { id: 'producer', t: '生产者', x: 140, y: 768, go: 'xb2-07/p2' },
+        { id: 'consumer', t: '消费者', x: 140, y: 808, go: 'xb2-07/p2' },
+        { id: 'decomposer', t: '分解者', x: 140, y: 848, go: 'xb2-07/p2' },
+        { id: 'nonliving', t: '非生物的\n物质和能量', x: 140, y: 898, go: 'xb2-07/p2' },
+        { id: 'func', t: '功能', x: 664, y: 760, go: 'xb2-11/p6' },
+        { id: 'energy', t: '能量流动', x: 808, y: 662, go: 'xb2-08/p1' },
+        { id: 'matter', t: '物质循环', x: 808, y: 760, go: 'xb2-10/p1' },
+        { id: 'info', t: '信息传递', x: 808, y: 862, go: 'xb2-11' },
+        { id: 'e-process', t: '过程', lx: 905, y: 590, go: 'xb2-08/p2' },
+        { id: 'e-feature', t: '特点', lx: 905, y: 626, go: 'xb2-08/p6' },
+        { id: 'e-pyramid', t: '生态金字塔', lx: 905, y: 662, go: 'xb2-08/p7' },
+        { id: 'e-meaning', t: '研究能量流动的意义', lx: 905, y: 698, go: 'xb2-09/p5' },
+        { id: 'carbon', t: '碳循环', lx: 905, y: 738, go: 'xb2-10/p2' },
+        { id: 'magnify', t: '生物富集', lx: 905, y: 774, go: 'xb2-10/p5' },
+        { id: 'm-meaning', t: '研究物质循环的意义', lx: 905, y: 810, go: 'xb2-10' },
+        { id: 'i-kind', t: '种类', lx: 905, y: 850, go: 'xb2-11/p1' },
+        { id: 'i-role', t: '作用', lx: 905, y: 886, go: 'xb2-11/p4' },
+        { id: 'i-use', t: '应用', lx: 905, y: 922, go: 'xb2-11/p5' },
+        { id: 'balance', t: '生态平衡', x: 528, y: 866, go: 'xb2-12/p1' },
+        { id: 'stability', t: '生态系统的稳定性', x: 528, y: 936, go: 'xb2-12' },
+        { id: 'resist', t: '抵抗力稳定性', lx: 655, y: 918, go: 'xb2-12/p3' },
+        { id: 'recover', t: '恢复力稳定性', lx: 655, y: 954, go: 'xb2-12/p3' },
+        { id: 'harmony', t: '人与环境和谐发展', x: 528, y: 1040, go: 'xb2-14/p6' },
+        { id: 'impact', t: '人类活动对生态环境的影响', lx: 680, y: 1018, go: 'xb2-13' },
+        { id: 'diversity', t: '生物多样性及其保护', lx: 680, y: 1062, go: 'xb2-14' },
+        { id: 'engineer', t: '生态工程', x: 340, y: 1040, go: 'xb2-15/p1' },
+        { id: 'principle', t: '生态工程\n基本原理', x: 214, y: 1004, go: 'xb2-15/p6' },
+        { id: 'example', t: '生态工程\n的实例', x: 214, y: 1078, go: 'xb2-15/p7' },
+        { id: 'p-self', t: '自生', lx: 83, y: 958, go: 'xb2-15/p2' },
+        { id: 'p-coord', t: '协调', lx: 83, y: 994, go: 'xb2-15/p4' },
+        { id: 'p-cycle', t: '循环', lx: 83, y: 1030, go: 'xb2-15/p3' },
+        { id: 'p-whole', t: '整体', lx: 83, y: 1066, go: 'xb2-15/p5' }
+      ],
+      groups: [
+        { id: 'g-rates', of: ['immig', 'emig', 'birth', 'death'], style: 'dash' },
+        { id: 'g-agesex', of: ['age', 'sex'], style: 'none' },
+        { id: 'g-js', of: ['jcurve', 'scurve'], style: 'join', side: 'r' },
+        { id: 'g-em', of: ['energy', 'matter'], style: 'dash', pad: 10 },
+        { id: 'g-human', of: ['impact', 'diversity'], style: 'join', side: 'l' }
+      ],
+      edges: [
+        /* 种群 */
+        { from: 'indiv', to: 'pop', arrow: 'end', label: '同种总和', lp: [490, 134] },
+        { from: 'pop', to: 'popfac', straight: true },
+        { fork: 'popfac', to: ['abiotic', 'biotic'], dir: 'r', at: 735 },
+        { fork: 'pop', to: ['jcurve', 'scurve', 'fluct', 'decline'], dir: 'r', at: 735, label: '数量变化' },
+        { from: 'g-js', to: 'model', arrow: 'end', label: '表征方法' },
+        { fork: 'pop', to: ['density', 'g-rates', 'g-agesex'], dir: 'l', at: 420, label: '数量特征' },
+        { fork: 'density', to: ['quadrat', 'mark'], dir: 'l', at: 190, label: '调查方法' },
+        { from: 'g-rates', to: 'density', arrow: 'end', label: '直接决定' },
+        { from: 'age', to: 'birth', arrow: 'end', straight: true },
+        { from: 'age', to: 'death', arrow: 'end', straight: true },
+        { from: 'sex', to: 'birth', arrow: 'end', straight: true },
+        { from: 'pop', to: 'comm', arrow: 'end', label: '所有种群\n集合', lp: [478, 300] },
+        /* 群落 */
+        { from: 'comm', to: 'commtype' },
+        { fork: 'commtype', to: ['desert', 'grass', 'forest'], dir: 'l', at: 335 },
+        { from: 'comm', to: 'commstruct' },
+        { fork: 'commstruct', to: ['species', 'spatial', 'season', 'niche'], dir: 'r', at: 735 },
+        { fork: 'species', to: ['richness', 'inter'], dir: 'r', at: 852 },
+        { fork: 'inter', to: ['coop', 'mutual', 'compete', 'predation', 'parasit'], dir: 'r', at: 975 },
+        { fork: 'spatial', to: ['vertical', 'horizontal'], dir: 'r', at: 852 },
+        { from: 'comm', to: 'succ', via: [[528, 530]] },
+        { fork: 'succ', to: ['primary', 'secondary'], dir: 'l', at: 345 },
+        { from: 'comm', to: 'eco', arrow: 'end', label: '＋非生物环境', lp: [592, 690],
+          note: '合并两张图时补充：生态系统是生物群落与非生物环境相互作用形成的统一整体（选必2 XB2-07 生态系统的概念）' },
+        /* 生态系统 */
+        { from: 'eco', to: 'struct' },
+        { fork: 'struct', to: ['trophic', 'components'], dir: 'l', at: 328 },
+        { fork: 'trophic', to: ['chain', 'web'], dir: 'l', at: 205 },
+        { from: 'chain', to: 'web', arrow: 'end', label: '组成' },
+        { fork: 'components', to: ['producer', 'consumer', 'decomposer', 'nonliving'], dir: 'l', at: 205 },
+        { from: 'eco', to: 'func' },
+        { fork: 'func', to: ['g-em', 'info'], dir: 'r', at: 725 },
+        { from: 'trophic', to: 'g-em', arrow: 'end', via: [[268, 612], [808, 612]], label: '渠道', lp: [680, 600] },
+        { from: 'energy', to: 'matter', arrow: 'end', via: [[792, 711]], label: '动力', lv: true, lp: [775, 711] },
+        { from: 'matter', to: 'energy', arrow: 'end', via: [[824, 711]], label: '载体', lv: true, lp: [841, 711] },
+        { from: 'info', to: 'g-em', arrow: 'end', via: [[832, 816]], label: '调节', lv: true, lp: [849, 816] },
+        { fork: 'energy', to: ['e-process', 'e-feature', 'e-pyramid', 'e-meaning'], dir: 'r', at: 885 },
+        { fork: 'matter', to: ['carbon', 'magnify', 'm-meaning'], dir: 'r', at: 885 },
+        { fork: 'info', to: ['i-kind', 'i-role', 'i-use'], dir: 'r', at: 885 },
+        { from: 'eco', to: 'balance', arrow: 'end' },
+        { from: 'stability', to: 'balance', arrow: 'end', label: '维持' },
+        { fork: 'stability', to: ['resist', 'recover'], dir: 'r', at: 630 },
+        { from: 'stability', to: 'harmony', arrow: 'end' },
+        { from: 'g-human', to: 'harmony', arrow: 'end' },
+        { from: 'harmony', to: 'engineer', arrow: 'end' },
+        { fork: 'engineer', to: ['principle', 'example'], dir: 'l', at: 278 },
+        { fork: 'principle', to: ['p-self', 'p-coord', 'p-cycle', 'p-whole'], dir: 'l', at: 155 }
+      ],
+      texts: [
+        { t: '最基本特征', x: 381, y: 95 },
+        { t: '其他特征', x: 364, y: 272 },
+        { t: '影响', x: 226, y: 290 },
+        { t: '自我调节', x: 482, y: 812 },
+        { t: '（负反馈调节）', x: 592, y: 812 }
+      ]
+    }
+  ]
 };

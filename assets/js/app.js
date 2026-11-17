@@ -1150,14 +1150,58 @@
       compressTopTitle();
     };
     on(window, 'resize', topLayoutHook);
+    /* 顶栏路径的同级菜单（思维导图模块页）：弹层挂在 body 上，避免被路径栏的溢出裁切 */
+    var crumbMenus = [], crumbPop = null, crumbBtn = null;
+    function closeCrumbMenu(refocus) {
+      if (!crumbPop || crumbPop.hidden) return;
+      crumbPop.hidden = true;
+      if (crumbBtn) { crumbBtn.setAttribute('aria-expanded', 'false'); if (refocus) crumbBtn.focus(); }
+    }
+    function openCrumbMenu(btn) {
+      var list = crumbMenus[+btn.getAttribute('data-crumb-menu')]; if (!list) return;
+      if (!crumbPop) {
+        crumbPop = D.createElement('div'); crumbPop.className = 'top-crumb-pop'; crumbPop.setAttribute('role', 'menu'); crumbPop.hidden = true;
+        D.body.appendChild(crumbPop);
+        on(crumbPop, 'click', function (ev) { if (ev.target.closest('a')) closeCrumbMenu(false); });
+        on(crumbPop, 'keydown', function (ev) {
+          var links = $$('a', crumbPop), i = links.indexOf(D.activeElement);
+          if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') { ev.preventDefault(); var n = links[(i + (ev.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length]; if (n) n.focus(); }
+          else if (ev.key === 'Escape') { ev.preventDefault(); closeCrumbMenu(true); }
+        });
+        on(D, 'click', function (ev) { if (crumbPop && !crumbPop.hidden && !crumbPop.contains(ev.target) && !ev.target.closest('[data-crumb-menu]')) closeCrumbMenu(false); });
+        on(window, 'hashchange', function () { closeCrumbMenu(false); });
+        on(window, 'resize', function () { closeCrumbMenu(false); });
+      }
+      crumbBtn = btn;
+      crumbPop.innerHTML = list.map(function (x) {
+        return '<a role="menuitem" href="' + escH(x.h) + '"' + (x.cur ? ' class="is-cur" aria-current="location"' : '') + '>' + escH(x.t) + '</a>';
+      }).join('');
+      crumbPop.hidden = false; btn.setAttribute('aria-expanded', 'true');
+      var r = btn.getBoundingClientRect();
+      crumbPop.style.top = Math.round(r.bottom + 4) + 'px';
+      crumbPop.style.left = Math.round(Math.max(8, Math.min(r.left, window.innerWidth - crumbPop.offsetWidth - 8))) + 'px';
+      var curA = $('a.is-cur', crumbPop) || $('a', crumbPop); if (curA) curA.focus();
+    }
+    on(topTitle, 'click', function (ev) {
+      var b = ev.target.closest('[data-crumb-menu]'); if (!b) return;
+      ev.preventDefault();
+      if (crumbPop && !crumbPop.hidden && crumbBtn === b) closeCrumbMenu(false); else openCrumbMenu(b);
+    });
     function setTopCrumbs(items) {
       var root = '<a class="top-crumb-home" href="#/" aria-label="树梢文档，返回总索引" title="树梢文档 · 总索引">' +
         '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a3 3 0 01-3-3V6a3 3 0 013-3z"/><path d="M7 3a3 3 0 00-3 3v12a3 3 0 013-3h12M9 8h6M9 12h6"/></svg></a>';
       var parentHref = '#/';
       for (var i = items.length - 2; i >= 0; i--) { if (items[i].h) { parentHref = items[i].h; break; } }
       var ellipsis = '<span class="top-crumb-unit" data-crumb-ellipsis hidden><span class="top-crumb-sep" aria-hidden="true">›</span><a class="top-crumb-ellipsis" href="' + escH(parentHref) + '" aria-label="返回上一级目录" title="返回上一级目录">…</a></span>';
+      crumbMenus = [];
       topTitle.innerHTML = root + ellipsis + items.map(function (it) {
         var label = escH(it.t), body = it.h ? '<a class="top-crumb" href="' + escH(it.h) + '">' + label + '</a>' : '<span class="top-crumb" aria-current="location">' + label + '</span>';
+        /* 带同级列表的当前项：点一下弹出菜单切换同级 */
+        if (!it.h && it.menu && it.menu.length > 1) {
+          crumbMenus.push(it.menu);
+          body = '<button type="button" class="top-crumb top-crumb-menu" aria-current="location" aria-haspopup="true" aria-expanded="false" data-crumb-menu="' + (crumbMenus.length - 1) + '" title="切换同级">' +
+            '<span class="top-crumb-t">' + label + '</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg></button>';
+        }
         return '<span class="top-crumb-unit" data-crumb><span class="top-crumb-sep" aria-hidden="true">›</span>' + body + '</span>';
       }).join('');
       topTitle.setAttribute('role', 'navigation'); topTitle.setAttribute('aria-label', '当前位置');
@@ -1204,8 +1248,14 @@
       home.hidden = true; frame.hidden = true; view = 'map';
       var titles = r.title.split(' · '), crumbs = [];
       if (r.book) crumbs.push({ t: BOOK_BY[r.book].full, h: '#/' + r.book });
-      crumbs.push({ t: r.book ? '思维导图' : '学科思维导图', h: titles.length > 2 ? '#/map/' + (r.book || 'bio') : '' });
-      if (titles.length > 2) crumbs.push({ t: titles.slice(2).join(' · ') });
+      if (r.path) {
+        /* 思维导图提供完整路径：根以下逐级可点，最后一级可切换同级 */
+        crumbs.push({ t: r.book ? '思维导图' : '学科思维导图', h: r.path.length ? (r.base || '#/map/' + (r.book || 'bio')) : '' });
+        crumbs = crumbs.concat(r.path);
+      } else {
+        crumbs.push({ t: r.book ? '思维导图' : '学科思维导图', h: titles.length > 2 ? '#/map/' + (r.book || 'bio') : '' });
+        if (titles.length > 2) crumbs.push({ t: titles.slice(2).join(' · ') });
+      }
       setTopCrumbs(crumbs);
       D.title = r.title + ' · ' + SITE.title;
       setNav('', '', 'read'); markSpecial('map');
