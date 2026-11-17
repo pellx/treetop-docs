@@ -57,6 +57,7 @@
 │   ├── img/site/               站点图标
 │   └── fonts/                  NotoSansSC 字体
 ├── LICENSE
+├── NOTICE
 └── README.md
 ```
 
@@ -95,4 +96,12 @@
 
 ## 许可
 
-本项目采用 [MIT License](./LICENSE)。
+本项目采用 [Apache License 2.0](./LICENSE) 发布，**允许商用**：可以自由使用、修改、再分发，也可以并入闭源产品，不要求公开你的修改。
+
+条件只有一个——**必须标注出处与作者**：
+
+- 随附仓库中的 [LICENSE](./LICENSE) 与 [NOTICE](./NOTICE) 两份文件；
+- 在你的分发物（源码、文档、"关于"页面或帮助信息）中注明：本项目为 **树梢文档（Treetop Docs）**，作者 **pellx**，出处 <https://github.com/pellx/treetop-docs>；
+- 修改过的文件需说明已修改（Apache-2.0 第 4(b) 条）。
+
+Apache-2.0 同时附带专利授权。如需去掉署名与出处，需另行取得作者的书面许可。
