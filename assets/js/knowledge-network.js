@@ -39,7 +39,7 @@
    * 一、模型：把手工数据与站点数据合成为实体表，并记录校验问题
    * ===================================================================== */
   var KIND_LABEL = {
-    bio: '学科', book: '全书', domain: '领域', part: '部分', unit: '单元', ep: '期', point: '考点', concept: '概念',
+    bio: '学科', book: '全书', domain: '领域', map: '导图', part: '部分', unit: '单元', ep: '期', point: '考点', concept: '概念',
     topic: '专题', tgroup: '专题分组', line: '主线', task: '大题任务', step: '任务步骤', method: '方法组', group: '分组'
   };
   var STATUS_LABEL = { site: '原文可查', editor: '编辑判断·待确认', title: '仅据标题·待核', proposal: '提议·待确认', sketch: '示意·未对照真题' };
@@ -379,10 +379,15 @@
              所以不再多插一层与领域同名的导图卡片，直接把各模块挂在领域下。 */
           var one = parts.length ? M.mapOfPart[parts[0]] : null;
           if (one && parts.some(function (p) { return M.mapOfPart[p] !== one; })) one = null;
+          /* 每张图覆盖几个模块：只覆盖一个的，图卡就代表那个模块，
+             不再在它下面多挂一层与它同义的模块卡；模块自己的期、单元直接挂在图上 */
+          var cover = {};
+          parts.forEach(function (p) { var mp = M.mapOfPart[p]; if (mp) cover[mp.id] = (cover[mp.id] || 0) + 1; });
           parts.forEach(function (pid) {
             var mp = one ? null : M.mapOfPart[pid];
             if (!mp) { partBody(mk(pid, dn), M.ent[pid]); return; }
             var mn = T.byKey[dn.key + '/' + mp.id] || mk(mp.id, dn);
+            if (cover[mp.id] === 1) { mn.onlyPart = pid; partBody(mn, M.ent[pid]); return; }
             partBody(mk(pid, mn), M.ent[pid]);
           });
         });
@@ -741,12 +746,16 @@
         inst = pickInstance(tr, placeId(fid), '');
       }
       if (!inst) {
-        /* 深链失效时逐级退回：考点 → 所在期或单元；期 → 单元；其余 → 范围根 */
-        var e = M.ent[fid], alt = null;
+        /* 深链失效时逐级退回：考点 → 所在期或单元；期 → 单元；只由一张图代表的模块 → 那张图；其余 → 范围根 */
+        var e = M.ent[fid], alt = null, note = '';
         if (!e && /^[a-z]{2}\d-\d{2}\.p\d+$/.test(fid) && M.ent[fid.split('.')[0]]) alt = pickInstance(tr, M.unitOfEp[fid.split('.')[0]] || fid.split('.')[0], '');
         else if (e && e.kind === 'point') alt = pickInstance(tr, M.unitOfEp[e.ep] || e.ep, '');
         else if (e && e.kind === 'ep') alt = pickInstance(tr, M.unitOfEp[fid] || fid, '');
-        notes.push((e ? '「' + e.name + '」不在' + scopeLabel(scope) + '的' + LOGICS[logic] + '视图中' : '节点「' + fid + '」不存在或已更名') + (alt ? '，已定位到上一级。' : '，已回到' + scopeLabel(scope) + '总览。'));
+        else if (e && e.kind === 'part' && M.mapOfPart[fid] && pickInstance(tr, M.mapOfPart[fid].id, '')) {
+          alt = pickInstance(tr, M.mapOfPart[fid].id, '');
+          note = '「' + e.name + '」由导图「' + M.mapOfPart[fid].name + '」代表，已打开这张导图。';
+        }
+        notes.push(note || ((e ? '「' + e.name + '」不在' + scopeLabel(scope) + '的' + LOGICS[logic] + '视图中' : '节点「' + fid + '」不存在或已更名') + (alt ? '，已定位到上一级。' : '，已回到' + scopeLabel(scope) + '总览。')));
         focus = alt || tr.root;
       } else if (!inst.children.length && inst.parent) { focus = inst.parent; selKey = inst.key; }
       else focus = inst;

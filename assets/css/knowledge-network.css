@@ -16,14 +16,16 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-bar { display: flex; align-items: center; gap: 8px 12px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
 .kn-bar .topbar-title { flex: 1 1 auto; min-width: 0; }
 .kn-picks { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.topbar .kn-picks { flex: 0 1 auto; min-width: 0; }
-.kn-picker { display: inline-flex; align-items: center; min-width: 0; }
+.topbar .kn-picks { flex: 0 0 auto; min-width: 0; }
+/* 思维导图里两个菜单留在顶栏左侧，搜索始终贴右：中间多出来的空档由自动外边距吃掉 */
+.topbar .kn-picks ~ .search { margin-left: auto; }
+/* 两个菜单各占自己的宽度、绝不收缩：宁可顶栏放不下让搜索压上来，也不让两个框叠在一起 */
+.kn-picker { display: inline-flex; align-items: center; flex: 0 0 auto; min-width: 0; }
 .kn-picker select { min-width: 0; max-width: min(240px, 55vw); height: 34px; padding: 0 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); font: inherit; font-size: 14px; }
 .topbar .kn-picker select { height: 32px; }
 .topbar .kn-logic-select { min-width: 98px; }
 .topbar .kn-picker select:hover { border-color: var(--accent); }
 @media (min-width: 600px) {
-  .kn-picker:has(.kn-scope-select) { flex: 0 1 250px; }
   .kn-scope-select { width: 100%; }
 }
 @media (max-width: 599px) {
