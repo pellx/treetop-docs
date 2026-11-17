@@ -9,10 +9,21 @@
  *   site   —— 依据是站内讲义原文，basis 里的 quote 可在该讲义中逐字查到（只说明讲义这样写，不代表另经专家审定）；
  *   editor —— 编辑判断，待确认（可附原文作参考，但"关系本身"是整理者的归纳）；
  *   title  —— 仅依据考点标题，正文待核。
+ *
+ * basis 的条目种类：
+ *   { kind: 'site', ref: '期/锚点', quote: '…' }  站内讲义原文，校验逐字核对；
+ *   { kind: 'editor', note: '…' }                  整理者的说明或判断；
+ *   { kind: 'figure', ref: 'IMG_….jpg', note: '…' } 教材知识框架参考图（docs/knowledge-map/ 下的原文件名），
+ *       只作整理来源记录：note 写"第几讲"与图上写法；网站不显示、不链接图片。
+ *       图片依据不算站内核验——只有图片依据的关系 status 必须是 'editor'；status:'site' 仍须有可逐字查到的 site 引文。
+ *       图上模糊的细箭头（如第18讲信息传递旁、第16讲植物调节）不据此写确定关系；确需引用时标 editor，并在 note 中写明终点待核对。
+ *
+ * maps：模块的"知识关系图"（手工绘制、自由布局，复刻教材"知识框架"图）。格式见文件末尾 maps 前的注释与
+ *   docs/knowledge-network.md。总览只展示索引结构；进入模块（部分、领域）后显示这里绘制的关系图。
  */
 window.KN_DATA = {
   version: 1,
-  updated: '2026-11-15',
+  updated: '2026-11-16',
 
   /* 关系类型。arrange（编排归类）与 collect（专题收录）由骨架和专题隐含，不单独写成关系。 */
   relTypes: {
@@ -26,7 +37,8 @@ window.KN_DATA = {
     contrast: { name: '对比', note: '容易混淆，需要区分' },
     analogy: { name: '类比', note: '推理结构相似，对象和机制不同，不能互换' },
     scale: { name: '跨尺度对应', note: '同一过程在不同生命系统层次上的对应，不是因果' },
-    apply: { name: '原理→应用', note: '后者应用前者的原理' }
+    apply: { name: '原理→应用', note: '后者应用前者的原理' },
+    measure: { name: '方法·表征', note: '一方是调查、测定或表征另一方的方法，不是因果' }
   },
 
   /* 学科图第一圈。顺序是编辑安排（大致从细胞到个体、群体再到技术），不是严格的尺度序列。 */
@@ -96,7 +108,27 @@ window.KN_DATA = {
     { id: 'u-xb2-stable', part: 'xb2-eco', name: '稳定性', eps: ['xb2-12'] },
     { id: 'u-xb2-impact', part: 'xb2-human', name: '人类活动的影响', eps: ['xb2-13'] },
     { id: 'u-xb2-diversity', part: 'xb2-human', name: '生物多样性及保护', eps: ['xb2-14'] },
-    { id: 'u-xb2-engineer', part: 'xb2-human', name: '生态工程', eps: ['xb2-15'] }
+    { id: 'u-xb2-engineer', part: 'xb2-human', name: '生态工程', eps: ['xb2-15'] },
+
+    /* ==== 必修1 · 单元整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （必修1 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
+
+    /* ==== 必修2 · 单元整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （必修2 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
+
+    /* ==== 选必1 · 单元整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （选必1 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
+
+    /* ==== 选必2 · 单元整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （选必2 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
+
+    /* ==== 选必3 · 单元整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （选必3 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
   ],
 
   /* 概念：稳定 ID；可挂多个讲义位置（第一个为主位置）；一个考点也可以拆成多个概念。
@@ -243,7 +275,27 @@ window.KN_DATA = {
     { id: 'k-promoter', name: '启动子与起始密码子', targets: [{ ref: 'xb3-13/p7', t: '启动子与起始密码' }],
       brief: '启动子不是起始密码子，终止子不是终止密码子：一个看 DNA 和转录，一个看 mRNA 和翻译', briefRef: 'xb3-13/p7' },
     { id: 'k-protein-eng', name: '蛋白质工程的思路', targets: [{ ref: 'xb3-16/p2', t: '蛋白质工程的思路' }],
-      brief: '思路与中心法则方向相反；因为密码子的简并，推出的脱氧核苷酸序列不是唯一的', briefRef: 'xb3-16/p2' }
+      brief: '思路与中心法则方向相反；因为密码子的简并，推出的脱氧核苷酸序列不是唯一的', briefRef: 'xb3-16/p2' },
+
+    /* ==== 必修1 · 概念整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （必修1 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
+
+    /* ==== 必修2 · 概念整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （必修2 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
+
+    /* ==== 选必1 · 概念整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （选必1 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
+
+    /* ==== 选必2 · 概念整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （选必2 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
+
+    /* ==== 选必3 · 概念整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （选必3 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
   ],
 
   /* 关系。from/to 可以是概念、部分或单元；basis 中 kind:'site' 的 quote 必须能在 ref 讲义中逐字查到。 */
@@ -280,6 +332,54 @@ window.KN_DATA = {
       condition: '答题句式只适用于"除草、灭虫这类措施有什么意义"的设问。',
       basis: [{ kind: 'site', ref: 'xb2-09/p6', quote: '除草灭虫的意义：调整能量流动关系，使能量持续高效地流向对人类最有益的部分' }] },
 
+    /* 种群 · 2026-11-16 切片（参考第17讲知识框架图，逐条核对讲义原文） */
+    { id: 'r-quadrat-density', from: 'k-quadrat', to: 'k-pop-density', type: 'measure', label: '调查（估算）', status: 'site',
+      condition: '适用于植物，以及活动能力弱、活动范围小的动物。',
+      basis: [{ kind: 'site', ref: 'xb2-01/p2', quote: '最后求出各样方种群密度的平均值，作为该种群密度的估算值。' },
+        { kind: 'figure', ref: 'IMG_20261115_225536.jpg', note: '教材知识框架第17讲：样方法、标记重捕法 —"调查方法"→ 种群密度。' }] },
+    { id: 'r-mark-density', from: 'k-mark', to: 'k-pop-density', type: 'measure', label: '调查（估算）', status: 'editor',
+      condition: '适用于活动能力强、活动范围大的动物。',
+      basis: [{ kind: 'site', ref: 'xb2-01/p3', quote: '适用于活动能力强、活动范围大的动物，比如田鼠、鸟类、鱼类。' },
+        { kind: 'site', ref: 'xb2-01/p3', quote: '按比例相等，N = M × n ÷ m。' },
+        { kind: 'figure', ref: 'IMG_20261115_225536.jpg', note: '教材知识框架第17讲：样方法、标记重捕法 —"调查方法"→ 种群密度。' },
+        { kind: 'editor', note: '该考点原文写的是估算个体数 N 与适用对象，未逐字写"调查种群密度"；"调查方法→种群密度"据参考图整理，待确认。' }] },
+    { id: 'r-model-jcurve', from: 'k-model', to: 'k-jcurve', type: 'measure', label: '用数学模型表征（公式 Nt = N0λ^t）', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-02/p1', quote: '建构种群增长模型的方法' },
+        { kind: 'site', ref: 'xb2-02/p2', quote: '种群的数量每年以一定的倍数增长，第 t 年的数量 = 初始数量 × λ 的 t 次方。' },
+        { kind: 'figure', ref: 'IMG_20261115_225536.jpg', note: '教材知识框架第17讲："J"形增长、"S"形增长、波动、下降 —"表征方法"→ 建立数学模型。' }] },
+    { id: 'r-model-scurve', from: 'k-model', to: 'k-scurve', type: 'measure', label: '用数学模型表征（曲线）', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-02/p1', quote: '数学公式精确，曲线图直观，两种形式各有优点。' },
+        { kind: 'site', ref: 'xb2-02/p3', quote: '当出生率等于死亡率时，种群停止增长，数量稳定在一定水平，曲线呈“S”形。' },
+        { kind: 'figure', ref: 'IMG_20261115_225536.jpg', note: '教材知识框架第17讲："J"形增长、"S"形增长、波动、下降 —"表征方法"→ 建立数学模型。' }] },
+    { id: 'r-jcurve-scurve', from: 'k-jcurve', to: 'k-scurve', type: 'contrast', label: '理想条件 vs 资源和空间有限', status: 'site',
+      condition: '比较维度：前提条件（理想条件 vs 资源和空间有限）；有无K值；"J"形 λ 保持不变，"S"形达到K值后停止增长。',
+      basis: [{ kind: 'site', ref: 'xb2-02/p2', quote: '条件是食物和空间条件充裕、气候适宜、没有天敌和其他竞争物种等理想条件。' },
+        { kind: 'site', ref: 'xb2-02/p3', quote: '自然界的资源和空间总是有限的。' }] },
+    { id: 'r-rates-scurve', from: 'k-rates', to: 'k-scurve', type: 'cause', label: '出生率降到等于死亡率时，种群停止增长', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-02/p3', quote: '当出生率等于死亡率时，种群停止增长，数量稳定在一定水平，曲线呈“S”形。' }] },
+    { id: 'r-growthrate-kapply', from: 'k-growthrate', to: 'k-kapply', type: 'apply', label: 'K/2 时增长最快：定捕捞剩余量与防治时机', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-02/p4', quote: '种群数量为 K/2 时，增长速率最大。' },
+        { kind: 'site', ref: 'xb2-02/p5', quote: '捕捞后，让剩余量维持在 K/2 左右，种群增长速率最快，可以持续获得较大的捕捞量。' },
+        { kind: 'site', ref: 'xb2-02/p5', quote: '防治要越早越好，在种群数量达到 K/2 之前进行。' }] },
+    { id: 'r-lambda-growthrate', from: 'k-lambda', to: 'k-growthrate', type: 'contrast', label: '临界值不同：λ 看 1，增长速率看 K/2 与 K', status: 'editor',
+      condition: '比较维度：判读的临界值（λ 曲线为 1；增长速率曲线最高点对应 K/2、降到零对应 K）。两种曲线都不能按曲线升降直接判断数量增减。',
+      basis: [{ kind: 'site', ref: 'xb2-02/p8', quote: '看 λ 和 1 比大小，不看 λ 升还是降' },
+        { kind: 'site', ref: 'xb2-02/p4', quote: '增长速率曲线的最高点对应 K/2，降到零的点对应 K 值。' },
+        { kind: 'editor', note: '两处判读方法原文可查；把二者并列对比是编辑判断（同推导方法组"看率不看数"）。' }] },
+    { id: 'r-kapply-endangered', from: 'k-kapply', to: 'k-endangered', type: 'apply', label: '建立自然保护区，提高K值', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-02/p5', quote: '保护濒危动物，要建立自然保护区，改善栖息环境，提高K值。' }] },
+    { id: 'r-age-endangered', from: 'k-age', to: 'k-endangered', type: 'instance', label: '保护前须调查的数量特征之一', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-03/p5', quote: '先调查种群的数量、年龄结构和性别比例，分析影响它们数量变化的因素。' }] },
+    { id: 'r-abiotic-fluct', from: 'k-abiotic', to: 'k-fluct', type: 'cause', label: '气候等因素可引起种群爆发或波动', status: 'site',
+      condition: '非生物因素的影响往往是综合性的；同一因素对不同种群作用可能相反（干旱使许多植物死亡率升高，却使东亚飞蝗爆发）。',
+      basis: [{ kind: 'site', ref: 'xb2-03/p1', quote: '对东亚飞蝗来说，气候干旱正是种群爆发式增长的主要原因。' },
+        { kind: 'site', ref: 'xb2-02/p6', quote: '有些则会在短时间内大量增长，比如东亚飞蝗的爆发' },
+        { kind: 'figure', ref: 'IMG_20261115_225536.jpg', note: '教材知识框架第17讲："影响种群数量变化的因素"（非生物因素、生物因素）连向种群；种群 —"数量变化"→ "J"形、"S"形、波动、下降。' }] },
+    { id: 'r-biotic-fluct', from: 'k-biotic', to: 'k-fluct', type: 'cause', label: '捕食等种间关系可使数量周期性波动', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-03/p2', quote: '其他生物通过捕食、种间竞争、寄生等关系影响种群数量。' },
+        { kind: 'site', ref: 'xb2-03/p4', quote: '两者呈现周期性波动' },
+        { kind: 'figure', ref: 'IMG_20261115_225536.jpg', note: '教材知识框架第17讲："影响种群数量变化的因素"（非生物因素、生物因素）连向种群；种群 —"数量变化"→ "J"形、"S"形、波动、下降。' }] },
+
     /* 种群→群落→生态系统（部分之间） */
     { id: 'r-pop-comm', from: 'xb2-pop', to: 'xb2-comm', type: 'compose', label: '各种生物种群的集合构成群落', status: 'site',
       basis: [{ kind: 'site', ref: 'xb2-04/p1', quote: '在相同时间聚集在一定地域中各种生物种群的集合，叫做生物群落' }] },
@@ -293,11 +393,51 @@ window.KN_DATA = {
 
     /* 生态系统内部 */
     { id: 'r-web-energy', from: 'k-foodweb', to: 'k-energyflow', type: 'basis', label: '渠道：能量沿食物链和食物网传递', status: 'site',
-      basis: [{ kind: 'site', ref: 'xb2-08/p1', quote: '传递：沿着食物链和食物网，以有机物中的化学能形式传递。' }] },
+      basis: [{ kind: 'site', ref: 'xb2-08/p1', quote: '传递：沿着食物链和食物网，以有机物中的化学能形式传递。' },
+        { kind: 'figure', ref: 'IMG_20261115_225543.jpg', note: '教材知识框架第18讲：营养结构 —"渠道"→ 能量流动、物质循环所在的虚线框。' }] },
     { id: 'r-chain-web', from: 'k-foodchain', to: 'k-foodweb', type: 'compose', label: '食物链相互交错构成食物网', status: 'site',
       basis: [{ kind: 'site', ref: 'xb2-07/p6', quote: '许多食物链彼此相互交错，连接成复杂的营养关系，就是食物网。' }] },
-    { id: 'r-energy-matter', from: 'u-xb2-energy', to: 'u-xb2-matter', type: 'basis', label: '能量是动力，物质是载体', status: 'site',
-      basis: [{ kind: 'site', ref: 'xb2-10/p6', quote: '物质是能量的载体，能量沿着食物链流动，就储存在有机物中；能量是物质循环的动力。' }] },
+    /* 能量与物质的双向作用写成两条：方向不同、关系词不同（2026-11-16 由原单元间"能量是动力，物质是载体"一条拆分）。 */
+    { id: 'r-energy-matter', from: 'k-energyflow', to: 'k-carbon', type: 'basis', label: '是物质循环的动力', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-10/p6', quote: '能量是物质循环的动力。' },
+        { kind: 'figure', ref: 'IMG_20261115_225543.jpg', note: '教材知识框架第18讲：能量流动 —"动力"→ 物质循环；物质循环 —"载体"→ 能量流动（两条方向相反的箭头）。' }] },
+    { id: 'r-carbon-energy', from: 'k-carbon', to: 'k-energyflow', type: 'basis', label: '含碳有机物是能量的载体', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-10/p6', quote: '物质是能量的载体，能量沿着食物链流动，就储存在有机物中' },
+        { kind: 'site', ref: 'xb2-10/p2', quote: '在生物群落内部，以含碳有机物的形式传递。' },
+        { kind: 'figure', ref: 'IMG_20261115_225543.jpg', note: '教材知识框架第18讲：能量流动 —"动力"→ 物质循环；物质循环 —"载体"→ 能量流动（两条方向相反的箭头）。' }] },
+
+    /* 生态系统 · 2026-11-16 切片（参考第18讲知识框架图，逐条核对讲义原文） */
+    { id: 'r-chain-magnify', from: 'k-foodchain', to: 'k-magnify', type: 'basis', label: '渠道：难降解物质沿食物链逐级积累', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-10/p5', quote: '会沿食物链逐级积累，营养级越高，浓度越高。' },
+        { kind: 'figure', ref: 'IMG_20261115_225543.jpg', note: '教材知识框架第18讲：营养结构 —"渠道"→ 能量流动、物质循环所在的虚线框；生物富集列在物质循环下。' }] },
+    { id: 'r-energyin-assim', from: 'k-energy-in', to: 'k-assim', type: 'seq', label: '先固定（同化），再分为呼吸散失与生长、发育和繁殖', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-08/p2', quote: '每个营养级都拆成：固定或同化 → 呼吸散失 + 用于生长、发育和繁殖' },
+        { kind: 'site', ref: 'xb2-08/p4', quote: '同化量 = 呼吸作用散失 + 用于生长、发育和繁殖。' }] },
+    { id: 'r-assim-feature', from: 'k-assim', to: 'k-energy-feature', type: 'cause', label: '每级都有呼吸散失、流向分解者和未利用，所以逐级递减', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-08/p6', quote: '原因：每个营养级都有能量在呼吸作用中散失，还有一部分流向分解者，一部分未被利用。' }] },
+    { id: 'r-assim-efficiency', from: 'k-assim', to: 'k-efficiency', type: 'basis', label: '计算依据：分子分母都用同化量', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-09/p1', quote: '传递效率 = 下一营养级同化量 ÷ 上一营养级同化量 × 100%。' },
+        { kind: 'site', ref: 'xb2-08/p5', quote: '分子分母都必须是同化量，不能用摄入量。' }] },
+    { id: 'r-efficiency-feature', from: 'k-efficiency', to: 'k-energy-feature', type: 'measure', label: '定量表示逐级递减（相邻营养级约10%～20%）', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-08/p6', quote: '相邻两个营养级之间的传递效率大约是10%到20%。' }] },
+    { id: 'r-web-change', from: 'k-foodweb', to: 'k-web-change', type: 'basis', label: '分析依据：先找营养级，再看食物来源是否多样', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-07/p7', quote: '先看减少的生物处在哪个营养级' }] },
+    { id: 'r-feature-webchange', from: 'k-energy-feature', to: 'k-web-change', type: 'basis', label: '解释依据：营养级越低，获得的能量越多', status: 'site',
+      condition: '用于"中间营养级减少，高营养级生物改食较低营养级"的情形。',
+      basis: [{ kind: 'site', ref: 'xb2-07/p7', quote: '营养级降低，获得的能量反而更多，所以鹰的数量增加。' },
+        { kind: 'site', ref: 'xb2-08/p6', quote: '相邻两个营养级之间的传递效率大约是10%到20%。' }] },
+    { id: 'r-biotic-webchange', from: 'k-biotic', to: 'k-web-change', type: 'cause', label: '种内竞争加剧，使失去天敌的被捕食者回落并趋于稳定', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-07/p7', quote: '天敌减少：被捕食者先增加，后因种内竞争加剧而减少，最后趋于稳定。' },
+        { kind: 'site', ref: 'xb2-03/p2', quote: '随着种群密度增大，种内竞争加剧，从而使种群的增长受到限制。' }] },
+    { id: 'r-web-selfreg', from: 'k-foodweb', to: 'k-selfreg', type: 'cause', label: '食物网越复杂，自我调节能力越强', status: 'site',
+      condition: '原文为"一般来说"；北极冻原、荒漠等结构简单的生态系统两种稳定性都低，不能反推"简单就恢复快"。',
+      basis: [{ kind: 'site', ref: 'xb2-12/p4', quote: '一般来说，生态系统中的组分越多，食物网越复杂，自我调节能力就越强。' }] },
+    { id: 'r-info-energy', from: 'u-xb2-info', to: 'u-xb2-energy', type: 'cause', label: '决定能量流动的方向和状态', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-11/p6', quote: '信息传递决定着能量流动和物质循环的方向和状态。' },
+        { kind: 'editor', note: '依据仅为讲义原文；第18讲参考图信息传递旁"调节"细箭头的终点待放大核对，未作为本关系依据。' }] },
+    { id: 'r-info-matter', from: 'u-xb2-info', to: 'u-xb2-matter', type: 'cause', label: '决定物质循环的方向和状态', status: 'site',
+      basis: [{ kind: 'site', ref: 'xb2-11/p6', quote: '信息传递决定着能量流动和物质循环的方向和状态。' },
+        { kind: 'editor', note: '依据仅为讲义原文；第18讲参考图信息传递旁"调节"细箭头的终点待放大核对，未作为本关系依据。' }] },
     { id: 'r-feature-magnify', from: 'k-energy-feature', to: 'k-magnify', type: 'contrast', label: '沿食物链：能量逐级递减，富集物浓度逐级升高', status: 'site',
       basis: [{ kind: 'site', ref: 'xb2-08/p6', quote: '只能沿食物链由低营养级流向高营养级' },
         { kind: 'site', ref: 'xb2-10/p5', quote: '会沿食物链逐级积累，营养级越高，浓度越高。' }] },
@@ -352,7 +492,31 @@ window.KN_DATA = {
     { id: 'r-transcribe-promoter', from: 'k-transcribe', to: 'k-promoter', type: 'basis', label: '启动子、终止子控制转录', status: 'site',
       basis: [{ kind: 'site', ref: 'xb3-13/p7', quote: '启动子和终止子，是DNA上的一段序列，控制的是转录。' }] },
     { id: 'r-codon-promoter', from: 'k-codon', to: 'k-promoter', type: 'contrast', label: '起始、终止密码子在 mRNA 上，控制翻译', status: 'site',
-      basis: [{ kind: 'site', ref: 'xb3-13/p7', quote: '起始密码子和终止密码子，位于mRNA上，控制的是翻译的开始和结束。' }] }
+      basis: [{ kind: 'site', ref: 'xb3-13/p7', quote: '起始密码子和终止密码子，位于mRNA上，控制的是翻译的开始和结束。' }] },
+
+    /* ==== 必修1 · 关系整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （必修1 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
+
+    /* ==== 必修2 · 关系整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （必修2 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
+
+    /* ==== 选必1 · 关系整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （选必1 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
+
+    /* ==== 选必2 · 关系整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （选必2 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
+
+    /* ==== 选必3 · 关系整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （选必3 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
+
+    /* ==== 跨册 · 关系整理区（以下按册追加；每条末尾带逗号） ==== */
+    /* （跨册 整理区结束） */
+    /* 分隔：保持本行不变，便于各册并行合并 */
   ],
 
   /* 跨章或跨册的复习问题集合。成员全是引用（概念 id 或考点 "期/锚点"）；分组是复习问题分组，不是知识组成。 */
@@ -483,5 +647,177 @@ window.KN_DATA = {
   ],
 
   /* 题型证据：逐题记录。每条需写年份、地区卷别、题号、题型、涉及概念。当前没有任何记录。 */
-  evidence: []
+  evidence: [],
+
+  /* ===================================================================
+   * 知识关系图（自由布局，复刻教材"知识框架"图）。进入模块后显示；总览只显示索引结构。
+   *
+   * { id, name, anchors: [实体 ID…]（哪些领域/部分进入后显示本图；路径上最近的锚点生效）, source: 来源说明,
+   *   nodes:  [{ id, t: '文字（\n 换行）', x: 中心横坐标 | lx: 左缘横坐标, y: 中心纵坐标,
+   *              go: '期/锚点'（如 'xb2-01/p1'）或 '期'（如 'xb2-04'）——点击直接打开讲义；省略则不可点,
+   *              s: 'main'（加粗的主干节点）, w/h: 可选，覆盖自动尺寸 }],
+   *   groups: [{ id, of: [节点 ID…], style: 'dash'（虚线框）| 'join'（成员一侧加括线并合为一个端点，side: 'l'|'r'）| 'none'（只合成端点） }],
+   *   edges:  连线 { from, to, arrow: 'end'|'start'|'both'（省略为无箭头）, label: 关系词, lp: [x, y] 标签中心, lv: true 竖排标签,
+   *                  via: [[x, y]…] 折点, fs/ts: 起点/终点所在边 'l'|'r'|'t'|'b', straight: true 斜直线, note: 说明（悬停显示） }
+   *           分类括线 { fork: 上级 ID, to: [下级 ID…], dir: 'l'|'r'|'t'|'b', at: 竖（横）线位置, label: 主干上的文字, arrow: true 各分支带箭头 }
+   *   texts:  [{ t, x, y, lv }] 独立文字（括线分支说明等） }
+   * 端点可以是节点或分组。坐标单位为 px，节点文字 14px；画布大小由内容自动决定。
+   * =================================================================== */
+  maps: [
+    {
+      id: 'm-eco', name: '种群、群落与生态系统',
+      anchors: ['d-eco', 'xb2-pop', 'xb2-comm', 'xb2-eco', 'xb2-human'],
+      source: '参照教材第17讲（种群与群落）、第18讲（生态系统及生态工程）知识框架图合并；"群落 → 生态系统"一线为合并时补充',
+      nodes: [
+        /* ---- 种群（第17讲上半） ---- */
+        { id: 'indiv', t: '个体', x: 528, y: 72 },
+        { id: 'pop', t: '种群', x: 528, y: 196, s: 'main', go: 'xb2-01' },
+        { id: 'popfac', t: '影响种群数量\n变化的因素', x: 648, y: 84, go: 'xb2-03' },
+        { id: 'abiotic', t: '非生物因素', lx: 760, y: 66, go: 'xb2-03/p1' },
+        { id: 'biotic', t: '生物因素', lx: 760, y: 104, go: 'xb2-03/p2' },
+        { id: 'jcurve', t: '“J”形增长', lx: 760, y: 144, go: 'xb2-02/p2' },
+        { id: 'scurve', t: '“S”形增长', lx: 760, y: 180, go: 'xb2-02/p3' },
+        { id: 'fluct', t: '波动', lx: 760, y: 216, go: 'xb2-02/p6' },
+        { id: 'decline', t: '下降', lx: 760, y: 252, go: 'xb2-02/p6' },
+        { id: 'model', t: '建立数学模型', lx: 950, y: 162, go: 'xb2-02/p1' },
+        { id: 'density', t: '种群密度', x: 304, y: 107, go: 'xb2-01/p1' },
+        { id: 'quadrat', t: '样方法', lx: 55, y: 86, go: 'xb2-01/p2' },
+        { id: 'mark', t: '标记重捕法', lx: 55, y: 128, go: 'xb2-01/p3' },
+        { id: 'immig', t: '迁入率', x: 184, y: 196, go: 'xb2-01/p5' },
+        { id: 'emig', t: '迁出率', x: 268, y: 196, go: 'xb2-01/p5' },
+        { id: 'birth', t: '出生率', x: 184, y: 248, go: 'xb2-01/p5' },
+        { id: 'death', t: '死亡率', x: 268, y: 248, go: 'xb2-01/p5' },
+        { id: 'age', t: '年龄结构', x: 152, y: 322, go: 'xb2-01/p6' },
+        { id: 'sex', t: '性别比例', x: 268, y: 322, go: 'xb2-01/p7' },
+
+        /* ---- 群落（第17讲下半） ---- */
+        { id: 'comm', t: '群落', x: 528, y: 412, s: 'main', go: 'xb2-04' },
+        { id: 'commtype', t: '群落的\n主要类型', x: 402, y: 412, go: 'xb2-05/p1' },
+        { id: 'desert', t: '荒漠生物群落', lx: 200, y: 376, go: 'xb2-05/p2' },
+        { id: 'grass', t: '草原生物群落', lx: 200, y: 412, go: 'xb2-05/p3' },
+        { id: 'forest', t: '森林生物群落', lx: 200, y: 448, go: 'xb2-05/p4' },
+        { id: 'commstruct', t: '群落的结构', x: 670, y: 412, go: 'xb2-04' },
+        { id: 'species', t: '物种组成', lx: 755, y: 324, go: 'xb2-04/p1' },
+        { id: 'richness', t: '物种丰富度', lx: 872, y: 302, go: 'xb2-04/p1' },
+        { id: 'inter', t: '种间关系', lx: 872, y: 344, go: 'xb2-04/p3' },
+        { id: 'coop', t: '原始合作', lx: 995, y: 262, go: 'xb2-04/p3' },
+        { id: 'mutual', t: '互利共生', lx: 995, y: 300, go: 'xb2-04/p3' },
+        { id: 'compete', t: '种间竞争', lx: 995, y: 338, go: 'xb2-04/p3' },
+        { id: 'predation', t: '捕食', lx: 995, y: 376, go: 'xb2-04/p3' },
+        { id: 'parasit', t: '寄生', lx: 995, y: 414, go: 'xb2-04/p3' },
+        { id: 'spatial', t: '空间结构', lx: 755, y: 412, go: 'xb2-04/p5' },
+        { id: 'vertical', t: '垂直结构', lx: 872, y: 394, go: 'xb2-04/p5' },
+        { id: 'horizontal', t: '水平结构', lx: 872, y: 432, go: 'xb2-04/p5' },
+        { id: 'season', t: '季节性', lx: 755, y: 466, go: 'xb2-04/p6' },
+        { id: 'niche', t: '生态位', lx: 755, y: 510, go: 'xb2-04/p7' },
+        { id: 'succ', t: '群落的演替', x: 420, y: 530, go: 'xb2-06/p1' },
+        { id: 'primary', t: '初生演替', lx: 250, y: 512, go: 'xb2-06/p2' },
+        { id: 'secondary', t: '次生演替', lx: 250, y: 548, go: 'xb2-06/p3' },
+
+        /* ---- 生态系统（第18讲） ---- */
+        { id: 'eco', t: '生态系统', x: 528, y: 760, s: 'main', go: 'xb2-07/p1' },
+        { id: 'struct', t: '结构', x: 388, y: 760, go: 'xb2-07' },
+        { id: 'trophic', t: '营养\n结构', x: 268, y: 690, go: 'xb2-07/p5' },
+        { id: 'components', t: '组成\n成分', x: 268, y: 828, go: 'xb2-07/p2' },
+        { id: 'chain', t: '食物链', x: 140, y: 648, go: 'xb2-07/p5' },
+        { id: 'web', t: '食物网', x: 140, y: 714, go: 'xb2-07/p6' },
+        { id: 'producer', t: '生产者', x: 140, y: 768, go: 'xb2-07/p2' },
+        { id: 'consumer', t: '消费者', x: 140, y: 808, go: 'xb2-07/p2' },
+        { id: 'decomposer', t: '分解者', x: 140, y: 848, go: 'xb2-07/p2' },
+        { id: 'nonliving', t: '非生物的\n物质和能量', x: 140, y: 898, go: 'xb2-07/p2' },
+        { id: 'func', t: '功能', x: 664, y: 760, go: 'xb2-11/p6' },
+        { id: 'energy', t: '能量流动', x: 808, y: 662, go: 'xb2-08/p1' },
+        { id: 'matter', t: '物质循环', x: 808, y: 760, go: 'xb2-10/p1' },
+        { id: 'info', t: '信息传递', x: 808, y: 862, go: 'xb2-11' },
+        { id: 'e-process', t: '过程', lx: 905, y: 590, go: 'xb2-08/p2' },
+        { id: 'e-feature', t: '特点', lx: 905, y: 626, go: 'xb2-08/p6' },
+        { id: 'e-pyramid', t: '生态金字塔', lx: 905, y: 662, go: 'xb2-08/p7' },
+        { id: 'e-meaning', t: '研究能量流动的意义', lx: 905, y: 698, go: 'xb2-09/p5' },
+        { id: 'carbon', t: '碳循环', lx: 905, y: 738, go: 'xb2-10/p2' },
+        { id: 'magnify', t: '生物富集', lx: 905, y: 774, go: 'xb2-10/p5' },
+        { id: 'm-meaning', t: '研究物质循环的意义', lx: 905, y: 810, go: 'xb2-10' },
+        { id: 'i-kind', t: '种类', lx: 905, y: 850, go: 'xb2-11/p1' },
+        { id: 'i-role', t: '作用', lx: 905, y: 886, go: 'xb2-11/p4' },
+        { id: 'i-use', t: '应用', lx: 905, y: 922, go: 'xb2-11/p5' },
+        { id: 'balance', t: '生态平衡', x: 528, y: 866, go: 'xb2-12/p1' },
+        { id: 'stability', t: '生态系统的稳定性', x: 528, y: 936, go: 'xb2-12' },
+        { id: 'resist', t: '抵抗力稳定性', lx: 655, y: 918, go: 'xb2-12/p3' },
+        { id: 'recover', t: '恢复力稳定性', lx: 655, y: 954, go: 'xb2-12/p3' },
+        { id: 'harmony', t: '人与环境和谐发展', x: 528, y: 1040, go: 'xb2-14/p6' },
+        { id: 'impact', t: '人类活动对生态环境的影响', lx: 680, y: 1018, go: 'xb2-13' },
+        { id: 'diversity', t: '生物多样性及其保护', lx: 680, y: 1062, go: 'xb2-14' },
+        { id: 'engineer', t: '生态工程', x: 340, y: 1040, go: 'xb2-15/p1' },
+        { id: 'principle', t: '生态工程\n基本原理', x: 214, y: 1004, go: 'xb2-15/p6' },
+        { id: 'example', t: '生态工程\n的实例', x: 214, y: 1078, go: 'xb2-15/p7' },
+        { id: 'p-self', t: '自生', lx: 83, y: 958, go: 'xb2-15/p2' },
+        { id: 'p-coord', t: '协调', lx: 83, y: 994, go: 'xb2-15/p4' },
+        { id: 'p-cycle', t: '循环', lx: 83, y: 1030, go: 'xb2-15/p3' },
+        { id: 'p-whole', t: '整体', lx: 83, y: 1066, go: 'xb2-15/p5' }
+      ],
+      groups: [
+        { id: 'g-rates', of: ['immig', 'emig', 'birth', 'death'], style: 'dash' },
+        { id: 'g-agesex', of: ['age', 'sex'], style: 'none' },
+        { id: 'g-js', of: ['jcurve', 'scurve'], style: 'join', side: 'r' },
+        { id: 'g-em', of: ['energy', 'matter'], style: 'dash', pad: 10 },
+        { id: 'g-human', of: ['impact', 'diversity'], style: 'join', side: 'l' }
+      ],
+      edges: [
+        /* 种群 */
+        { from: 'indiv', to: 'pop', arrow: 'end', label: '同种总和', lp: [490, 134] },
+        { from: 'pop', to: 'popfac', straight: true },
+        { fork: 'popfac', to: ['abiotic', 'biotic'], dir: 'r', at: 735 },
+        { fork: 'pop', to: ['jcurve', 'scurve', 'fluct', 'decline'], dir: 'r', at: 735, label: '数量变化' },
+        { from: 'g-js', to: 'model', arrow: 'end', label: '表征方法' },
+        { fork: 'pop', to: ['density', 'g-rates', 'g-agesex'], dir: 'l', at: 420, label: '数量特征' },
+        { fork: 'density', to: ['quadrat', 'mark'], dir: 'l', at: 190, label: '调查方法' },
+        { from: 'g-rates', to: 'density', arrow: 'end', label: '直接决定' },
+        { from: 'age', to: 'birth', arrow: 'end', straight: true },
+        { from: 'age', to: 'death', arrow: 'end', straight: true },
+        { from: 'sex', to: 'birth', arrow: 'end', straight: true },
+        { from: 'pop', to: 'comm', arrow: 'end', label: '所有种群\n集合', lp: [478, 300] },
+        /* 群落 */
+        { from: 'comm', to: 'commtype' },
+        { fork: 'commtype', to: ['desert', 'grass', 'forest'], dir: 'l', at: 335 },
+        { from: 'comm', to: 'commstruct' },
+        { fork: 'commstruct', to: ['species', 'spatial', 'season', 'niche'], dir: 'r', at: 735 },
+        { fork: 'species', to: ['richness', 'inter'], dir: 'r', at: 852 },
+        { fork: 'inter', to: ['coop', 'mutual', 'compete', 'predation', 'parasit'], dir: 'r', at: 975 },
+        { fork: 'spatial', to: ['vertical', 'horizontal'], dir: 'r', at: 852 },
+        { from: 'comm', to: 'succ', via: [[528, 530]] },
+        { fork: 'succ', to: ['primary', 'secondary'], dir: 'l', at: 345 },
+        { from: 'comm', to: 'eco', arrow: 'end', label: '＋非生物环境', lp: [592, 690],
+          note: '合并两张图时补充：生态系统是生物群落与非生物环境相互作用形成的统一整体（选必2 XB2-07 生态系统的概念）' },
+        /* 生态系统 */
+        { from: 'eco', to: 'struct' },
+        { fork: 'struct', to: ['trophic', 'components'], dir: 'l', at: 328 },
+        { fork: 'trophic', to: ['chain', 'web'], dir: 'l', at: 205 },
+        { from: 'chain', to: 'web', arrow: 'end', label: '组成' },
+        { fork: 'components', to: ['producer', 'consumer', 'decomposer', 'nonliving'], dir: 'l', at: 205 },
+        { from: 'eco', to: 'func' },
+        { fork: 'func', to: ['g-em', 'info'], dir: 'r', at: 725 },
+        { from: 'trophic', to: 'g-em', arrow: 'end', via: [[268, 612], [808, 612]], label: '渠道', lp: [680, 600] },
+        { from: 'energy', to: 'matter', arrow: 'end', via: [[792, 711]], label: '动力', lv: true, lp: [775, 711] },
+        { from: 'matter', to: 'energy', arrow: 'end', via: [[824, 711]], label: '载体', lv: true, lp: [841, 711] },
+        { from: 'info', to: 'g-em', arrow: 'end', via: [[832, 816]], label: '调节', lv: true, lp: [849, 816] },
+        { fork: 'energy', to: ['e-process', 'e-feature', 'e-pyramid', 'e-meaning'], dir: 'r', at: 885 },
+        { fork: 'matter', to: ['carbon', 'magnify', 'm-meaning'], dir: 'r', at: 885 },
+        { fork: 'info', to: ['i-kind', 'i-role', 'i-use'], dir: 'r', at: 885 },
+        { from: 'eco', to: 'balance', arrow: 'end' },
+        { from: 'stability', to: 'balance', arrow: 'end', label: '维持' },
+        { fork: 'stability', to: ['resist', 'recover'], dir: 'r', at: 630 },
+        { from: 'stability', to: 'harmony', arrow: 'end' },
+        { from: 'g-human', to: 'harmony', arrow: 'end' },
+        { from: 'harmony', to: 'engineer', arrow: 'end' },
+        { fork: 'engineer', to: ['principle', 'example'], dir: 'l', at: 278 },
+        { fork: 'principle', to: ['p-self', 'p-coord', 'p-cycle', 'p-whole'], dir: 'l', at: 155 }
+      ],
+      texts: [
+        { t: '最基本特征', x: 381, y: 95 },
+        { t: '其他特征', x: 364, y: 272 },
+        { t: '影响', x: 226, y: 290 },
+        { t: '自我调节', x: 482, y: 812 },
+        { t: '（负反馈调节）', x: 592, y: 812 }
+      ]
+    }
+  ]
 };
