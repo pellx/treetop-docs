@@ -1600,6 +1600,11 @@
         G.paths.push({ d: d, cls: 'kn-cm-e' });
         b = cmBox(g.side === 'l' ? sx : L, y0, g.side === 'l' ? R - sx : sx - L, Math.max(1, y1 - y0), { id: g.id, group: g });
         b.l = g.side === 'l' ? sx : L; b.r = g.side === 'l' ? R : sx;
+      } else if (g.style === 'bracket') {
+        /* 大方括号：在成员一侧画一条带端钩的竖线，括住整列，竖线中点作为整组的端点（如"延伸 → 蛋白质工程"） */
+        var bg = g.gap || 18, bx = g.side === 'l' ? L - bg : R + bg, hook = g.side === 'l' ? 8 : -8;
+        G.paths.push({ d: 'M' + (bx + hook) + ' ' + Tt + 'H' + bx + 'V' + B + 'H' + (bx + hook), cls: 'kn-cm-e' });
+        b = cmBox(bx, Tt, 0, B - Tt, { id: g.id, group: g });
       } else {
         var pad = typeof g.pad === 'number' ? g.pad : (g.style === 'dash' ? 8 : 0);
         b = cmBox(L - pad, Tt - pad, R - L + 2 * pad, B - Tt + 2 * pad, { id: g.id, group: g });

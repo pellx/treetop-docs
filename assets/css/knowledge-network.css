@@ -200,14 +200,14 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-edges .kn-cm-halo { fill: none; stroke: var(--bg); stroke-width: 6; }
 .kn-edges .kn-cm-grp { fill: none; stroke: var(--fg); stroke-width: 1.2; stroke-dasharray: 5 4; }
 .kn-edges .kn-cm-mk path { fill: var(--fg); stroke: none; }
-.kn-cm-n { position: absolute; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0 4px; border: 1.3px solid var(--fg); background: var(--surface); color: var(--fg); font: inherit; font-size: 14px; line-height: 20px; text-align: center; white-space: nowrap; cursor: pointer; }
+.kn-cm-n { position: absolute; box-sizing: border-box; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0 4px; border: 1.3px solid var(--fg); background: var(--surface); color: var(--fg); font: inherit; font-size: 14px; line-height: 20px; text-align: center; white-space: nowrap; cursor: pointer; }
 .kn-cm-n.is-plain { cursor: default; }
 .kn-cm-n.is-main { font-weight: 700; border-width: 2px; }
 button.kn-cm-n:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
 button.kn-cm-n:focus-visible { outline: 3px solid var(--accent-strong); outline-offset: 1px; }
 .kn-cm-n.is-vis { color: var(--accent-text); }
 .kn-cm-n.is-hi { border-color: var(--title-bar); background: var(--title-bg); box-shadow: 0 0 0 2px var(--title-bar); }
-.kn-cm-l { position: absolute; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 17px; color: var(--fg); background: var(--bg); text-align: center; white-space: nowrap; pointer-events: none; }
+.kn-cm-l { position: absolute; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 17px; color: var(--fg); background: var(--bg); text-align: center; white-space: nowrap; pointer-events: none; }
 .kn-cm-l[title] { pointer-events: auto; cursor: help; }
 .kn-cm-l.is-v { writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 1px; }
 .kn-cm-empty ul { margin: 6px 0 0; padding-left: 20px; }
