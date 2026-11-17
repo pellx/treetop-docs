@@ -44,6 +44,9 @@
   };
   var STATUS_LABEL = { site: '原文可查', editor: '编辑判断·待确认', title: '仅据标题·待核', proposal: '提议·待确认', sketch: '示意·未对照真题' };
   var CONTAINER = { bio: 1, book: 1, domain: 1, map: 1, part: 1, unit: 1, ep: 1 };
+  /* 领域、全书、导图、模块这些"架子"卡片不记"访问过"：它们只是装讲义的框，
+     只有真正打开过讲义的具体节点（期、考点、概念）才标记，免得一张领域卡永远顶着这个标签 */
+  var STRUCT = { bio: 1, book: 1, domain: 1, map: 1, part: 1, unit: 1 };
   var SCOPES = ['bio'].concat(SITE.books.map(function (b) { return b.key; }));
   var LOGICS = { rel: '知识关系', task: '大题任务', method: '推导方法' };
 
@@ -969,13 +972,15 @@
     saveView(); render({ keepScroll: true });
   }
   function toggleMore(key) { var i = S.more.indexOf(key); if (i >= 0) S.more.splice(i, 1); else S.more.push(key); saveView(); render({ keepScroll: true }); }
-  function openLecture(pid, href, label) {
+  function openLecture(pid, href, label, id) {
     var tg = href || (M.ent[pid] ? '#/' + M.ent[pid].ep + '/' + M.ent[pid].a : '#/');
     var token = rand();
     saveView(scrollPos());
     sSet('sessionStorage', 'tt-kn-return', { tab: TAB, token: token, url: S.url, label: label || placeLabel(), at: Date.now(), active: true });
-    if (S.selId) markVisited(S.selId);
-    if (pid) markVisited(pid);
+    /* 只标记这次真正打开的节点和考点；当时选中的如果是领域、模块这类架子卡，不记 */
+    if (id && M.ent[id] && !STRUCT[M.ent[id].kind]) markVisited(id);
+    if (S.selId && M.ent[S.selId] && !STRUCT[M.ent[S.selId].kind]) markVisited(S.selId);
+    if (pid && !STRUCT[(M.ent[pid] || {}).kind]) markVisited(pid);
     try { history.pushState({ kn: token }, '', tg); if (api) api.route(); }
     catch (e) { location.hash = tg; }
   }
@@ -1293,7 +1298,7 @@
   function nodeHtml(tr, nd) {
     var n = nd.n, e = M.ent[n.id] || { kind: 'group' }, kind = e.kind, role = nd.role;
     var name = nodeName(n), sel = S.sel === n.key && role !== 'sib' && role !== 'trunk';
-    var vis = visited().indexOf(n.id) >= 0;
+    var vis = visited().indexOf(n.id) >= 0 && !STRUCT[kind];
     var fallback = (kind === 'point' && !n.ref) || (kind === 'ep' && epState(n.id).s === 'none');
     var cls = 'kn-node kn-r-' + role + ' kn-k-' + kind + (n.ref ? ' kn-ref' : '') + (fallback ? ' kn-fb' : '') + (sel ? ' is-sel' : '') + (nd.current ? ' is-cur' : '') + (nd.expanded ? ' is-exp' : '') + (n.pending ? ' kn-pending' : '');
     if (kind === 'group' || kind === 'topic' || kind === 'tgroup') cls += ' kn-dashed';
@@ -1950,7 +1955,7 @@
     var kv = visibleKids(n, level === 1 ? 30 : LIMIT_GRAND, level === 1 ? 28 : SHOW_GRAND), out = '';
     kv.list.forEach(function (c) {
       var e = M.ent[c.id] || { kind: 'group' }, ex = S.exp.indexOf(c.key) >= 0 && c.children.length;
-      var sel = S.sel === c.key, tg = targetsOf(c.id), vis = visited().indexOf(c.id) >= 0;
+      var sel = S.sel === c.key, tg = targetsOf(c.id), vis = visited().indexOf(c.id) >= 0 && !STRUCT[e.kind];
       var fallback = (e.kind === 'point' && !c.ref) || (e.kind === 'ep' && epState(c.id).s === 'none');
       out += '<li role="treeitem" aria-level="' + level + '"' + (c.children.length ? ' aria-expanded="' + (ex ? 'true' : 'false') + '"' : '') + ' aria-selected="' + (sel ? 'true' : 'false') + '" class="kn-li' + (c.ref ? ' kn-ref' : '') + (fallback ? ' kn-fb' : '') + (sel ? ' is-sel' : '') + '">' +
         '<div class="kn-row">' +
@@ -2444,7 +2449,10 @@
         case 'exp': toggleExp(key); break;
         case 'more': toggleMore(key); break;
         case 'focus': if (tr.byKey[key]) { S.preview = ''; focusNode(tr.byKey[key]); } break;
-        case 'read': openLecture(b.getAttribute('data-pid'), b.getAttribute('data-href')); break;
+        case 'read':
+          var rn = key && tr.byKey[key];
+          openLecture(b.getAttribute('data-pid'), b.getAttribute('data-href'), null, rn ? rn.id : b.getAttribute('data-id'));
+          break;
         case 'goto': goEntity(id, { scope: b.getAttribute('data-scope') || undefined, logic: b.getAttribute('data-logic') || undefined, selectSelf: !!(M.ent[id] && !CONTAINER[M.ent[id].kind] && M.ent[id].kind !== 'part') }); break;
         case 'pos': goEntity(id, { scope: 'bio', logic: b.getAttribute('data-logic'), via: b.getAttribute('data-via'), selectSelf: true }); break;
         case 'preview':
