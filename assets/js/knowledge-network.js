@@ -640,7 +640,7 @@
       '<div class="kn-hint" hidden><span>总览：点大模块后用"展开 ▸"进入该模块的知识关系图，"▸ 数字"在原处展开下级，点小章节直接打开讲义。关系图：点知识点打开讲义；拖动平移，滚轮或双指缩放。</span><button type="button" data-act="hint-close">知道了</button></div>' +
       '<div class="kn-body">' +
         '<div class="kn-view">' +
-          '<div class="kn-canvas" role="group" aria-label="思维导图"><button type="button" class="kn-reset-view" data-act="reset-view" aria-label="回正思维导图" title="回正思维导图"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5M8 12h8M12 8v8"/></svg><span>回正</span></button><span class="kn-exp-ops" role="group" aria-label="展开与收起"><button type="button" data-act="exp-all">展开全部</button><button type="button" data-act="exp-none">收起</button></span><div class="kn-world"><svg class="kn-edges" aria-hidden="true"></svg><div class="kn-nodes"></div></div></div>' +
+          '<div class="kn-canvas" role="group" aria-label="思维导图"><button type="button" class="kn-reset-view" data-act="reset-view" aria-label="回正思维导图" title="回正思维导图"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5M8 12h8M12 8v8"/></svg><span>回正</span></button><span class="kn-exp-ops" role="group" aria-label="展开与收起"><button type="button" data-act="exp-all">展开</button><button type="button" data-act="exp-none">收起</button></span><div class="kn-world"><svg class="kn-edges" aria-hidden="true"></svg><div class="kn-nodes"></div></div></div>' +
           '<div class="kn-list" hidden></div>' +
         '</div>' +
         '<aside class="kn-card" aria-label="信息卡" tabindex="-1"></aside>' +

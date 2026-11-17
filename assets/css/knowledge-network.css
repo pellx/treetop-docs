@@ -57,10 +57,10 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-reset-view { display: none; position: absolute; z-index: 5; left: 10px; top: 10px; align-items: center; gap: 4px; height: 30px; padding: 0 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg-dim); font-size: 12.5px; }
 .kn-graph-pan .kn-reset-view { display: inline-flex; }
 .kn-reset-view:hover { color: var(--fg); border-color: var(--accent); }
-.kn-exp-ops { display: none; position: absolute; z-index: 5; left: 86px; top: 10px; }
-.kn-overview .kn-graph-pan .kn-exp-ops { display: inline-flex; }
+.kn-exp-ops { display: none; position: absolute; z-index: 5; left: 10px; top: 46px; min-width: 63px; }
+.kn-overview .kn-graph-pan .kn-exp-ops { display: flex; flex-direction: column; align-items: stretch; }
 .kn-exp-ops button { height: 30px; padding: 0 9px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg-dim); font-size: 12.5px; }
-.kn-exp-ops button + button { border-left: 0; }
+.kn-exp-ops button + button { border-top: 0; }
 .kn-exp-ops button:hover { color: var(--fg); border-color: var(--accent); }
 .kn-reset-view svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: square; }
 .kn-canvas[hidden], .kn-list[hidden] { display: none; }
