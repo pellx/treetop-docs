@@ -12,41 +12,40 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-muted { color: var(--fg-dim); font-size: 13px; }
 .kn-k { color: var(--fg-dim); font-size: 12px; margin-right: 6px; }
 
-/* ---------- 顶部工具条 ---------- */
-.kn-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+/* ---------- 顶部：菜单在顶栏，路径在下面一行 ---------- */
+.kn-bar { display: flex; align-items: center; gap: 8px 12px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.kn-bar .topbar-title { flex: 1 1 auto; min-width: 0; }
+.kn-picks { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.topbar .kn-picks { flex: 0 1 auto; min-width: 0; }
 .kn-picker { display: inline-flex; align-items: center; min-width: 0; }
-.kn-picker .kn-k { flex: none; white-space: nowrap; }
 .kn-picker select { min-width: 0; max-width: min(240px, 55vw); height: 34px; padding: 0 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); font: inherit; font-size: 14px; }
+.topbar .kn-picker select { height: 32px; }
+.topbar .kn-logic-select { min-width: 98px; }
+.topbar .kn-picker select:hover { border-color: var(--accent); }
 @media (min-width: 600px) {
-  .kn-bar { flex-wrap: nowrap; }
-  .kn-picker:has(.kn-scope-select) { flex: 0 1 260px; }
+  .kn-picker:has(.kn-scope-select) { flex: 0 1 250px; }
   .kn-scope-select { width: 100%; }
-  .kn-form, .kn-info-btn { flex: none; white-space: nowrap; }
 }
 @media (max-width: 599px) {
-  .kn-bar { display: grid; grid-template-columns: max-content minmax(0, 1fr); }
   .kn-scope-select { width: 100%; }
-  .kn-form { justify-self: end; }
-  .kn-info-btn { justify-self: start; margin-left: 0; white-space: nowrap; }
+  .topbar .kn-picks { flex: 1 1 auto; }
+  .topbar .kn-picks .kn-picker { flex: 0 1 auto; }
+  .topbar .kn-picker select { max-width: none; padding: 0 4px; font-size: 13px; }
 }
-.kn-form { display: inline-flex; border: 1px solid var(--line-strong); }
-.kn-form button { height: 32px; padding: 0 12px; border: 0; background: var(--surface); font-size: 14px; color: var(--fg); }
-.kn-form button + button { border-left: 1px solid var(--line); }
-.kn-form button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
-.kn-info-btn { height: 34px; padding: 0 12px; border: 1px solid var(--line); background: var(--surface); font-size: 13.5px; margin-left: auto; }
-.kn-info-btn:hover, .kn-picker select:hover { border-color: var(--accent); }
+/* 覆盖与说明：浮在图上 */
+.kn-view-ops { position: absolute; z-index: 6; right: 10px; top: 10px; display: flex; gap: 6px; }
+.kn-view-ops .kn-info-btn { height: 30px; margin: 0; padding: 0 10px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg-dim); font-size: 12.5px; }
+.kn-view-ops .kn-info-btn:hover { color: var(--fg); border-color: var(--accent); }
 
 /* ---------- 位置条、来路、提示 ---------- */
 .kn-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 6px 16px; border-bottom: 1px solid var(--line); }
 .kn-sub[hidden] { display: none; }
 .kn-from button { background: var(--surface); border: 1px solid var(--accent-line); color: var(--accent-text); padding: 2px 10px; font-size: 13px; }
 .kn-from button:hover { background: var(--accent-soft); }
-.kn-notice, .kn-hint { display: flex; align-items: center; gap: 10px; padding: 6px 16px; font-size: 13.5px; border-bottom: 1px solid var(--draft-line); background: var(--draft-bg); color: var(--draft-fg); }
-.kn-notice[hidden], .kn-hint[hidden] { display: none; }
-.kn-notice span, .kn-hint span { flex: 1; }
-.kn-notice button, .kn-hint button { background: none; border: 1px solid var(--draft-line); color: var(--draft-fg); padding: 0 8px; font-size: 13px; }
-.kn-hint { background: var(--tip-test-bg); border-color: var(--tip-test-line); color: var(--fg); }
-.kn-hint button { border-color: var(--tip-test-line); color: var(--fg); }
+.kn-notice { display: flex; align-items: center; gap: 10px; padding: 6px 16px; font-size: 13.5px; border-bottom: 1px solid var(--draft-line); background: var(--draft-bg); color: var(--draft-fg); }
+.kn-notice[hidden] { display: none; }
+.kn-notice span { flex: 1; }
+.kn-notice button { background: none; border: 1px solid var(--draft-line); color: var(--draft-fg); padding: 0 8px; font-size: 13px; }
 
 /* ---------- 主体：图／列表 + 信息卡 ---------- */
 .kn-body { position: relative; flex: 1; min-height: 0; display: flex; }
@@ -329,8 +328,7 @@ button.kn-cm-n:focus-visible { outline: 3px solid var(--accent-strong); outline-
   .kn-card { width: 300px; }
 }
 @media (max-width: 899px) {
-  .kn-bar { padding: 8px 10px; gap: 6px 8px; justify-content: center; }
-  .kn-info-btn { margin-left: 0; }
+  .kn-bar { padding: 8px 10px; gap: 6px 8px; }
   .kn-sub { padding: 4px 10px; }
   .kn-n-flag { height: 24px; line-height: 22px; }
   .kn-n-flags { top: -12px; }
@@ -341,7 +339,6 @@ button.kn-cm-n:focus-visible { outline: 3px solid var(--accent-strong); outline-
   .kn-l-head { flex-direction: column; }
 }
 @media (max-width: 520px) {
-  .kn-logic button, .kn-form button { padding: 0 9px; }
   .kn-top-btn { padding: 0 8px; }
   .kn-l-go { flex-direction: column; align-items: stretch; }
 }
@@ -349,5 +346,5 @@ button.kn-cm-n:focus-visible { outline: 3px solid var(--accent-strong); outline-
   .kn-node, .kn-card, .kn-edges .kn-rel { transition: none !important; }
 }
 @media print {
-  .kn-bar, .kn-top-btn, .kn-top-back, .kn-pop { display: none !important; }
+  .kn-bar, .kn-picks, .kn-view-ops, .kn-top-btn, .kn-top-back, .kn-pop { display: none !important; }
 }
