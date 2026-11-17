@@ -203,6 +203,8 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-cm-n { position: absolute; box-sizing: border-box; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0 4px; border: 1.3px solid var(--fg); background: var(--surface); color: var(--fg); font: inherit; font-size: 14px; line-height: 20px; text-align: center; white-space: nowrap; cursor: pointer; }
 .kn-cm-n.is-plain { cursor: default; }
 .kn-cm-n.is-main { font-weight: 700; border-width: 2px; }
+.kn-cm-n.is-bare { border-color: transparent; background: transparent; }
+.kn-cm-n.is-note { border-style: dashed; font-size: 13px; line-height: 18px; }
 button.kn-cm-n:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
 button.kn-cm-n:focus-visible { outline: 3px solid var(--accent-strong); outline-offset: 1px; }
 .kn-cm-n.is-vis { color: var(--accent-text); }

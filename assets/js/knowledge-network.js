@@ -249,7 +249,7 @@
       });
       arr(mp.edges).forEach(function (e, i) {
         if (!e) return;
-        var ends = e.fork ? [e.fork].concat(arr(e.to)) : [e.from, e.to];
+        var ends = e.loop ? [e.loop] : e.fork ? [e.fork].concat(arr(e.to)) : [e.from, e.to];
         var bad = ends.filter(function (x) { return !ids[x]; });
         if (bad.length || (e.fork && !arr(e.to).length)) { issue('warn', where + ' 的第 ' + (i + 1) + ' 条连线端点不存在：' + bad.join('、') + '（已跳过）', [mp.id]); return; }
         out.edges.push(e);
@@ -1615,6 +1615,16 @@
     mp.edges.forEach(function (e) {
       var arrow = e.arrow === 'start' || e.arrow === 'both' || e.arrow === 'end' ? e.arrow : (e.arrow === true ? 'end' : '');
       var cls = 'kn-cm-e' + (e.dash ? ' kn-cm-dash' : '');
+      if (e.loop) {
+        /* 自循环：绕节点一侧画约 240° 的圆弧箭头（如 DNA 的"复制"）；side 为圆弧鼓出的方向 */
+        var Lb = G.box[e.loop], rr = e.r || Math.max(Lb.w, Lb.h) / 2 + 8;
+        var phi = { l: 180, r: 0, t: 270, b: 90 }[e.side || 'l'], rad = Math.PI / 180;
+        var pa = { x: Lb.cx + rr * Math.cos((phi + 120) * rad), y: Lb.cy + rr * Math.sin((phi + 120) * rad) };
+        var pb = { x: Lb.cx + rr * Math.cos((phi - 120) * rad), y: Lb.cy + rr * Math.sin((phi - 120) * rad) };
+        G.paths.push({ d: 'M' + pa.x.toFixed(1) + ' ' + pa.y.toFixed(1) + 'A' + rr + ' ' + rr + ' 0 1 0 ' + pb.x.toFixed(1) + ' ' + pb.y.toFixed(1), cls: cls, end: true, note: e.note || '' });
+        if (e.label) G.labels.push(cmLabel(e.label, e.lp ? e.lp[0] : Lb.cx, e.lp ? e.lp[1] : Lb.cy + rr + 12, e.lv));
+        return;
+      }
       if (e.fork) {
         /* 分类括线：上级一侧引出主干，到竖（横）线后分到各下级 */
         var P = G.box[e.fork], K = e.to.map(function (id) { return G.box[id]; }), dir = e.dir || 'r', horiz = dir === 'l' || dir === 'r';
@@ -1634,7 +1644,12 @@
         return;
       }
       var A = G.box[e.from], Bx = G.box[e.to], pts;
-      if (e.straight) pts = [cmClip(A, Bx.cx, Bx.cy), cmClip(Bx, A.cx, A.cy)];
+      if (e.straight) {
+        /* 斜直线；有折点时依次经过折点（如"竖直下来再斜着分开"的菱形） */
+        var sv = arr(e.via).map(function (p) { return { x: p[0], y: p[1] }; });
+        var f0 = sv[0] || { x: Bx.cx, y: Bx.cy }, f1 = sv.length ? sv[sv.length - 1] : { x: A.cx, y: A.cy };
+        pts = [cmClip(A, f0.x, f0.y)].concat(sv, [cmClip(Bx, f1.x, f1.y)]);
+      }
       else {
         var via = arr(e.via).map(function (p) { return { x: p[0], y: p[1] }; });
         var s0 = cmAttach(A, via[0] || { x: Bx.cx, y: Bx.cy }, e.fs);
@@ -1696,6 +1711,22 @@
       /* 尚未绘制：说明情况，列出下级并可直接打开讲义 */
       refs.svg.innerHTML = ''; refs.world.style.width = 'auto'; refs.world.style.height = 'auto'; refs.world.style.transform = '';
       refs.canvas.classList.remove('kn-graph-pan'); graphGeom = null; graphView.key = '';
+      /* 本身没有图、但下级各部分有图（如领域）：列出这些关系图的入口，几个部分共用一张图时合并为一项 */
+      var sub = [], seenMap = {};
+      focus.children.forEach(function (c) {
+        var m = M.mapOf[c.id]; if (!m) return;
+        if (seenMap[m.id]) { seenMap[m.id].names.push(nodeName(c)); return; }
+        seenMap[m.id] = { m: m, key: c.key, names: [nodeName(c)] }; sub.push(seenMap[m.id]);
+      });
+      if (sub.length) {
+        var hub = D.createElement('div'); hub.className = 'kn-empty kn-cm-empty kn-cm-hub';
+        hub.innerHTML = '<h3>「' + esc(nodeName(focus)) + '」的知识关系图</h3><p>本领域按模块分为 ' + sub.length + ' 张关系图：</p><ul>' + sub.map(function (s) {
+          return '<li><button type="button" class="kn-link" data-act="focus" data-key="' + esc(s.key) + '">' + esc(s.m.name) + '</button>' +
+            (s.names.length > 1 || s.names[0] !== s.m.name ? '<span class="kn-muted">（' + esc(s.names.join('、')) + '）</span>' : '') + '</li>';
+        }).join('') + '</ul>';
+        refs.nodes.appendChild(hub);
+        return;
+      }
       var kids = focus.children.map(function (c) {
         var lec = lectureOf(c.id), nm = esc(nodeName(c));
         return '<li>' + (lec ? '<button type="button" class="kn-link" data-act="read" data-pid="' + esc(lec.pid) + '" data-href="' + esc(lec.href) + '">' + nm + '</button>' : '<button type="button" class="kn-link" data-act="focus" data-key="' + esc(c.key) + '">' + nm + '</button>') + '</li>';
@@ -1723,7 +1754,7 @@
     refs.svg.innerHTML = svg;
     var vis = visited(), h = '';
     G.nodes.forEach(function (b) {
-      var n = b.n, cls = 'kn-cm-n' + (n.s === 'main' ? ' is-main' : '') + (hi[n.id] ? ' is-hi' : '');
+      var n = b.n, cls = 'kn-cm-n' + (n.s ? ' is-' + n.s : '') + (hi[n.id] ? ' is-hi' : '');
       var pos = 'style="left:' + px(b.l + ox) + 'px;top:' + px(b.t + oy) + 'px;width:' + b.w + 'px;height:' + b.h + 'px"';
       var txt = esc(n.t).replace(/\n/g, '<br>');
       if (n.go) {
