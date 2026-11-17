@@ -15,7 +15,7 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 /* ---------- 顶部：菜单在顶栏，路径在下面一行 ---------- */
 .kn-bar { display: flex; align-items: center; gap: 8px 12px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
 .kn-bar .topbar-title { flex: 1 1 auto; min-width: 0; }
-.kn-picks { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.kn-picks { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .topbar .kn-picks { flex: 0 1 auto; min-width: 0; }
 .kn-picker { display: inline-flex; align-items: center; min-width: 0; }
 .kn-picker select { min-width: 0; max-width: min(240px, 55vw); height: 34px; padding: 0 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); font: inherit; font-size: 14px; }
@@ -88,6 +88,10 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 
 .kn-node { position: absolute; left: 0; top: 0; display: flex; align-items: stretch; transition: transform .26s ease, opacity .2s ease; }
 .kn-node.kn-enter { opacity: 0; }
+/* 大跨度重排：不用滑行，直接在落点淡入 */
+.kn-node.kn-jump { transition: none; }
+.kn-node.kn-jumpin { animation: kn-fadein .28s ease both; }
+@keyframes kn-fadein { from { opacity: 0; } to { opacity: 1; } }
 .kn-n-main { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 1px; text-align: left; padding: 5px 10px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--fg); font-size: 14px; line-height: 1.35; overflow: hidden; }
 .kn-n-main:hover { border-color: var(--accent); background: var(--accent-soft); }
 .kn-n-name { font-weight: 600; color: var(--title-fg); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -99,6 +103,9 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-tag-fb { border-style: dashed; }
 .kn-tag-part { border-style: dotted; }
 .kn-tag-vis { border-color: var(--accent-line); color: var(--accent-text); }
+/* "访问过"贴到卡片左下角：绝对定位，不占小字那一行，也不改变卡片高度 */
+.kn-node .kn-tag-vis { position: absolute; left: 5px; bottom: 0; z-index: 1; margin: 0; padding: 0 3px; font-size: 10px; line-height: 1.25; background: var(--surface); }
+.kn-node.is-sel .kn-tag-vis { background: var(--accent-soft); }
 
 .kn-r-center .kn-n-main, .kn-r-focus .kn-n-main { border: 2px solid var(--title-bar); background: var(--title-bg); }
 .kn-r-center .kn-n-name, .kn-r-focus .kn-n-name { font-size: 16px; }
@@ -348,6 +355,7 @@ button.kn-cm-n:focus-visible { outline: 3px solid var(--accent-strong); outline-
 }
 @media (prefers-reduced-motion: reduce) {
   .kn-node, .kn-card, .kn-edges .kn-rel { transition: none !important; }
+  .kn-node.kn-jumpin { animation: none; }
 }
 @media print {
   .kn-bar, .kn-picks, .kn-view-ops, .kn-top-btn, .kn-top-back, .kn-pop { display: none !important; }

@@ -30,6 +30,9 @@
   function sSet(area, k, v) { memStore[area + k] = v; try { WIN[area].setItem(k, JSON.stringify(v)); } catch (e) { /* 存储不可用：只保留在内存中 */ } }
   function rand() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
   var REDUCED = WIN.matchMedia && WIN.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* 一轮重排里最多的位移（曼哈顿距离，px）超过 FAR_MOVE 就算整屏重排：
+     所有挪动超过 NEAR_MOVE 的节点都不滑行，改为隐藏后在落点淡入 */
+  var FAR_MOVE = 48, NEAR_MOVE = 10;
   function narrow() { return WIN.innerWidth < 900; }
 
   /* =====================================================================
@@ -466,7 +469,10 @@
       case 'book': bits.push(e.parts.length + ' 部分', s.pts + ' 考点'); break;
       case 'domain':
         if (T.logic === 'rel') {
-          s.maps = n.children.filter(function (c) { return M.ent[c.id] && M.ent[c.id].kind === 'map'; }).length;
+          /* 数这个领域各小节落在哪几张关系图上；整个领域共用一张图时树里没有导图节点，也要算上 */
+          var dm = {};
+          e.parts.forEach(function (p) { var mp = M.mapOfPart[p]; if (mp) dm[mp.id] = 1; });
+          s.maps = Object.keys(dm).length;
           if (s.maps) bits.push(s.maps + ' 个导图', e.parts.length + ' 个知识点');
           else bits.push(e.parts.length + ' 部分', s.pts + ' 考点');
         } else bits.push(n.children.length ? n.children.length + ' 个任务' : '任务 0 · 尚未整理');
@@ -850,7 +856,10 @@
     opts = opts || {};
     var tr = T();
     var url = urlFor(tr, n, opts.sel ? tr.byKey[opts.sel] : null);
-    if (opts.sel) putView(url, { sel: opts.sel, selId: tr.byKey[opts.sel] ? tr.byKey[opts.sel].id : '', exp: getView(url) ? getView(url).exp : defaultExp(tr, n), more: [] });
+    var old = getView(url);
+    /* 明确展开某个节点时另写一份视图：不把上次在该地址里选中的节点带回来，
+       否则它会决定显示哪张关系图，展开领域时可能落到毫不相干的图 */
+    putView(url, { sel: opts.sel || '', selId: opts.sel && tr.byKey[opts.sel] ? tr.byKey[opts.sel].id : '', exp: old ? old.exp : defaultExp(tr, n), more: [] });
     go(url);
   }
   function addNote(m) { if (m && (S.pendingNotice || '').indexOf(m) < 0) S.pendingNotice = (S.pendingNotice ? S.pendingNotice + ' ' : '') + m; }
@@ -1540,13 +1549,33 @@
     labels.forEach(function (lb, i) { items.push({ k: 'lab:' + i + ':' + lb.t, nd: { x: lb.x, y: lb.y - 10, w: 0, h: 20 }, cls: 'kn-node kn-lab ' + (lb.cls || '') + (lb.id && S.selId === lb.id ? ' is-sel' : ''), html: lb.id ? '<button type="button" data-act="line-label" data-id="' + esc(lb.id) + '" aria-label="查看' + esc(lb.t) + '详情">' + esc(lb.t) + '</button>' : '<span>' + esc(lb.t) + '</span>' }); });
     var activeKey = D.activeElement && D.activeElement.closest && D.activeElement.closest('.kn-node') ? D.activeElement.closest('.kn-node').getAttribute('data-k') : '';
     var activeAct = D.activeElement && D.activeElement.getAttribute ? D.activeElement.getAttribute('data-act') : '';
+    /* 整屏重排时不滑行：先看这一轮里留下的节点最多挪多远，够大就统一切成"隐藏后在落点淡入" */
+    var bigShift = false;
+    items.forEach(function (it) {
+      var el = existing[it.k];
+      if (!el || el._knx == null) return;
+      if (Math.abs(it.nd.x - el._knx) + Math.abs(it.nd.y - el._kny) > FAR_MOVE) bigShift = true;
+    });
     items.forEach(function (it) {
       var el = existing[it.k];
       var fresh = !el;
       if (fresh) { el = D.createElement('div'); el.setAttribute('data-k', it.k); if (!REDUCED) el.classList.add('kn-enter'); nodesBox.appendChild(el); }
       else delete existing[it.k];
       if (el.getAttribute('data-sig') !== it.cls + it.html) { el.className = it.cls + (fresh && !REDUCED ? ' kn-enter' : ''); el.innerHTML = it.html; el.setAttribute('data-sig', it.cls + it.html); }
-      el.style.transform = 'translate(' + Math.round(it.nd.x) + 'px,' + Math.round(it.nd.y) + 'px)';
+      var tx = 'translate(' + Math.round(it.nd.x) + 'px,' + Math.round(it.nd.y) + 'px)';
+      /* 整屏重排时不做平移，直接在新位置淡入；只是小挪动才用原来的滑行 */
+      var ox = el._knx, oy = el._kny;
+      var far = bigShift && !fresh && ox != null && Math.abs(it.nd.x - ox) + Math.abs(it.nd.y - oy) > NEAR_MOVE;
+      if (far && !REDUCED) {
+        el.classList.add('kn-jump'); el.style.transform = tx; el.style.opacity = '0';
+        void el.offsetWidth; /* 先在旧位置无过渡地落位并隐藏，下一帧再淡入 */
+        el.classList.remove('kn-jump'); el.style.opacity = '';
+        el.classList.remove('kn-enter'); el.classList.add('kn-jumpin');
+        if (!el._knAnim) { el._knAnim = 1; el.addEventListener('animationend', function (ev) { if (ev.animationName === 'kn-fadein') el.classList.remove('kn-jumpin'); }); }
+      } else {
+        el.style.transform = tx;
+      }
+      el._knx = Math.round(it.nd.x); el._kny = Math.round(it.nd.y);
       if (it.nd.w) el.style.width = it.nd.w + 'px';
       if (it.nd.h) el.style.height = it.nd.h + 'px';
       keep[it.k] = el;
@@ -1728,7 +1757,10 @@
   }
   /* 模块所用的关系图：从当前位置（含选中的叶子）沿上级向上找最近的锚点 */
   function mapFor(tr, focus) {
-    var start = (S.sel && tr.byKey[S.sel]) || focus;
+    /* 选中的节点必须在当前焦点之下才算数，别让上一处选中的分支决定这里显示哪张图 */
+    var selNode = S.sel && tr.byKey[S.sel], inside = false;
+    for (var y = selNode; y && !inside; y = y.parent) inside = y === focus;
+    var start = inside && selNode ? selNode : focus;
     for (var x = start; x; x = x.parent) if (M.mapOf[x.id]) return M.mapOf[x.id];
     /* 兜底（如专题里引用的知识点）：哪张图画了它对应的讲义考点就用哪张 */
     var e = M.ent[start.id];
