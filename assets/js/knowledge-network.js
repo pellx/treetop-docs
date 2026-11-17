@@ -1293,6 +1293,10 @@
       inner = '<button type="button" class="kn-n-main" ' + (nd.current ? 'aria-current="true" data-act="none"' : 'data-act="focus"') + ' data-key="' + esc(n.key) + '" title="' + esc(name) + '"><span class="kn-n-name">' + esc(name) + '</span></button>';
       return { cls: cls, html: inner };
     }
+    /* 总览里原地展开的导图卡片：点击进入这张导图，而不是打开讲义 */
+    if (role === 'sub' && kind === 'map') {
+      return { cls: cls + ' kn-go', html: '<button type="button" class="kn-n-main" data-act="focus" data-key="' + esc(n.key) + '" title="' + esc('打开导图：' + name) + '" aria-label="' + esc('打开导图：' + name) + '"><span class="kn-n-name">' + esc(name) + '</span></button>' };
+    }
     /* 总览里的小章节（原地展开的二级卡片）：直接打开讲义 */
     var lec = role === 'sub' ? lectureOf(n.id) : null;
     if (lec) {
@@ -1301,7 +1305,9 @@
     var tag = n.ref ? '<span class="kn-tag">引用</span>' : kind === 'ep' ? epTag(n.id) : (fallback ? '<span class="kn-tag kn-tag-fb">未整理</span>' : '');
     if (vis) tag += '<span class="kn-tag kn-tag-vis">访问过</span>';
     if (n.pending) tag += '<span class="kn-tag kn-tag-fb">待确认</span>';
-    inner = '<button type="button" class="kn-n-main" data-act="sel" data-key="' + esc(n.key) + '" aria-pressed="' + (sel ? 'true' : 'false') + '" aria-label="' + esc(aria + '：' + name + (meta ? '（' + meta + '）' : '')) + '"' + (role === 'sub' ? ' title="' + esc(name) + '"' : '') + '>' +
+    /* 导图节点本身就是一张图：点卡片直接进入这张导图，其余节点照旧先选中 */
+    var mainAct = kind === 'map' && (role === 'child' || role === 'grand') ? 'focus' : 'sel';
+    inner = '<button type="button" class="kn-n-main" data-act="' + mainAct + '" data-key="' + esc(n.key) + '" aria-pressed="' + (sel ? 'true' : 'false') + '" aria-label="' + esc(aria + '：' + name + (meta ? '（' + meta + '）' : '')) + '"' + (role === 'sub' ? ' title="' + esc(name) + '"' : '') + (mainAct === 'focus' ? ' title="' + esc('打开导图：' + name) + '"' : '') + '>' +
       '<span class="kn-n-kind">' + esc(role === 'center' || role === 'focus' ? aria : '') + '</span>' +
       '<span class="kn-n-name">' + esc(name) + '</span>' + (meta || tag ? '<span class="kn-n-meta">' + tag + esc(meta) + '</span>' : '') + '</button>';
     if ((role === 'child' || role === 'ring') && n.children.length) {
