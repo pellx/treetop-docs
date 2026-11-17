@@ -463,12 +463,12 @@
       case 'domain':
         if (T.logic === 'rel') {
           s.maps = n.children.filter(function (c) { return M.ent[c.id] && M.ent[c.id].kind === 'map'; }).length;
-          if (s.maps) bits.push(s.maps + ' 个思维导图', e.parts.length + ' 个小节');
+          if (s.maps) bits.push(s.maps + ' 个导图', e.parts.length + ' 个知识点');
           else bits.push(e.parts.length + ' 部分', s.pts + ' 考点');
         } else bits.push(n.children.length ? n.children.length + ' 个任务' : '任务 0 · 尚未整理');
         break;
       case 'map':
-        bits.push(e.parts.length + ' 个小节', s.pts + ' 考点');
+        bits.push(e.parts.length + ' 个知识点', s.pts + ' 考点');
         break;
       case 'part':
         var units = n.children.filter(function (c) { return M.ent[c.id] && M.ent[c.id].kind === 'unit'; }).length;
@@ -2004,7 +2004,7 @@
     if (e.kind === 'line') h += sec('站点', idList(e.stations)) + sec('关系', '<ul class="kn-c-rels">' + e.edges.map(function (rid) { return relRow(M.relById[rid], null); }).join('') + '</ul>');
     if (e.kind === 'topic') h += sec('分组', '<ul class="kn-c-list">' + e.groups.map(function (g) { return '<li>' + esc(M.ent[g].name) + ' <span class="kn-muted">' + M.ent[g].items.length + ' 项</span></li>'; }).join('') + '</ul>');
     if (e.kind === 'map') {
-      h += sec('这张图覆盖的小节', '<ul class="kn-c-list">' + e.parts.map(function (p) { return '<li>' + entLink(p) + '</li>'; }).join('') + '</ul>');
+      h += sec('这张图覆盖的知识点', '<ul class="kn-c-list">' + e.parts.map(function (p) { return '<li>' + entLink(p) + '</li>'; }).join('') + '</ul>');
       if (e.source) h += sec('来源', '<p>' + esc(e.source) + '</p>');
     }
     /* 关系（逐条，关系词处处相同） */
