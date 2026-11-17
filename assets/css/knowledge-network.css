@@ -29,8 +29,10 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 @media (max-width: 599px) {
   .kn-scope-select { width: 100%; }
   .topbar .kn-picks { flex: 1 1 auto; }
-  .topbar .kn-picks .kn-picker { flex: 0 1 auto; }
-  .topbar .kn-picker select { max-width: none; padding: 0 4px; font-size: 13px; }
+  .topbar .kn-picks .kn-picker { flex: 0 0 auto; }
+  /* 窄屏两个菜单各自收窄，但互不压住对方，中间留出 12px */
+  .topbar .kn-picker select { max-width: 42vw; padding: 0 4px; font-size: 13px; }
+  .topbar .kn-logic-select { min-width: 86px; }
 }
 /* 覆盖与说明：浮在图上 */
 .kn-view-ops { position: absolute; z-index: 6; right: 10px; top: 10px; display: flex; gap: 6px; }
