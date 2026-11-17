@@ -371,9 +371,13 @@
           if (!M.ent[did]) return;
           var dn = mk(did, root);
           var parts = M.ent[did].parts.slice().sort(function (a, b) { return M.books.indexOf(M.ent[a].book) - M.books.indexOf(M.ent[b].book); });
-          /* 同一领域里有好几张关系图时，先列子图，子图下再列它覆盖的小节；没有图的小节直接挂在领域下 */
+          /* 同一领域里有好几张关系图时，先列子图，子图下再列它覆盖的小节；没有图的小节直接挂在领域下。
+             整个领域只有一张图时，那张图就是领域自己的全貌（聚焦领域即进入），
+             所以不再多插一层与领域同名的导图卡片，直接把各模块挂在领域下。 */
+          var one = parts.length ? M.mapOfPart[parts[0]] : null;
+          if (one && parts.some(function (p) { return M.mapOfPart[p] !== one; })) one = null;
           parts.forEach(function (pid) {
-            var mp = M.mapOfPart[pid];
+            var mp = one ? null : M.mapOfPart[pid];
             if (!mp) { partBody(mk(pid, dn), M.ent[pid]); return; }
             var mn = T.byKey[dn.key + '/' + mp.id] || mk(mp.id, dn);
             partBody(mk(pid, mn), M.ent[pid]);
