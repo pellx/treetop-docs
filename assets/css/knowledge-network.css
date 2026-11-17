@@ -77,7 +77,7 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 /* 语义关系线：加粗、带箭头（对比/类比无箭头、点线）；待确认为虚线 */
 .kn-edges .kn-rel { stroke: var(--kn-c); stroke-width: 2.2; transition: opacity .2s ease; }
 .kn-edges .kn-rel.kn-rel-tbd { stroke-dasharray: 7 4; }
-.kn-edges .kn-rel.kn-rel-sym { stroke-dasharray: 1.5 4.5; stroke-width: 2.6; }
+.kn-edges .kn-rel.kn-rel-sym { stroke-dasharray: 0 5; stroke-linecap: round; stroke-width: 3; }
 .kn-edges .kn-rel.is-hi { stroke-width: 3; }
 .kn-edges .is-dim { opacity: .15; }
 .kn-edges .kn-mk path { fill: var(--kn-c); }
@@ -99,6 +99,7 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-n-sib { font-size: 11.5px; color: var(--fg-dim); }
 .kn-tag { display: inline-block; font-size: 11px; line-height: 1.4; padding: 0 4px; margin-right: 4px; border: 1px solid var(--line-strong); color: var(--fg-dim); vertical-align: 1px; }
 .kn-tag-fb { border-style: dashed; }
+.kn-tag-part { border-style: dotted; }
 .kn-tag-vis { border-color: var(--accent-line); color: var(--accent-text); }
 
 .kn-r-center .kn-n-main, .kn-r-focus .kn-n-main { border: 2px solid var(--title-bar); background: var(--title-bg); }
@@ -152,7 +153,8 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 /* 关系词标签：可截断，title 与读屏文本给完整句子 */
 .kn-rl { pointer-events: none; z-index: 2; transition: transform .26s ease, opacity .2s ease; }
 .kn-rl-t { pointer-events: auto; display: inline-block; max-width: 100%; height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; line-height: 16px; padding: 0 4px; background: var(--surface); border: 1px solid var(--kn-c); color: var(--kn-c); cursor: default; }
-.kn-rl.kn-rel-tbd .kn-rl-t, .kn-rl.kn-rel-sym .kn-rl-t { border-style: dashed; }
+.kn-rl.kn-rel-sym .kn-rl-t { border-style: dotted; }
+.kn-rl.kn-rel-tbd .kn-rl-t { border-style: dashed; }
 .kn-rl-q { font-weight: 700; margin-right: 3px; padding-right: 3px; border-right: 1px dashed currentColor; }
 .kn-rl.is-hi .kn-rl-t { font-weight: 700; border-width: 2px; line-height: 14px; }
 .kn-rl.is-dim, .kn-agg-lab.is-dim { opacity: .2; }
