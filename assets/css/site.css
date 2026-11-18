@@ -93,7 +93,7 @@
   --playing-line: #5e9f76;
   --skip-bg: #000000;
   --skip-fg: #ffffff;
-  --brand-mark-bg: #ffffff;
+  --brand-mark-bg: var(--accent);
   --drawer-shadow: rgba(0, 0, 0, .4);
 
   /* 底部播放器（日间浅色；深色值见 html[data-theme="dark"]） */
