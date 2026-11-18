@@ -14,45 +14,23 @@
 <link rel="stylesheet" href="../../assets/css/remotion.css">
 <style>
 .immune-atlas {
-  --atlas-paper: #f5f8f9;
-  --atlas-body: #e1eaee;
-  --atlas-outline: #78909c;
-  --atlas-ink: #243940;
-  /* 图内拉开讲义红、橙两类的色差；实线和虚线也标记同一分类。 */
-  --atlas-primary: #ab1850;
-  --atlas-peripheral: #ba6505;
+  --atlas-body: var(--bg-soft);
+  --atlas-outline: var(--fg-faint);
+  --atlas-primary: var(--red);
+  --atlas-peripheral: var(--orange);
   max-width: 456px;
   margin: 6px 0;
-  border: 1px solid var(--line);
-  background: var(--atlas-paper);
-  color: var(--atlas-ink);
 }
-:root[data-theme="dark"] .immune-atlas {
-  --atlas-paper: #20282c;
-  --atlas-body: #303e46;
-  --atlas-outline: #90a9b6;
-  --atlas-ink: #edf3f5;
-  --atlas-primary: #e65084;
-  --atlas-peripheral: #d27c17;
-}
-.immune-atlas > figcaption,
+.immune-atlas > .rm-svg { margin: 0; }
 .immune-atlas-key {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  justify-content: center;
   gap: 2px 14px;
-  padding: 8px 12px;
+  color: var(--fg-dim);
   font-size: 13px;
   line-height: 1.5;
 }
-.immune-atlas > figcaption {
-  justify-content: space-between;
-  border-bottom: 1px solid var(--line);
-}
-.immune-atlas > figcaption strong { font-size: 15px; }
-.immune-atlas > figcaption span { color: var(--fg-dim); }
-.immune-atlas > .rm-svg { margin: 0; }
-.immune-atlas-key { border-top: 1px solid var(--line); }
 .immune-atlas-key span { display: inline-flex; align-items: center; gap: 6px; }
 .immune-atlas-key span::before {
   content: "";
@@ -60,7 +38,7 @@
   border-top: 2px solid var(--atlas-primary);
 }
 .immune-atlas-key span + span::before { border-top: 2px dashed var(--atlas-peripheral); }
-.immune-atlas-labels { fill: var(--atlas-ink); font-size: 21px; font-weight: 700; }
+.immune-atlas-labels { fill: var(--fg-lead); font-size: 21px; font-weight: 700; }
 </style>
 </head>
 
@@ -398,9 +376,9 @@
 <div class="para" data-lines="og1" data-src="src/scenes/Organs.tsx › Hl (src/components/ui.tsx)"><button class="play-btn" type="button" data-play="og1" title="从这里播放" aria-label="从这里播放"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button><div class="para-body"><div class="rm-a" style="font-weight:800">免疫系统 = <mark class="hl-red">免疫器官</mark> + <mark class="hl-orange">免疫细胞</mark> + <mark class="hl-green">免疫活性物质</mark></div></div></div>
 <div class="para" data-lines="og1" data-src="src/scenes/Organs.tsx › Body (src/scenes/Organs.tsx), G (src/components/kit.tsx)"><button class="play-btn" type="button" data-play="og1" title="从这里播放" aria-label="从这里播放"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button><div class="para-body">
 <figure class="immune-atlas">
-  <figcaption><strong id="xb1-13-atlas-title">人体免疫器官</strong><span>正面示意</span></figcaption>
   <svg viewBox="0 0 380 446" class="rm-svg" role="img" aria-labelledby="xb1-13-atlas-title" aria-describedby="xb1-13-atlas-desc">
-    <desc id="xb1-13-atlas-desc">扁桃体在咽腭部，胸腺在胸骨后上方，脾在人体左上腹（图的右侧）。淋巴结沿淋巴管分布，图中示意颈部、腋下及腹股沟的淋巴结。骨髓以股骨剖面为例。</desc>
+    <title id="xb1-13-atlas-title">人体免疫器官正面示意图</title>
+    <desc id="xb1-13-atlas-desc">扁桃体在咽腭部，胸腺在胸骨后上方，脾在人体左上腹（图的右侧）。淋巴结沿淋巴管分布，图中示意颈部、腋下及腹股沟的淋巴结。骨髓以股骨剖面为例。实线标注免疫细胞产生、成熟的场所；虚线标注免疫细胞集中分布的场所。</desc>
     <defs>
       <g id="xb1-13-lymph-side">
         <path d="M172 88q-6 15-15 22l-8 17q-11 21-17 48l-16 70 M151 127q2 21 17 51t5 54q-7 17-8 28l-1 24" fill="none" stroke="var(--atlas-peripheral)" stroke-width="1.6" opacity=".4"/>
@@ -428,7 +406,7 @@
     <path d="M191 130l1 14M225 175q3 9-5 18" fill="none" stroke="var(--atlas-body)" stroke-width="1.2" stroke-linecap="round" opacity=".65"/>
     <!-- 用股骨轮廓内的红色髓腔示意骨髓，而不是把整段腿骨涂红。 -->
     <g id="xb1-13-femur">
-      <path d="M156 279c3-5 9-6 13-2 3 3 2 7-1 11l-4 39c0 5 4 9 2 13-1 3-4 4-7 2-4 3-9 1-9-3-1-4 3-7 4-12l3-39c-2-3-3-6-1-9z" fill="var(--atlas-paper)" stroke="var(--atlas-outline)" stroke-width="1.25"/>
+      <path d="M156 279c3-5 9-6 13-2 3 3 2 7-1 11l-4 39c0 5 4 9 2 13-1 3-4 4-7 2-4 3-9 1-9-3-1-4 3-7 4-12l3-39c-2-3-3-6-1-9z" fill="var(--bg)" stroke="var(--atlas-outline)" stroke-width="1.25"/>
       <path d="M163 282q-2 7-4 30l-2 20" fill="none" stroke="var(--atlas-primary)" stroke-width="4.5" stroke-linecap="round"/>
     </g>
     <use href="#xb1-13-femur" transform="translate(380 0) scale(-1 1)"/>
@@ -447,7 +425,7 @@
       </g>
     </g>
   </svg>
-  <div class="immune-atlas-key" role="group" aria-label="图例"><span>产生、成熟</span><span>集中分布</span></div>
+  <figcaption class="immune-atlas-key"><span>产生、成熟</span><span>集中分布</span></figcaption>
 </figure>
 </div></div>
 <div class="para" data-lines="og2" data-src="src/scenes/Organs.tsx"><button class="play-btn" type="button" data-play="og2" title="从这里播放" aria-label="从这里播放"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button><div class="para-body"><div class="rm-a" style="font-weight:900;color:var(--orange)">扁桃体</div></div></div>
