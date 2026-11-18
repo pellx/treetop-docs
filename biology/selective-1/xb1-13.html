@@ -12,6 +12,56 @@
 <link rel="apple-touch-icon" href="../../assets/img/site/apple-touch-icon.png">
 <link rel="stylesheet" href="../../assets/css/site.css">
 <link rel="stylesheet" href="../../assets/css/remotion.css">
+<style>
+.immune-atlas {
+  --atlas-paper: #f5f8f9;
+  --atlas-body: #e1eaee;
+  --atlas-outline: #78909c;
+  --atlas-ink: #243940;
+  /* 图内拉开讲义红、橙两类的色差；实线和虚线也标记同一分类。 */
+  --atlas-primary: #ab1850;
+  --atlas-peripheral: #ba6505;
+  max-width: 456px;
+  margin: 6px 0;
+  border: 1px solid var(--line);
+  background: var(--atlas-paper);
+  color: var(--atlas-ink);
+}
+:root[data-theme="dark"] .immune-atlas {
+  --atlas-paper: #20282c;
+  --atlas-body: #303e46;
+  --atlas-outline: #90a9b6;
+  --atlas-ink: #edf3f5;
+  --atlas-primary: #e65084;
+  --atlas-peripheral: #d27c17;
+}
+.immune-atlas > figcaption,
+.immune-atlas-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 14px;
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.immune-atlas > figcaption {
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+}
+.immune-atlas > figcaption strong { font-size: 15px; }
+.immune-atlas > figcaption span { color: var(--fg-dim); }
+.immune-atlas > .rm-svg { margin: 0; }
+.immune-atlas-key { border-top: 1px solid var(--line); }
+.immune-atlas-key span { display: inline-flex; align-items: center; gap: 6px; }
+.immune-atlas-key span::before {
+  content: "";
+  width: 16px;
+  border-top: 2px solid var(--atlas-primary);
+}
+.immune-atlas-key span + span::before { border-top: 2px dashed var(--atlas-peripheral); }
+.immune-atlas-labels { fill: var(--atlas-ink); font-size: 21px; font-weight: 700; }
+</style>
 </head>
 
 <body>
@@ -346,7 +396,60 @@
 <section class="point" id="p1" data-point="1">
 <h2 class="pt-h"><span class="pt-title">免疫器官</span><span class="pt-num">01</span><button class="play-btn lg" type="button" data-play="og1" title="从本考点开始播放" aria-label="从本考点开始播放"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button><a class="anchor" href="#p1" aria-label="本节链接">#</a></h2>
 <div class="para" data-lines="og1" data-src="src/scenes/Organs.tsx › Hl (src/components/ui.tsx)"><button class="play-btn" type="button" data-play="og1" title="从这里播放" aria-label="从这里播放"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button><div class="para-body"><div class="rm-a" style="font-weight:800">免疫系统 = <mark class="hl-red">免疫器官</mark> + <mark class="hl-orange">免疫细胞</mark> + <mark class="hl-green">免疫活性物质</mark></div></div></div>
-<div class="para" data-lines="og1" data-src="src/scenes/Organs.tsx › Body (src/scenes/Organs.tsx), G (src/components/kit.tsx)"><button class="play-btn" type="button" data-play="og1" title="从这里播放" aria-label="从这里播放"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button><div class="para-body"><svg viewBox="0 0 620 720" class="rm-svg" role="img" style="max-width:496px"><g transform="translate(110,0)"><circle cx="200" cy="80" r="56" stroke-width="4" style="fill:#f6e3cc;stroke:#8a5a2b"></circle><path d="M110,170 Q200,140 290,170 L310,420 Q200,450 90,420 Z" stroke-width="4" style="fill:#f6e3cc;stroke:#8a5a2b"></path><path d="M110,175 L60,400 M290,175 L340,400" stroke-width="40" stroke-linecap="round" style="stroke:#f6e3cc"></path><path d="M110,175 L60,400 M290,175 L340,400" stroke-width="4" fill="none" opacity="0.25" style="stroke:#8a5a2b"></path><path d="M150,430 L140,700 M250,430 L260,700" stroke-width="56" stroke-linecap="round" style="stroke:#f6e3cc"></path><g><ellipse cx="186" cy="128" rx="9" ry="7" style="fill:var(--orange)"></ellipse><ellipse cx="214" cy="128" rx="9" ry="7" style="fill:var(--orange)"></ellipse></g><g><path d="M182,225 Q200,215 218,225 L214,275 Q200,285 186,275 Z" style="fill:var(--red)"></path></g><g><circle cx="135" cy="268" r="9" stroke-width="2" style="fill:var(--orange);stroke:var(--surface)"></circle><circle cx="150" cy="160" r="9" stroke-width="2" style="fill:var(--orange);stroke:var(--surface)"></circle><circle cx="250" cy="160" r="9" stroke-width="2" style="fill:var(--orange);stroke:var(--surface)"></circle><circle cx="120" cy="420" r="9" stroke-width="2" style="fill:var(--orange);stroke:var(--surface)"></circle><circle cx="280" cy="420" r="9" stroke-width="2" style="fill:var(--orange);stroke:var(--surface)"></circle><circle cx="95" cy="330" r="9" stroke-width="2" style="fill:var(--orange);stroke:var(--surface)"></circle></g><g><ellipse cx="250" cy="360" rx="22" ry="34" transform="rotate(25 250 360)" style="fill:var(--orange)"></ellipse></g><g><line x1="145" y1="480" x2="142" y2="660" stroke-width="12" stroke-linecap="round" style="stroke:var(--red)"></line><line x1="255" y1="480" x2="258" y2="660" stroke-width="12" stroke-linecap="round" style="stroke:var(--red)"></line></g></g><g><line x1="324" y1="128" x2="460" y2="110" stroke-width="3" style="stroke:var(--orange)"></line></g><g><line x1="320" y1="250" x2="460" y2="240" stroke-width="3" style="stroke:var(--red)"></line></g><g><line x1="260" y1="160" x2="100" y2="190" stroke-width="3" style="stroke:var(--orange)"></line></g><g><line x1="372" y1="365" x2="460" y2="370" stroke-width="3" style="stroke:var(--orange)"></line></g><g><line x1="255" y1="600" x2="100" y2="590" stroke-width="3" style="stroke:var(--red)"></line></g></svg></div></div>
+<div class="para" data-lines="og1" data-src="src/scenes/Organs.tsx › Body (src/scenes/Organs.tsx), G (src/components/kit.tsx)"><button class="play-btn" type="button" data-play="og1" title="从这里播放" aria-label="从这里播放"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button><div class="para-body">
+<figure class="immune-atlas">
+  <figcaption><strong id="xb1-13-atlas-title">人体免疫器官</strong><span>正面示意</span></figcaption>
+  <svg viewBox="0 0 380 446" class="rm-svg" role="img" aria-labelledby="xb1-13-atlas-title" aria-describedby="xb1-13-atlas-desc">
+    <desc id="xb1-13-atlas-desc">扁桃体在咽腭部，胸腺在胸骨后上方，脾在人体左上腹（图的右侧）。淋巴结沿淋巴管分布，图中示意颈部、腋下及腹股沟的淋巴结。骨髓以股骨剖面为例。</desc>
+    <defs>
+      <g id="xb1-13-lymph-side">
+        <path d="M172 88q-6 15-15 22l-8 17q-11 21-17 48l-16 70 M151 127q2 21 17 51t5 54q-7 17-8 28l-1 24" fill="none" stroke="var(--atlas-peripheral)" stroke-width="1.6" opacity=".4"/>
+        <g fill="var(--atlas-peripheral)" stroke="var(--atlas-body)" stroke-width="1.2">
+          <circle cx="172" cy="88" r="3.9"/><circle cx="168" cy="99" r="3.5"/>
+          <circle cx="151" cy="121" r="3.5"/><circle cx="146" cy="131" r="5"/><circle cx="142" cy="141" r="3.6"/>
+          <circle cx="166" cy="247" r="3.6"/><circle cx="171" cy="251" r="4.7"/><circle cx="162" cy="257" r="3.5"/>
+        </g>
+      </g>
+    </defs>
+    <!-- 正面人体轮廓，内层细线只用于提示解剖位置。 -->
+    <path d="M190 13C175 13 164 24 164 42v8c-7-4-7 11 1 14 2 9 5 15 11 20v10c-4 8-12 11-29 15-16 4-25 12-28 28l-8 48-12 57c-3 9-7 17-7 26v10c0 5 4 6 5 1l2-10-1 14c0 6 5 6 6 1l2-11 1 6c1 4 5 3 5-1l2-22 15-67 11-37c2 23 7 39 5 57-1 13-9 30-9 49-1 30 7 58 10 86l1 55-6 15c-3 6 1 10 8 10h10c7 0 10-4 10-10l1-15 7-48c3-27 4-51 12-74h2c8 23 9 47 12 74l7 48 1 15c0 6 3 10 10 10h10c7 0 11-4 8-10l-6-15 1-55c3-28 11-56 10-86 0-19-8-36-9-49-2-18 3-34 5-57l11 37 15 67 2 22c0 4 4 5 5 1l1-6 2 11c1 5 6 5 6-1l-1-14 2 10c1 5 5 4 5-1v-10c0-9-4-17-7-26l-12-57-8-48c-3-16-12-24-28-28-17-4-25-7-29-15V84c6-5 9-11 11-20 8-3 8-18 1-14v-8c0-18-11-29-26-29z" fill="var(--atlas-body)" stroke="var(--atlas-outline)" stroke-width="1.5" stroke-linejoin="round"/>
+    <g fill="none" stroke="var(--atlas-outline)" stroke-width="1.25" stroke-linecap="round" opacity=".58">
+      <path d="M177 49q4-2 8 0m10 0q4-2 8 0m-16 12 3 1 3-1m-10 6q7 3 14 0 M176 84q14 9 28 0 M151 117q19-9 36 2m6 0q17-11 36-2 M190 150v20 M154 157q15 5 26 4m20 0q11 1 26-4 M156 175q16 6 25 5m18 0q9 1 25-5 M188 216q2 2 4 0 M145 239q23 0 39 27m12 0q16-27 39-27 M153 349q6 5 14 1m46 0q8 4 14-1"/>
+    </g>
+    <use href="#xb1-13-lymph-side"/>
+    <use href="#xb1-13-lymph-side" transform="translate(380 0) scale(-1 1)"/>
+    <!-- 咽部的成对扁桃体、胸部两叶胸腺、图右（人体左侧）的脾。 -->
+    <g fill="var(--atlas-peripheral)">
+      <ellipse cx="183" cy="74" rx="3.8" ry="5.1" transform="rotate(-18 183 74)"/>
+      <ellipse cx="197" cy="74" rx="3.8" ry="5.1" transform="rotate(18 197 74)"/>
+      <path d="M228 170c9 7 2 27-8 32-5 3-11 0-9-6 1-3 5-7 6-11 1-4 0-8 3-12 2-3 5-5 8-3z"/>
+    </g>
+    <path d="M188 125c-5-6-12 1-12 12-1 8 1 16 7 16 5 0 8-6 8-12 1 7 4 11 9 10 7-2 7-14 4-22-3-10-10-10-14-1z" fill="var(--atlas-primary)"/>
+    <path d="M191 130l1 14M225 175q3 9-5 18" fill="none" stroke="var(--atlas-body)" stroke-width="1.2" stroke-linecap="round" opacity=".65"/>
+    <!-- 用股骨轮廓内的红色髓腔示意骨髓，而不是把整段腿骨涂红。 -->
+    <g id="xb1-13-femur">
+      <path d="M156 279c3-5 9-6 13-2 3 3 2 7-1 11l-4 39c0 5 4 9 2 13-1 3-4 4-7 2-4 3-9 1-9-3-1-4 3-7 4-12l3-39c-2-3-3-6-1-9z" fill="var(--atlas-paper)" stroke="var(--atlas-outline)" stroke-width="1.25"/>
+      <path d="M163 282q-2 7-4 30l-2 20" fill="none" stroke="var(--atlas-primary)" stroke-width="4.5" stroke-linecap="round"/>
+    </g>
+    <use href="#xb1-13-femur" transform="translate(380 0) scale(-1 1)"/>
+    <!-- 实线与虚线沿用图例，分别指向产生、成熟和集中分布的器官。 -->
+    <g fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M197 74h32l18-17h118 M146 131h-28l-16-13H15 M224 187h32l16 20h93" stroke="var(--atlas-peripheral)" stroke-dasharray="3 3.5"/>
+      <path d="M199 136h39l22-14h105 M159 310h-40l-18-16H15" stroke="var(--atlas-primary)"/>
+    </g>
+    <g class="immune-atlas-labels">
+      <text x="15" y="109">淋巴结</text>
+      <text x="15" y="285">骨髓</text>
+      <g text-anchor="end">
+        <text x="365" y="48">扁桃体</text>
+        <text x="365" y="113">胸腺</text>
+        <text x="365" y="198">脾</text>
+      </g>
+    </g>
+  </svg>
+  <div class="immune-atlas-key" role="group" aria-label="图例"><span>产生、成熟</span><span>集中分布</span></div>
+</figure>
+</div></div>
 <div class="para" data-lines="og2" data-src="src/scenes/Organs.tsx"><button class="play-btn" type="button" data-play="og2" title="从这里播放" aria-label="从这里播放"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button><div class="para-body"><div class="rm-a" style="font-weight:900;color:var(--orange)">扁桃体</div></div></div>
 <div class="para" data-lines="og2" data-src="src/scenes/Organs.tsx"><button class="play-btn" type="button" data-play="og2" title="从这里播放" aria-label="从这里播放"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button><div class="para-body"><div class="rm-a" style="font-weight:900;color:var(--red)">胸腺</div></div></div>
 <div class="para" data-lines="og2" data-src="src/scenes/Organs.tsx"><button class="play-btn" type="button" data-play="og2" title="从这里播放" aria-label="从这里播放"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button><div class="para-body"><div class="rm-a" style="font-weight:900;color:var(--orange)">淋巴结</div></div></div>
