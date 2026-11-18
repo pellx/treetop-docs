@@ -14,26 +14,31 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 
 /* ---------- 顶部：菜单在顶栏，路径在下面一行 ---------- */
 .kn-bar { display: flex; align-items: center; gap: 8px 12px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
-.kn-bar .topbar-title { flex: 1 1 auto; min-width: 0; }
+.kn-bar .topbar-title { flex: 1 1 auto; flex-wrap: wrap; row-gap: 6px; min-width: 0; overflow: visible; }
+.kn-bar .top-crumb-unit { max-width: 100%; }
 .kn-picks { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.topbar .kn-picks { flex: 0 0 auto; min-width: 0; }
-/* 思维导图里两个菜单留在顶栏左侧，搜索始终贴右：中间多出来的空档由自动外边距吃掉 */
-.topbar .kn-picks ~ .search { margin-left: auto; }
-/* 两个菜单各占自己的宽度、绝不收缩：宁可顶栏放不下让搜索压上来，也不让两个框叠在一起 */
+.topbar .kn-picks { flex: 0 0 auto; }
+/* 搜索优先折叠，折叠后范围菜单才收缩；两个菜单仍保留 12px 间距。 */
+.topbar.search-collapsed .kn-picks, .topbar .kn-picker + .kn-picker { flex-shrink: 1; }
 .kn-picker { display: inline-flex; align-items: center; flex: 0 0 auto; min-width: 0; }
 .kn-picker select { min-width: 0; max-width: min(240px, 55vw); height: 34px; padding: 0 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); font: inherit; font-size: 14px; }
+.kn-scope-select { width: 100%; }
 .topbar .kn-picker select { height: 32px; }
 .topbar .kn-logic-select { min-width: 98px; }
 .topbar .kn-picker select:hover { border-color: var(--accent); }
-@media (min-width: 600px) {
-  .kn-scope-select { width: 100%; }
+/* 搜索按钮留在顶栏右侧；展开的输入框和结果定位在顶栏下方。 */
+.topbar .kn-picks ~ .search { margin-left: auto; --kn-search-inset: 20px; }
+.topbar .kn-picks ~ .search.is-collapsed.is-open { position: static; flex: 0 0 38px; width: 38px; }
+.topbar .kn-picks ~ .search.is-open :is(.search-box, .results) { position: absolute; inset-inline: var(--kn-search-inset); }
+.topbar .kn-picks ~ .search.is-open .search-box { top: calc(100% + 6px); }
+.topbar .kn-picks ~ .search.is-open .results { top: calc(100% + 50px); width: auto; max-height: min(70vh, 560px, calc(100dvh - var(--top-h) - 56px)); }
+@media (max-width: 899px) {
+  .topbar .kn-picks ~ .search { --kn-search-inset: 12px; }
+  .topbar:has(> .kn-picks) .menu-btn { flex-shrink: 0; }
 }
 @media (max-width: 599px) {
-  .kn-scope-select { width: 100%; }
-  .topbar .kn-picks { flex: 1 1 auto; }
-  .topbar .kn-picks .kn-picker { flex: 0 0 auto; }
-  /* 窄屏两个菜单各自收窄，但互不压住对方，中间留出 12px */
-  .topbar .kn-picker select { max-width: 42vw; padding: 0 4px; font-size: 13px; }
+  .topbar .kn-picker { max-width: 42vw; }
+  .topbar .kn-picker select { max-width: 100%; padding: 0 4px; font-size: 13px; }
   .topbar .kn-logic-select { min-width: 86px; }
 }
 /* 覆盖与说明：浮在图上 */
@@ -77,25 +82,20 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-edges .kn-e-grand { stroke: var(--line-strong); stroke-width: 1.2; }
 .kn-edges .kn-e-port.kn-st-editor, .kn-edges .kn-e-port.kn-st-title { stroke-dasharray: 6 4; }
 /* 语义关系线：加粗、带箭头（对比/类比无箭头、点线）；待确认为虚线 */
-.kn-edges .kn-rel { stroke: var(--kn-c); stroke-width: 2.2; transition: opacity .2s ease; }
+.kn-edges .kn-rel { stroke: var(--kn-c); stroke-width: 2.2; }
 .kn-edges .kn-rel.kn-rel-tbd { stroke-dasharray: 7 4; }
 .kn-edges .kn-rel.kn-rel-sym { stroke-dasharray: 0 5; stroke-linecap: round; stroke-width: 3; }
 .kn-edges .kn-rel.is-hi { stroke-width: 3; }
 .kn-edges .is-dim { opacity: .15; }
 .kn-edges .kn-mk path { fill: var(--kn-c); }
 /* 总览聚合：点划线，无箭头 */
-.kn-edges .kn-agg { stroke: var(--fg-dim); stroke-width: 2; stroke-dasharray: 10 3 2 3; transition: opacity .2s ease; }
+.kn-edges .kn-agg { stroke: var(--fg-dim); stroke-width: 2; stroke-dasharray: 10 3 2 3; }
 .kn-edges .kn-agg.is-hi { stroke: var(--fg); stroke-width: 2.6; }
 .kn-edges .kn-e-port { stroke: var(--orange); }
 .kn-edges .kn-e-line { stroke-width: 4; stroke-linejoin: round; stroke-linecap: square; opacity: .85; }
 .kn-nodes { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 
-.kn-node { position: absolute; left: 0; top: 0; display: flex; align-items: stretch; transition: transform .26s ease, opacity .2s ease; }
-.kn-node.kn-enter { opacity: 0; }
-/* 大跨度重排：不用滑行，直接在落点淡入 */
-.kn-node.kn-jump { transition: none; }
-.kn-node.kn-jumpin { animation: kn-fadein .28s ease both; }
-@keyframes kn-fadein { from { opacity: 0; } to { opacity: 1; } }
+.kn-node { position: absolute; left: 0; top: 0; display: flex; align-items: stretch; }
 .kn-n-main { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 1px; text-align: left; padding: 5px 10px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--fg); font-size: 14px; line-height: 1.35; overflow: hidden; }
 .kn-n-main:hover { border-color: var(--accent); background: var(--accent-soft); }
 .kn-n-name { font-weight: 600; color: var(--title-fg); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -106,17 +106,13 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-tag { display: inline-block; font-size: 11px; line-height: 1.4; padding: 0 4px; margin-right: 4px; border: 1px solid var(--line-strong); color: var(--fg-dim); vertical-align: 1px; }
 .kn-tag-fb { border-style: dashed; }
 .kn-tag-part { border-style: dotted; }
-.kn-tag-vis { border-color: var(--accent-line); color: var(--accent-text); }
-/* "访问过"贴到卡片左下角：绝对定位，不占小字那一行，也不改变卡片高度 */
-.kn-node .kn-tag-vis { position: absolute; left: 5px; bottom: 0; z-index: 1; margin: 0; padding: 0 3px; font-size: 10px; line-height: 1.25; background: var(--surface); }
-.kn-node.is-sel .kn-tag-vis { background: var(--accent-soft); }
 
 .kn-r-center .kn-n-main, .kn-r-focus .kn-n-main { border: 2px solid var(--title-bar); background: var(--title-bg); }
 .kn-r-center .kn-n-name, .kn-r-focus .kn-n-name { font-size: 16px; }
 .kn-r-ring .kn-n-main { border-left: 4px solid var(--accent); }
 /* 总览一圈的小字固定一行：字号略缩，避免"3 个导图 · 3 个知识点"折成两行 */
 .kn-r-ring .kn-n-meta { white-space: nowrap; font-size: 11.5px; letter-spacing: -.1px; }
-/* 带"访问过"等标签时才允许折行，否则标签会把固定一行挤掉 */
+/* 有整理状态等标签时允许折行。 */
 .kn-r-ring .kn-n-meta:has(.kn-tag) { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .kn-r-focus .kn-n-meta, .kn-r-center .kn-n-meta { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .kn-sib-label { position: absolute; left: 0; top: 0; font-size: 12px; color: var(--fg-dim); letter-spacing: .06em; }
@@ -142,29 +138,34 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-fb .kn-n-main { background: var(--surface-2); }
 .kn-fb .kn-n-name { font-weight: 500; color: var(--fg); }
 .kn-pending .kn-n-main { opacity: .85; }
-.kn-node.is-sel .kn-n-main { outline: 3px solid var(--accent-strong); outline-offset: 0; background: var(--accent-soft); }
 .kn-node.is-exp .kn-n-main { border-right-color: var(--accent); }
 
 .kn-n-exp { flex: none; width: 38px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid var(--line-strong); border-left: 0; background: var(--surface); color: var(--accent-text); font-size: 12px; line-height: 1.2; padding: 0; }
 .kn-n-exp span { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); }
 .kn-n-exp:hover, .kn-n-exp[aria-expanded="true"] { background: var(--accent-soft); }
 
-.kn-node.has-acts { z-index: 3; }
-.kn-n-acts { position: absolute; right: 3px; bottom: 3px; display: flex; gap: 3px; }
-.kn-r-grand .kn-n-acts, .kn-r-child .kn-n-acts { bottom: 3px; top: auto; transform: none; }
-.kn-r-child .kn-n-acts { right: 3px; }
-.kn-r-child.has-acts:has(.kn-n-exp) .kn-n-acts { right: 42px; }
-.kn-n-acts button { height: 24px; padding: 0 7px; border: 1px solid var(--accent-strong); background: var(--accent); color: var(--on-accent); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+/* 选中边框由整个节点绘制；保留按钮边框的占位，只显露内侧分隔线。 */
+.kn-node.is-sel:has(> .kn-n-main) { outline: 3px solid var(--accent-strong); background: var(--accent-soft); }
+.kn-node.is-sel > .kn-n-main { border-color: transparent; background: transparent; }
+.kn-node.is-sel > .kn-n-exp { border-color: transparent; border-left: 1px solid var(--accent-line); }
+.kn-node.is-sel > :is(.kn-n-main, .kn-n-exp):focus-visible { outline-color: var(--accent-text); outline-offset: -4px; }
+
+/* 操作行占用布局已预留的 30px，不拦截按钮之外的主卡点击。 */
+.kn-node.has-acts { --kn-act-h: 30px; z-index: 3; }
+.kn-node.has-acts .kn-n-main { padding-bottom: calc(var(--kn-act-h) + 2px); }
+.kn-node.has-acts .kn-n-exp { margin-bottom: var(--kn-act-h); }
+.kn-n-acts { position: absolute; inset: auto 0 0; height: var(--kn-act-h); display: flex; justify-content: flex-end; align-items: center; gap: 3px; padding: 0 3px 1px; border-top: 1px solid var(--accent-line); pointer-events: none; }
+.kn-n-acts button { height: 24px; padding: 0 6px; border: 1px solid var(--accent-strong); background: var(--accent); color: var(--on-accent); font-size: 12.5px; font-weight: 600; white-space: nowrap; pointer-events: auto; }
 .kn-n-acts button + button { background: var(--surface); color: var(--accent-text); }
 .kn-n-acts button:hover { background: var(--accent-strong); color: var(--on-accent); }
-.kn-r-grand.has-acts .kn-n-main, .kn-r-child.has-acts .kn-n-main { padding-bottom: 32px; }
+.kn-n-acts button:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 1px; }
 .kn-lab { pointer-events: none; z-index: 2; height: auto !important; }
 .kn-lab span, .kn-lab button { display: inline-block; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; padding: 0 5px; background: var(--surface); border: 1px solid var(--orange); color: var(--orange); }
 .kn-lab.kn-line-lab span, .kn-lab.kn-line-lab button { border-color: currentColor; color: inherit; }
 .kn-lab.kn-line-lab button { pointer-events: auto; cursor: pointer; }
 .kn-lab.kn-line-lab.is-sel button { outline: 3px solid var(--accent-strong); outline-offset: 0; background: var(--accent-soft); }
 /* 关系词标签：可截断，title 与读屏文本给完整句子 */
-.kn-rl { pointer-events: none; z-index: 2; transition: transform .26s ease, opacity .2s ease; }
+.kn-rl { pointer-events: none; z-index: 2; }
 .kn-rl-t { pointer-events: auto; display: inline-block; max-width: 100%; height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; line-height: 16px; padding: 0 4px; background: var(--surface); border: 1px solid var(--kn-c); color: var(--kn-c); cursor: default; }
 .kn-rl.kn-rel-sym .kn-rl-t { border-style: dotted; }
 .kn-rl.kn-rel-tbd .kn-rl-t { border-style: dashed; }
@@ -186,7 +187,6 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-r-sub .kn-n-meta, .kn-r-sub .kn-n-kind { display: none; }
 .kn-r-submore .kn-n-main { padding: 2px 8px; font-size: 12.5px; justify-content: center; }
 .kn-r-ring .kn-n-exp { width: 32px; }
-.kn-r-ring.has-acts:has(.kn-n-exp) .kn-n-acts { right: 36px; }
 
 /* 四条主线配色：能量为蓝色，其余沿用站点强调色。 */
 .kn-line-0 { color: var(--kn-energy); }
@@ -220,7 +220,6 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-cm-n.is-note { border-style: dashed; font-size: 13px; line-height: 18px; }
 button.kn-cm-n:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
 button.kn-cm-n:focus-visible { outline: 3px solid var(--accent-strong); outline-offset: 1px; }
-.kn-cm-n.is-vis { color: var(--accent-text); }
 .kn-cm-n.is-hi { border-color: var(--title-bar); background: var(--title-bg); box-shadow: 0 0 0 2px var(--title-bar); }
 .kn-cm-l { position: absolute; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 17px; color: var(--fg); background: var(--bg); text-align: center; white-space: nowrap; pointer-events: none; }
 .kn-cm-l[title] { pointer-events: auto; cursor: help; }
@@ -331,9 +330,12 @@ button.kn-cm-n:focus-visible { outline: 3px solid var(--accent-strong); outline-
 .kn-entry-h h2 { margin: 0; font-size: 17px; color: var(--title-fg); }
 .kn-entry p { margin: 4px 0 8px; }
 .kn-entry-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; align-items: center; }
-.kn-entry-row a { display: inline-block; padding: 3px 10px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); font-size: 13.5px; }
-.kn-entry-row a:hover { border-color: var(--accent); background: var(--accent-soft); text-decoration: none; }
-.kn-entry-lines a { border-style: dashed; }
+.kn-entry-row a:not(.btn-primary) { display: inline-block; padding: 3px 10px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); font-size: 13.5px; }
+.kn-entry-row a:not(.btn-primary):hover { border-color: var(--accent); background: var(--accent-soft); text-decoration: none; }
+/* 总索引末行保持两个入口并排，窄屏时在按钮内部换行。 */
+.kn-entry-foot { flex-wrap: nowrap; }
+.kn-entry-foot a { min-width: 0; overflow-wrap: anywhere; }
+.kn-entry-foot .btn-primary { margin-inline-start: auto; height: auto; min-height: 34px; white-space: normal; }
 
 /* ---------- 窄屏：信息卡从右侧滑出 ---------- */
 @media (min-width: 900px) {
@@ -358,8 +360,7 @@ button.kn-cm-n:focus-visible { outline: 3px solid var(--accent-strong); outline-
   .kn-l-go { flex-direction: column; align-items: stretch; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .kn-node, .kn-card, .kn-edges .kn-rel { transition: none !important; }
-  .kn-node.kn-jumpin { animation: none; }
+  .kn-card { transition: none !important; }
 }
 @media print {
   .kn-bar, .kn-picks, .kn-view-ops, .kn-top-btn, .kn-top-back, .kn-pop { display: none !important; }

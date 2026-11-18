@@ -248,9 +248,10 @@
       if (!topLine.contains(ev.target)) topLine.classList.remove('show-close');
     });
 
-    /* ---------- 进度条：整期所有句子共用一条，按知识点分段，可点击/拖动定位 ---------- */
+    /* ---------- 进度条：桌面按整期、知识点分段；移动端按当前知识点的各句分段，可点击/拖动定位 ---------- */
     var track = bar ? bar.parentNode : null;
-    var marks = null, seekTip = null, seekList = [], seekSecs = [], seekRanges = [], seekTotal = 0, seekEp = '';
+    var marks = null, seekTip = null, seekList = [], seekSecs = [], seekRanges = [], seekTotal = 0, seekEp = '', seekP = null, seekMobile = false;
+    var seekMedia = window.matchMedia ? window.matchMedia('(max-width: 899px)') : null;
     if (track) {
       track.classList.add('pl-seek');
       track.setAttribute('role', 'slider');
@@ -263,9 +264,16 @@
       seekTip = D.createElement('div'); seekTip.className = 'pl-seek-tip'; seekTip.hidden = true;
       track.appendChild(seekTip);
     }
+    function mobileSeek() { return seekMedia ? seekMedia.matches : window.innerWidth <= 899; }
+    function seekScopeChanged(it) {
+      var mobile = mobileSeek();
+      return seekEp !== it.ep || seekMobile !== mobile || (mobile && seekP !== it.p);
+    }
     function buildSeek(it) {
       seekEp = it.ep;
-      seekList = player.items.filter(function (x) { return x.ep === it.ep; });
+      seekP = it.p;
+      seekMobile = mobileSeek();
+      seekList = player.items.filter(function (x) { return x.ep === it.ep && (!seekMobile || x.p === it.p); });
       seekSecs = seekList.map(function (x) { return x.sec || 0; });
       seekTotal = seekSecs.reduce(function (s, v) { return s + v; }, 0);
       seekRanges = [];
@@ -275,7 +283,7 @@
       var e = EPS[it.ep] || {}, acc = 0;
       seekList.forEach(function (x, i) {
         var rg = seekRanges[seekRanges.length - 1];
-        if (!rg || rg.p !== x.p) { rg = { p: x.p, start: acc, dur: 0, secs: [] }; seekRanges.push(rg); }
+        if (!rg || rg.p !== x.p || seekMobile) { rg = { p: x.p, start: acc, dur: 0, secs: [] }; seekRanges.push(rg); }
         rg.dur += seekSecs[i]; rg.secs.push(seekSecs[i]);
         acc += seekSecs[i];
       });
@@ -283,7 +291,7 @@
         var seg = D.createElement('span'); seg.className = 'pl-seek-seg';
         seg.style.left = (rg.start / seekTotal * 100) + '%';
         seg.style.width = (rg.dur / seekTotal * 100) + '%';
-        seg.title = pointLabel(rg.p, e);
+        seg.title = seekMobile ? '第 ' + (ri + 1) + ' 句 · ' + seekList[ri].t : pointLabel(rg.p, e);
         var fill = D.createElement('span'); fill.className = 'pl-seek-fill';
         seg.appendChild(fill); rg.fill = fill;
         rg.ticks = [];
@@ -552,7 +560,7 @@
       box.classList.toggle('is-on', playing);
       $('#plPlay').setAttribute('aria-label', playing ? '暂停' : '播放');
       if (it) {
-        if (seekEp !== it.ep) buildSeek(it);
+        if (seekScopeChanged(it)) buildSeek(it);
         /* 只有换期或换知识点才重建标题；同一知识点内只改右侧计数，打开的跳转菜单不会被顶掉 */
         var same = player.items.filter(function (x) { return x.ep === it.ep; });
         var sc = same.filter(function (x) { return x.p === it.p; });
@@ -578,7 +586,11 @@
     };
     player.hooks.onTime = function (t, d) { if (seekTotal && !seekDrag) paintNow(); if (oldTime) oldTime(t, d); };
     var fitRaf = 0;
-    on(window, 'resize', function () { cancelAnimationFrame(fitRaf); fitRaf = requestAnimationFrame(fitTitle); });
+    on(window, 'resize', function () {
+      cancelAnimationFrame(fitRaf); fitRaf = requestAnimationFrame(fitTitle);
+      var it = player.cur();
+      if (it && seekScopeChanged(it)) { buildSeek(it); paintNow(); }
+    });
     player.hooks.onError = function (it) { sub.textContent = '音频加载失败，已跳过：' + (it ? it.n + '/' + it.id : ''); if (oldErr) oldErr(it); };
   }
 
@@ -731,7 +743,9 @@
     var sel = -1, cur = [], networkMode = false, defaultPlaceholder = q.getAttribute('placeholder') || '搜索';
     var search = $('.search'), toggle = $('#searchToggle'), searchBox = $('#searchBox');
     var topbar = search && search.closest('.topbar'), lastTopbarWidth = topbar ? topbar.clientWidth : 0;
-    function setSearchOpen(open) {
+    function isSearchExpanded() { return search && search.classList.contains('is-open'); }
+    function isMapSearchExpanded() { return networkMode && isSearchExpanded(); }
+    function setSearchOpen(open, restoreFocus) {
       var collapsible = search && search.classList.contains('is-collapsed'), expanded = !!open && collapsible;
       if (search && toggle) {
         search.classList.toggle('is-open', expanded);
@@ -741,12 +755,12 @@
         toggle.title = expanded ? '收起搜索' : '展开搜索';
       }
       if (open) { q.focus(); q.select(); }
-      else { box.hidden = true; q.blur(); if (toggle && collapsible) toggle.focus(); }
+      else { box.hidden = true; q.blur(); if (toggle && collapsible && restoreFocus !== false) toggle.focus(); }
       if (topLayoutHook) requestAnimationFrame(topLayoutHook);
     }
-    /* 标题优先占用空间；完整搜索框被压到过窄时，在任何视口宽度下都收成按钮。 */
+    /* 标题和导图菜单优先占用空间；完整搜索框被压到过窄时收成按钮。 */
     function syncSearchCollapse() {
-      if (!search || !searchBox || !topbar || search.classList.contains('is-open')) return;
+      if (!search || !searchBox || !topbar || isSearchExpanded()) return;
       search.classList.remove('is-collapsed'); topbar.classList.remove('search-collapsed');
       var collapse = searchBox.getBoundingClientRect().width < 180;
       search.classList.toggle('is-collapsed', collapse); topbar.classList.toggle('search-collapsed', collapse);
@@ -754,12 +768,12 @@
     }
     searchLayoutHook = syncSearchCollapse;
     syncSearchCollapse();
-    on(toggle, 'click', function () { setSearchOpen(!(search && search.classList.contains('is-open'))); });
+    on(toggle, 'click', function () { setSearchOpen(!isSearchExpanded()); });
     function topbarResized() {
       var width = topbar ? topbar.clientWidth : 0;
       if (width === lastTopbarWidth) return;
       lastTopbarWidth = width;
-      if (search && search.classList.contains('is-open')) setSearchOpen(false);
+      if (isSearchExpanded()) setSearchOpen(false);
       if (topLayoutHook) requestAnimationFrame(topLayoutHook);
     }
     if (window.ResizeObserver && topbar) { var topbarObserver = new ResizeObserver(topbarResized); topbarObserver.observe(topbar); }
@@ -771,6 +785,7 @@
     function syncSearchScope() {
       var active = !!networkAPI();
       if (active !== networkMode) {
+        if (isSearchExpanded()) setSearchOpen(false, false);
         networkMode = active; q.placeholder = active ? '在网络中查找概念、考点…' : defaultPlaceholder;
         box.hidden = true; box.innerHTML = ''; cur = []; sel = -1;
       }
@@ -842,7 +857,9 @@
     function choose(i) {
       if (syncSearchScope()) {
         var kn = networkAPI(); if (!kn) return;
-        box.hidden = true; q.blur(); kn.chooseSearch(i); return;
+        if (isMapSearchExpanded()) setSearchOpen(false, false);
+        else { box.hidden = true; q.blur(); }
+        kn.chooseSearch(i); return;
       }
       var o = cur[i]; if (!o) return; box.hidden = true; q.blur(); go(o.r.x, hrefFor(o.r.x));
     }
@@ -1138,7 +1155,9 @@
     function compressTopTitle() {
       var units = $$('[data-crumb]', topTitle), ellipsis = $('[data-crumb-ellipsis]', topTitle);
       if (!units.length || !ellipsis || !topTitle.clientWidth) return;
-      units.forEach(function (u) { u.hidden = false; }); units[units.length - 1].style.flex = 'none'; ellipsis.hidden = true;
+      units.forEach(function (u) { u.hidden = false; }); units[units.length - 1].style.flex = ''; ellipsis.hidden = true;
+      /* 思维导图路径可以换行，保留各级菜单。 */
+      if (topTitle.closest('.kn-bar')) return;
       var i = 0;
       while (topTitle.scrollWidth > topTitle.clientWidth && i < units.length - 1) {
         units[i].hidden = true; ellipsis.hidden = false; i++;
@@ -1185,7 +1204,11 @@
     on(topTitle, 'click', function (ev) {
       var b = ev.target.closest('[data-crumb-menu]'); if (!b) return;
       ev.preventDefault();
-      if (crumbPop && !crumbPop.hidden && crumbBtn === b) closeCrumbMenu(false); else openCrumbMenu(b);
+      if (crumbPop && !crumbPop.hidden) {
+        closeCrumbMenu(false);
+        if (crumbBtn === b) return;
+      }
+      openCrumbMenu(b);
     });
     function setTopCrumbs(items) {
       var root = '<a class="top-crumb-home" href="#/" aria-label="树梢文档，返回总索引" title="树梢文档 · 总索引">' +
@@ -1193,13 +1216,14 @@
       var parentHref = '#/';
       for (var i = items.length - 2; i >= 0; i--) { if (items[i].h) { parentHref = items[i].h; break; } }
       var ellipsis = '<span class="top-crumb-unit" data-crumb-ellipsis hidden><span class="top-crumb-sep" aria-hidden="true">›</span><a class="top-crumb-ellipsis" href="' + escH(parentHref) + '" aria-label="返回上一级目录" title="返回上一级目录">…</a></span>';
+      closeCrumbMenu(false);
       crumbMenus = [];
-      topTitle.innerHTML = root + ellipsis + items.map(function (it) {
-        var label = escH(it.t), body = it.h ? '<a class="top-crumb" href="' + escH(it.h) + '">' + label + '</a>' : '<span class="top-crumb" aria-current="location">' + label + '</span>';
-        /* 带同级列表的当前项：点一下弹出菜单切换同级 */
+      topTitle.innerHTML = root + ellipsis + items.map(function (it, i) {
+        var label = escH(it.t), current = i === items.length - 1 ? ' aria-current="location"' : '';
+        var body = it.h ? '<a class="top-crumb" href="' + escH(it.h) + '">' + label + '</a>' : '<span class="top-crumb"' + current + '>' + label + '</span>';
         if (!it.h && it.menu && it.menu.length > 1) {
           crumbMenus.push(it.menu);
-          body = '<button type="button" class="top-crumb top-crumb-menu" aria-current="location" aria-haspopup="true" aria-expanded="false" data-crumb-menu="' + (crumbMenus.length - 1) + '" title="切换同级">' +
+          body = '<button type="button" class="top-crumb top-crumb-menu"' + current + ' aria-haspopup="true" aria-expanded="false" data-crumb-menu="' + (crumbMenus.length - 1) + '" title="' + escH(it.menuLabel || '切换同级') + '">' +
             '<span class="top-crumb-t">' + label + '</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg></button>';
         }
         return '<span class="top-crumb-unit" data-crumb><span class="top-crumb-sep" aria-hidden="true">›</span>' + body + '</span>';
