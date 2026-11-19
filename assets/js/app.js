@@ -1247,7 +1247,7 @@
         D.title = BOOK_BY[curBook].full + ' · ' + SITE.title;
       } else {
         setTopCrumbs([{ t: '总索引' }]);
-        D.title = '总索引 · ' + SITE.title;
+        D.title = SITE.title;
       }
       setNav('', '', 'read'); markSpecial(curBook ? 'book' : 'home');
       if (chId) { var el = D.getElementById(chId); if (el) el.scrollIntoView({ block: 'start' }); }

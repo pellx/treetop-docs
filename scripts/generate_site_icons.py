@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Generate transparent site icons from the selected brand artwork.
+"""Generate site icons and the link preview from the selected brand artwork.
 
 Requires Pillow. Keep the transparent master at assets/img/site/brand-source.webp.
-The character is cropped to its visible bounds and enlarged onto a transparent
-square canvas; page background colors are applied separately through CSS.
+Site icons use transparent canvases. The link preview includes the background
+color of the sidebar brand mark.
 """
 
 from pathlib import Path
@@ -47,6 +47,13 @@ def main() -> None:
             icon = make_icon(character, size)
             icon.save(OUTPUT / filename, format="PNG", optimize=True)
             print(f"Generated {filename}: {size}x{size}, transparent RGBA")
+
+        size = SIZES["icon-512.png"]
+        # Match --brand-mark-bg in assets/css/site.css.
+        share_icon = Image.new("RGBA", (size, size), "#7bb380")
+        share_icon.alpha_composite(make_icon(character, size))
+        share_icon.convert("RGB").save(OUTPUT / "share-icon.png", optimize=True)
+        print(f"Generated share-icon.png: {size}x{size}, opaque RGB")
 
 
 if __name__ == "__main__":
