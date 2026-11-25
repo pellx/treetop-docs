@@ -232,7 +232,7 @@
       arr(mp.nodes).forEach(function (n) {
         if (!n || !n.id || ids[n.id]) { issue('error', where + ' 的节点 ID 缺失或重复：' + (n && n.id), [mp.id]); return; }
         if (typeof n.y !== 'number' || (typeof n.x !== 'number' && typeof n.lx !== 'number')) { issue('error', where + ' 的节点 ' + n.id + ' 缺少坐标', [mp.id]); return; }
-        var o = { id: n.id, t: String(n.t == null ? '' : n.t), x: n.x, lx: n.lx, y: n.y, w: n.w, h: n.h, s: n.s || '', go: null };
+        var o = { id: n.id, t: String(n.t == null ? '' : n.t), x: n.x, lx: n.lx, y: n.y, w: n.w, h: n.h, s: n.s || '', tip: n.tip || '', go: null };
         if (n.go) {
           var g = /^([a-z]{2}\d-\d{2})(?:\/(p\d+))?$/.exec(String(n.go));
           var pid = g && g[2] ? g[1] + '.' + g[2] : '';
@@ -246,7 +246,10 @@
         if (!g || !g.id || ids[g.id]) { issue('error', where + ' 的分组 ID 缺失或重复：' + (g && g.id), [mp.id]); return; }
         var of = arr(g.of).filter(function (x) { if (ids[x] === 'node') return true; issue('warn', where + ' 的分组 ' + g.id + ' 成员不存在：' + x, [mp.id]); return false; });
         if (!of.length) return;
-        ids[g.id] = 'group'; out.groups.push({ id: g.id, of: of, style: g.style || 'dash', side: g.side === 'l' ? 'l' : 'r', pad: g.pad, gap: g.gap });
+        ids[g.id] = 'group'; out.groups.push({ id: g.id, of: of, style: g.style || 'dash', side: g.side === 'l' ? 'l' : 'r', pad: g.pad, gap: g.gap, title: g.title || '', top: g.top, talign: g.talign === 'r' ? 'r' : 'l', go: null });
+        var gg = g.go && /^([a-z]{2}\d-\d{2})(?:\/(p\d+))?$/.exec(String(g.go));
+        if (g.go && (!gg || !M.ent[gg[1]] || (gg[2] && !M.ent[gg[1] + '.' + gg[2]]))) issue('warn', where + ' 的分组 ' + g.id + ' 讲义落点无效：' + g.go, [mp.id]);
+        else if (gg) out.groups[out.groups.length - 1].go = { ep: gg[1], pid: gg[2] ? gg[1] + '.' + gg[2] : '', href: '#/' + gg[1] + (gg[2] ? '/' + gg[2] : '') };
       });
       arr(mp.edges).forEach(function (e, i) {
         if (!e) return;
@@ -255,6 +258,7 @@
         if (bad.length || (e.fork && !arr(e.to).length)) { issue('warn', where + ' 的第 ' + (i + 1) + ' 条连线端点不存在：' + bad.join('、') + '（已跳过）', [mp.id]); return; }
         out.edges.push(e);
       });
+      out.legend = mp.legend !== false;
       out.texts = arr(mp.texts).filter(function (t) { return t && t.t && typeof t.x === 'number' && typeof t.y === 'number'; });
       arr(mp.anchors).forEach(function (a) {
         if (!M.ent[a]) { issue('warn', where + ' 的锚点不存在：' + a, [mp.id]); return; }
@@ -1626,9 +1630,19 @@
    * 方框知识点、分类括线、带关系词的箭头、虚线分组框。节点位置由数据决定，渲染只算连线。
    * ===================================================================== */
   var CM_FS = 14, CM_LH = 20, CM_PX = 11, CM_PY = 5, CM_LFS = 13, CM_PAD = 40;
+  /* 小字节点：细节（试剂、条件、实例）、易错提示、反应式。字号与内边距随样式变化，宽度仍按文字自动计算。 */
+  var CM_STY = { detail: { fs: 13, lh: 18, px: 8, py: 4 }, warn: { fs: 13, lh: 18, px: 8, py: 4 }, eq: { fs: 13, lh: 18, px: 10, py: 5 } };
+  /* 连线语义（k）：不写为结构线（分类、组成）；其余用颜色＋线形区分，图例自动列出本图用到的种类。 */
+  var CM_KINDS = {
+    flow: { name: '物质转化', note: '箭头指向产物；线上写阶段、条件与能量' },
+    link: { name: '跨区联系', note: '把实验、应用、易错与过程中的对应物质连起来' },
+    apply: { name: '原理→应用', note: '影响因素推出生产生活中的做法' },
+    contrast: { name: '对比', note: '容易混淆，需要区分' },
+    ext: { name: '联系其他模块', note: '指向别的模块中的知识点' }
+  };
   function cmTextW(t) {
     var w = 0;
-    Array.from(String(t)).forEach(function (ch) { var c = ch.charCodeAt(0); w += c > 0x2000 ? 1 : (c === 32 ? .32 : .6); });
+    Array.from(String(t)).forEach(function (ch) { var c = ch.charCodeAt(0); w += c >= 0x2070 && c <= 0x209f ? .5 : c > 0x2000 ? 1 : (c === 32 ? .32 : .6); });
     return w;
   }
   function cmBox(l, t, w, h, extra) {
@@ -1683,10 +1697,11 @@
   }
   function cmapGeom(mp) {
     if (mp.geom) return mp.geom;
-    var G = { box: {}, nodes: [], groups: [], paths: [], labels: [], w: 0, h: 0 };
+    var G = { box: {}, nodes: [], groups: [], zones: [], paths: [], labels: [], kinds: {}, w: 0, h: 0 };
     mp.nodes.forEach(function (n) {
+      var st = CM_STY[n.s] || { fs: CM_FS, lh: CM_LH, px: CM_PX, py: CM_PY };
       var lines = n.t.split('\n'), tw = Math.max.apply(null, lines.map(cmTextW));
-      var w = n.w || Math.round(tw * CM_FS + 2 * CM_PX), h = n.h || lines.length * CM_LH + 2 * CM_PY;
+      var w = n.w || Math.round(tw * st.fs + 2 * st.px), h = n.h || lines.length * st.lh + 2 * st.py;
       var b = cmBox(typeof n.lx === 'number' ? n.lx : n.x - w / 2, n.y - h / 2, w, h, { id: n.id, n: n });
       G.box[n.id] = b; G.nodes.push(b);
     });
@@ -1700,14 +1715,19 @@
         var gap = g.gap || 14, sx = g.side === 'l' ? L - gap : R + gap, ys = ms.map(function (m) { return m.cy; });
         var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys), d = 'M' + sx + ' ' + y0 + 'V' + y1;
         ms.forEach(function (m) { d += 'M' + (g.side === 'l' ? m.l : m.r) + ' ' + m.cy + 'H' + sx; });
-        G.paths.push({ d: d, cls: 'kn-cm-e' });
+        G.paths.push({ d: d, cls: 'kn-cm-e', ends: g.of.slice() });
         b = cmBox(g.side === 'l' ? sx : L, y0, g.side === 'l' ? R - sx : sx - L, Math.max(1, y1 - y0), { id: g.id, group: g });
         b.l = g.side === 'l' ? sx : L; b.r = g.side === 'l' ? R : sx;
       } else if (g.style === 'bracket') {
         /* 大方括号：在成员一侧画一条带端钩的竖线，括住整列，竖线中点作为整组的端点（如"延伸 → 蛋白质工程"） */
         var bg = g.gap || 18, bx = g.side === 'l' ? L - bg : R + bg, hook = g.side === 'l' ? 8 : -8;
-        G.paths.push({ d: 'M' + (bx + hook) + ' ' + Tt + 'H' + bx + 'V' + B + 'H' + (bx + hook), cls: 'kn-cm-e' });
+        G.paths.push({ d: 'M' + (bx + hook) + ' ' + Tt + 'H' + bx + 'V' + B + 'H' + (bx + hook), cls: 'kn-cm-e', ends: g.of.slice() });
         b = cmBox(bx, Tt, 0, B - Tt, { id: g.id, group: g });
+      } else if (g.style === 'zone') {
+        /* 区域：浅色底框，左上角写区域名（如"细胞质基质""线粒体内膜"），把同一场所或同一主题的知识点圈在一起 */
+        var zp = typeof g.pad === 'number' ? g.pad : 12, zt = typeof g.top === 'number' ? g.top : (g.title ? 28 : zp);
+        b = cmBox(L - zp, Tt - zt, R - L + 2 * zp, B - Tt + zt + zp, { id: g.id, group: g });
+        G.zones.push(b);
       } else {
         var pad = typeof g.pad === 'number' ? g.pad : (g.style === 'dash' ? 8 : 0);
         b = cmBox(L - pad, Tt - pad, R - L + 2 * pad, B - Tt + 2 * pad, { id: g.id, group: g });
@@ -1715,17 +1735,23 @@
       }
       G.box[g.id] = b;
     });
+    /* 端点展开：分组换成成员，悬停时据此找出与一个知识点直接相连的线和点 */
+    var gOf = {}; mp.groups.forEach(function (g) { gOf[g.id] = g.of; });
+    function ex(ids) { var out = []; ids.forEach(function (id) { (gOf[id] || [id]).forEach(function (x) { if (out.indexOf(x) < 0) out.push(x); }); }); return out; }
     mp.edges.forEach(function (e) {
       var arrow = e.arrow === 'start' || e.arrow === 'both' || e.arrow === 'end' ? e.arrow : (e.arrow === true ? 'end' : '');
-      var cls = 'kn-cm-e' + (e.dash ? ' kn-cm-dash' : '');
+      var k = CM_KINDS[e.k] ? e.k : '';
+      if (k) G.kinds[k] = 1;
+      var cls = 'kn-cm-e' + (e.dash ? ' kn-cm-dash' : '') + (k ? ' kn-cm-k-' + k : '');
+      var ends = ex(e.loop ? [e.loop] : e.fork ? [e.fork].concat(e.to) : [e.from, e.to]);
       if (e.loop) {
         /* 自循环：绕节点一侧画约 240° 的圆弧箭头（如 DNA 的"复制"）；side 为圆弧鼓出的方向 */
         var Lb = G.box[e.loop], rr = e.r || Math.max(Lb.w, Lb.h) / 2 + 8;
         var phi = { l: 180, r: 0, t: 270, b: 90 }[e.side || 'l'], rad = Math.PI / 180;
         var pa = { x: Lb.cx + rr * Math.cos((phi + 120) * rad), y: Lb.cy + rr * Math.sin((phi + 120) * rad) };
         var pb = { x: Lb.cx + rr * Math.cos((phi - 120) * rad), y: Lb.cy + rr * Math.sin((phi - 120) * rad) };
-        G.paths.push({ d: 'M' + pa.x.toFixed(1) + ' ' + pa.y.toFixed(1) + 'A' + rr + ' ' + rr + ' 0 1 0 ' + pb.x.toFixed(1) + ' ' + pb.y.toFixed(1), cls: cls, end: true, note: e.note || '' });
-        if (e.label) G.labels.push(cmLabel(e.label, e.lp ? e.lp[0] : Lb.cx, e.lp ? e.lp[1] : Lb.cy + rr + 12, e.lv));
+        G.paths.push({ d: 'M' + pa.x.toFixed(1) + ' ' + pa.y.toFixed(1) + 'A' + rr + ' ' + rr + ' 0 1 0 ' + pb.x.toFixed(1) + ' ' + pb.y.toFixed(1), cls: cls, k: k, end: true, note: e.note || '', ends: ends });
+        if (e.label) { var ll = cmLabel(e.label, e.lp ? e.lp[0] : Lb.cx, e.lp ? e.lp[1] : Lb.cy + rr + 12, e.lv); ll.ends = ends; ll.k = k; G.labels.push(ll); }
         return;
       }
       if (e.fork) {
@@ -1738,12 +1764,12 @@
         var lo = Math.min.apply(null, cs.concat(c0)), hi = Math.max.apply(null, cs.concat(c0));
         var stem = horiz ? [{ x: from, y: c0 }, { x: at, y: c0 }] : [{ x: c0, y: from }, { x: c0, y: at }];
         var d = cmD(stem) + (hi - lo > .5 ? (horiz ? 'M' + at + ' ' + lo + 'V' + hi : 'M' + lo + ' ' + at + 'H' + hi) : '');
-        G.paths.push({ d: d, cls: cls });
-        K.forEach(function (k, i) {
-          var pts = horiz ? [{ x: at, y: cs[i] }, { x: near(k), y: cs[i] }] : [{ x: cs[i], y: at }, { x: cs[i], y: near(k) }];
-          G.paths.push({ d: cmD(pts), cls: cls, end: !!e.arrow });
+        G.paths.push({ d: d, cls: cls, k: k, ends: ends, nb: ex([e.fork]), note: e.note || '' });
+        K.forEach(function (kb, i) {
+          var pts = horiz ? [{ x: at, y: cs[i] }, { x: near(kb), y: cs[i] }] : [{ x: cs[i], y: at }, { x: cs[i], y: near(kb) }];
+          G.paths.push({ d: cmD(pts), cls: cls, k: k, end: !!e.arrow, ends: ex([e.fork, e.to[i]]), note: e.note || '' });
         });
-        if (e.label) G.labels.push(e.lp ? cmLabel(e.label, e.lp[0], e.lp[1], e.lv) : cmAutoLabel(e.label, stem, e.lv));
+        if (e.label) { var fl = e.lp ? cmLabel(e.label, e.lp[0], e.lp[1], e.lv) : cmAutoLabel(e.label, stem, e.lv); fl.ends = ends; fl.nb = ex([e.fork]); fl.k = k; fl.note = e.note || ''; G.labels.push(fl); }
         return;
       }
       var A = G.box[e.from], Bx = G.box[e.to], pts;
@@ -1764,14 +1790,14 @@
           pts = pts.concat(cmLink(u, i === 1 ? u.ax : null, v, i === seq.length - 1 ? v.ax : null), [v]);
         }
       }
-      G.paths.push({ d: cmD(pts), cls: cls, end: arrow === 'end' || arrow === 'both', start: arrow === 'start' || arrow === 'both', note: e.note || '' });
+      G.paths.push({ d: cmD(pts), cls: cls, k: k, end: arrow === 'end' || arrow === 'both', start: arrow === 'start' || arrow === 'both', note: e.note || '', ends: ends });
       if (e.label) {
         var lb = e.lp ? cmLabel(e.label, e.lp[0], e.lp[1], e.lv) : cmAutoLabel(e.label, pts, e.lv);
-        if (lb) { lb.note = e.note || ''; G.labels.push(lb); }
+        if (lb) { lb.note = e.note || ''; lb.ends = ends; lb.k = k; G.labels.push(lb); }
       }
     });
     mp.texts.forEach(function (t) { G.labels.push(cmLabel(t.t, t.x, t.y, t.lv)); });
-    var all = G.nodes.concat(G.groups, G.labels);
+    var all = G.nodes.concat(G.groups, G.zones, G.labels);
     var minX = Math.min.apply(null, all.map(function (b) { return b.l; })), minY = Math.min.apply(null, all.map(function (b) { return b.t; }));
     G.ox = CM_PAD - minX; G.oy = CM_PAD - minY;
     G.w = Math.max.apply(null, all.map(function (b) { return b.r; })) + G.ox + CM_PAD;
@@ -1826,12 +1852,16 @@
     var hiBoxes = G.nodes.filter(function (b) { return hi[b.id]; });
     var px = function (v) { return Math.round(v * 10) / 10; };
     /* 连线：每条先画底色描边再画线，后画的线在交叉处断开前面的线，读起来像教材的"跨线" */
-    var svg = '<defs><marker id="kn-cm-ah" class="kn-cm-mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 1L10 5L0 9z"/></marker></defs>';
+    /* 箭头按连线语义分色：每种一个 marker（marker 不继承线色） */
+    var mk = function (k) { return '<marker id="kn-cm-ah' + (k ? '-' + k : '') + '" class="kn-cm-mk' + (k ? ' kn-cm-k-' + k : '') + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 1L10 5L0 9z"/></marker>'; };
+    var svg = '<defs>' + mk('') + Object.keys(G.kinds).map(mk).join('') + '</defs>';
     svg += '<g transform="translate(' + px(ox) + ' ' + px(oy) + ')">';
+    G.zones.forEach(function (b) { svg += '<rect class="kn-cm-zone" data-z="' + esc(b.id) + '" x="' + px(b.l) + '" y="' + px(b.t) + '" width="' + px(b.w) + '" height="' + px(b.h) + '"/>'; });
     G.groups.forEach(function (b) { svg += '<rect class="kn-cm-grp" x="' + px(b.l) + '" y="' + px(b.t) + '" width="' + px(b.w) + '" height="' + px(b.h) + '"/>'; });
     G.paths.forEach(function (p) {
-      svg += '<path class="kn-cm-halo" d="' + p.d + '"/>';
-      svg += '<path class="' + p.cls + '" d="' + p.d + '"' + (p.end ? ' marker-end="url(#kn-cm-ah)"' : '') + (p.start ? ' marker-start="url(#kn-cm-ah)"' : '') + '>' + (p.note ? '<title>' + esc(p.note) + '</title>' : '') + '</path>';
+      var ah = 'url(#kn-cm-ah' + (p.k ? '-' + p.k : '') + ')', de = (p.ends ? ' data-e=" ' + esc(p.ends.join(' ')) + ' "' : '') + (p.nb ? ' data-nb="' + esc(p.nb.join(' ')) + '"' : '');
+      svg += '<path class="kn-cm-halo" d="' + p.d + '"' + de + '/>';
+      svg += '<path class="' + p.cls + '" d="' + p.d + '"' + de + (p.end ? ' marker-end="' + ah + '"' : '') + (p.start ? ' marker-start="' + ah + '"' : '') + '>' + (p.note ? '<title>' + esc(p.note) + '</title>' : '') + '</path>';
     });
     svg += '</g>';
     refs.svg.setAttribute('width', G.w); refs.svg.setAttribute('height', G.h);
@@ -1839,19 +1869,27 @@
     refs.svg.setAttribute('viewBox', '0 0 ' + G.w + ' ' + G.h);
     refs.svg.innerHTML = svg;
     var h = '';
+    var whereOf = function (go) { return M.ent[go.ep] ? bookName(M.ent[go.ep].book) + ' ' + M.ent[go.ep].code + (go.pid ? ' · ' + M.ent[go.pid].name : ' · ' + M.ent[go.ep].name) : ''; };
+    G.zones.forEach(function (b) {
+      var g = b.group; if (!g.title) return;
+      var pos = 'style="left:' + px((g.talign === 'r' ? b.r : b.l) + ox) + 'px;top:' + px(b.t + oy) + 'px"', zc = 'kn-cm-zt' + (g.talign === 'r' ? ' is-r' : '');
+      if (g.go) h += '<button type="button" class="' + zc + '" ' + pos + ' data-z="' + esc(g.id) + '" data-act="read" data-pid="' + esc(g.go.pid) + '" data-href="' + esc(g.go.href) + '" title="' + esc('打开讲义：' + whereOf(g.go)) + '">' + esc(g.title) + '</button>';
+      else h += '<span class="' + zc + '" ' + pos + ' data-z="' + esc(g.id) + '">' + esc(g.title) + '</span>';
+    });
     G.nodes.forEach(function (b) {
       var n = b.n, cls = 'kn-cm-n' + (n.s ? ' is-' + n.s : '') + (hi[n.id] ? ' is-hi' : '');
       var pos = 'style="left:' + px(b.l + ox) + 'px;top:' + px(b.t + oy) + 'px;width:' + b.w + 'px;height:' + b.h + 'px"';
-      var txt = esc(n.t).replace(/\n/g, '<br>');
+      var txt = esc(n.t).replace(/\n/g, '<br>'), plain = n.t.replace(/\n/g, '');
       if (n.go) {
-        var where = M.ent[n.go.ep] ? bookName(M.ent[n.go.ep].book) + ' ' + M.ent[n.go.ep].code + (n.go.pid ? ' · ' + M.ent[n.go.pid].name : ' · ' + M.ent[n.go.ep].name) : '';
-        h += '<button type="button" class="' + cls + '" ' + pos + ' data-act="read" data-pid="' + esc(n.go.pid) + '" data-href="' + esc(n.go.href) + '" title="' + esc('打开讲义：' + where) + '" aria-label="' + esc(n.t.replace(/\n/g, '') + '，打开讲义：' + where) + '">' + txt + '</button>';
-      } else h += '<span class="' + cls + ' is-plain" ' + pos + '>' + txt + '</span>';
+        var where = whereOf(n.go);
+        h += '<button type="button" class="' + cls + '" ' + pos + ' data-id="' + esc(n.id) + '" data-act="read" data-pid="' + esc(n.go.pid) + '" data-href="' + esc(n.go.href) + '" title="' + esc((n.tip ? n.tip + '\n' : '') + '打开讲义：' + where) + '" aria-label="' + esc(plain + '，打开讲义：' + where) + '">' + txt + '</button>';
+      } else h += '<span class="' + cls + ' is-plain" ' + pos + ' data-id="' + esc(n.id) + '"' + (n.tip ? ' title="' + esc(n.tip) + '"' : '') + '>' + txt + '</span>';
     });
     G.labels.forEach(function (b) {
-      h += '<span class="kn-cm-l' + (b.v ? ' is-v' : '') + '" style="left:' + px(b.l + ox) + 'px;top:' + px(b.t + oy) + 'px;width:' + b.w + 'px;height:' + b.h + 'px"' + (b.note ? ' title="' + esc(b.note) + '"' : '') + '>' + esc(b.txt).replace(/\n/g, '<br>') + '</span>';
+      h += '<span class="kn-cm-l' + (b.v ? ' is-v' : '') + (b.k ? ' kn-cm-k-' + b.k : '') + '" style="left:' + px(b.l + ox) + 'px;top:' + px(b.t + oy) + 'px;width:' + b.w + 'px;height:' + b.h + 'px"' + (b.ends ? ' data-e=" ' + esc(b.ends.join(' ')) + ' "' : '') + (b.nb ? ' data-nb="' + esc(b.nb.join(' ')) + '"' : '') + (b.note ? ' title="' + esc(b.note) + '"' : '') + '>' + esc(b.txt).replace(/\n/g, '<br>') + '</span>';
     });
     refs.nodes.innerHTML = h;
+    cmLegend(mp, G);
     refs.nodes.setAttribute('aria-label', mp.name + '：知识关系图');
     /* 视口：有高亮时对准高亮区域，否则整图；缩放不低于可读下限，太高时先看顶部 */
     refs.canvas.classList.add('kn-graph-pan');
@@ -1874,6 +1912,52 @@
       graphView.y = bh * sc > ch ? 12 - tb.t * sc : (ch - bh * sc) / 2 - tb.t * sc;
     }
     applyGraphView();
+  }
+
+  /* 图例：列出本图用到的连线语义与节点样式；点击某种连线可暂时隐藏它（只影响当前页面） */
+  var CM_NODE_KEYS = { sub: '物质', detail: '要点细节', warn: '易错', eq: '反应式', ext: '其他模块的知识点' };
+  var cmOff = {}, cmLegendClosed = null;
+  function cmLegend(mp, G) {
+    var old = $('.kn-cm-legend', refs.canvas); if (old) old.parentNode.removeChild(old);
+    refs.world.classList.remove('kn-cm-focusing');
+    if (!mp.legend) return;
+    var kinds = Object.keys(CM_KINDS).filter(function (k) { return G.kinds[k]; });
+    var used = {}; mp.nodes.forEach(function (n) { if (CM_NODE_KEYS[n.s]) used[n.s] = 1; });
+    var styles = Object.keys(CM_NODE_KEYS).filter(function (k) { return used[k]; });
+    if (!kinds.length && !styles.length && !G.zones.length) return;
+    var box = D.createElement('details');
+    box.className = 'kn-cm-legend';
+    if (cmLegendClosed === null) cmLegendClosed = narrow();
+    if (!cmLegendClosed) box.open = true;
+    box.addEventListener('toggle', function () { cmLegendClosed = !box.open; });
+    var h = '<summary class="kn-cm-lg-h">图例 <span class="kn-muted">悬停或聚焦知识点可突出与它直接相连的内容</span></summary>';
+    if (kinds.length) h += '<div class="kn-cm-lg-row">' + kinds.map(function (k) {
+      return '<button type="button" class="kn-cm-lg-k kn-cm-k-' + k + (cmOff[k] ? ' is-off' : '') + '" data-act="cm-kind" data-id="' + k + '" aria-pressed="' + (cmOff[k] ? 'false' : 'true') + '" title="' + esc(CM_KINDS[k].note + '（点击显示或隐藏）') + '"><svg viewBox="0 0 28 8" aria-hidden="true"><path d="M1 4H22"/><path class="kn-cm-lg-ah" d="M20 1L27 4L20 7z"/></svg>' + esc(CM_KINDS[k].name) + '</button>';
+    }).join('') + '</div>';
+    if (styles.length || G.zones.length) h += '<div class="kn-cm-lg-row">' + (G.zones.length ? '<span class="kn-cm-lg-n is-zone">区域（场所 / 主题）</span>' : '') + styles.map(function (k) {
+      return '<span class="kn-cm-lg-n kn-cm-n is-' + k + '">' + esc(CM_NODE_KEYS[k]) + '</span>';
+    }).join('') + '</div>';
+    box.innerHTML = h;
+    refs.canvas.appendChild(box);
+    cmApplyOff();
+  }
+  function cmApplyOff() { Object.keys(CM_KINDS).forEach(function (k) { refs.world.classList.toggle('kn-cm-off-' + k, !!cmOff[k]); }); }
+  /* 邻域高亮：与该知识点直接相连的线、关系词和知识点保持原色，其余变淡 */
+  function cmNeighbors(id) {
+    var on = [], near = {}; near[id] = 1;
+    $$('[data-e]', refs.world).forEach(function (el) {
+      if (el.getAttribute('data-e').indexOf(' ' + id + ' ') < 0) return;
+      on.push(el); (el.getAttribute('data-nb') || el.getAttribute('data-e')).trim().split(' ').forEach(function (x) { near[x] = 1; });
+    });
+    return { on: on, near: near };
+  }
+  function cmFocus(id) {
+    $$('.is-on, .is-near, .is-src', refs.world).forEach(function (el) { el.classList.remove('is-on', 'is-near', 'is-src'); });
+    refs.world.classList.toggle('kn-cm-focusing', !!id);
+    if (!id) return;
+    var nb = cmNeighbors(id);
+    nb.on.forEach(function (el) { el.classList.add('is-on'); });
+    $$('.kn-cm-n[data-id]', refs.nodes).forEach(function (el) { var x = el.getAttribute('data-id'); if (nb.near[x]) el.classList.add(x === id ? 'is-src' : 'is-near'); });
   }
 
   function domainOf(id) {
@@ -2454,6 +2538,7 @@
       var act = b.getAttribute('data-act'), key = b.getAttribute('data-key'), id = b.getAttribute('data-id');
       var tr = T();
       switch (act) {
+        case 'cm-kind': cmOff[id] = !cmOff[id]; b.classList.toggle('is-off', !!cmOff[id]); b.setAttribute('aria-pressed', cmOff[id] ? 'false' : 'true'); cmApplyOff(); break;
         case 'reset-view': graphView.manual = false; render({ keepScroll: true }); saveView(); break;
         case 'exp-all': expandAll(true); break;
         case 'exp-none': expandAll(false); break;
@@ -2484,6 +2569,11 @@
         case 'card-focus': if (narrow()) openDrawer(true); refs.card.focus(); var tl = $('.kn-c-targets', refs.card); if (tl) tl.scrollIntoView({ block: 'nearest' }); break;
       }
     });
+    /* 知识关系图：悬停或键盘聚焦节点时突出它的直接联系 */
+    var cmHover = function (ev) { if (S.mode !== 'cmap') return; var n = ev.target.closest && ev.target.closest('.kn-cm-n[data-id]'); cmFocus(n ? n.getAttribute('data-id') : ''); };
+    on(refs.nodes, 'pointerover', cmHover); on(refs.nodes, 'focusin', cmHover);
+    on(refs.nodes, 'pointerleave', function () { if (S.mode === 'cmap') cmFocus(''); });
+    on(refs.nodes, 'focusout', function (ev) { if (S.mode === 'cmap' && !(ev.relatedTarget && refs.nodes.contains(ev.relatedTarget))) cmFocus(''); });
     on(root, 'change', function (ev) {
       var control = ev.target;
       if (control === refs.logicSelect) { setLogic(control.value); return; }
