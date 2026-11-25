@@ -501,3 +501,26 @@ html[data-theme="dark"] .kn-cm-badge { color: #111; }
 .kn-cm-n.is-flash { animation: kn-cm-flash 1.1s ease-out 1; }
 @keyframes kn-cm-flash { 0%, 40% { outline: 4px solid var(--accent-strong); outline-offset: 3px; } 100% { outline: 0 solid transparent; outline-offset: 3px; } }
 @media (prefers-reduced-motion: reduce) { .kn-cm-n.is-flash { animation: none; outline: 3px solid var(--accent-strong); } }
+
+/* 示意图底图：细胞质基质与线粒体（外膜、基质、内膜与嵴）。选中阶段时它所在的场所加深。 */
+.kn { --kn-cyto: rgba(214, 160, 40, .07); --kn-cyto-line: rgba(176, 128, 20, .45); --kn-mito: rgba(214, 102, 52, .08); --kn-mito-line: #c8643a; --kn-matrix: rgba(214, 102, 52, .13); --kn-art-on: rgba(62, 177, 71, .16); --kn-art-t: #9a5a1c; }
+html[data-theme="dark"] .kn { --kn-cyto: rgba(227, 194, 90, .06); --kn-cyto-line: rgba(227, 194, 90, .35); --kn-mito: rgba(255, 155, 107, .07); --kn-mito-line: #e08a5c; --kn-matrix: rgba(255, 155, 107, .12); --kn-art-on: rgba(123, 179, 128, .2); --kn-art-t: #e3b07a; }
+.kn-edges .kn-cm-art { transition: fill .15s, stroke-width .15s; }
+.kn-edges .kn-cm-art.is-cyto { fill: var(--kn-cyto); stroke: var(--kn-cyto-line); stroke-width: 1.2; stroke-dasharray: 2 4; }
+.kn-edges .kn-cm-art.is-outer { fill: var(--kn-mito); stroke: var(--kn-mito-line); stroke-width: 2; }
+.kn-edges .kn-cm-art.is-matrix { fill: var(--kn-matrix); stroke: none; }
+.kn-edges .kn-cm-art.is-inner { fill: none; stroke: var(--kn-mito-line); stroke-width: 1.6; }
+.kn-edges .kn-cm-art.is-crista { fill: var(--kn-matrix); stroke: var(--kn-mito-line); stroke-width: 1.6; stroke-linejoin: round; }
+.kn-edges .kn-cm-art.is-cyto.is-on { fill: var(--kn-art-on); stroke: var(--accent-strong); stroke-dasharray: none; stroke-width: 2; }
+.kn-edges .kn-cm-art.is-matrix.is-on { fill: var(--kn-art-on); }
+.kn-edges .kn-cm-art.is-inner.is-on, .kn-edges .kn-cm-art.is-crista.is-on { stroke: var(--accent-strong); stroke-width: 3.2; }
+.kn-edges .kn-cm-art.is-outer.is-on { stroke: var(--accent-strong); }
+.kn-cm-art-t { position: absolute; padding: 0 3px; color: var(--kn-art-t); font-size: 12.5px; font-weight: 600; line-height: 16px; letter-spacing: .5px; white-space: nowrap; pointer-events: none; }
+.kn-cm-art-t.is-sub { font-size: 11.5px; font-weight: 500; }
+.kn-cm-art-t.is-on { color: var(--accent-text); font-weight: 700; }
+
+/* 关联弧线：有方向的画箭头（实线更醒目），中点写关系性质 */
+.kn-edges .kn-cm-ref.has-dir { stroke-dasharray: none; stroke-width: 1.6; opacity: .75; }
+.kn-edges .kn-cm-rmk path { fill: var(--kn-t); }
+.kn-cm-ref-l { position: absolute; transform: translate(-50%, -50%); padding: 0 4px; border: 1px solid var(--kn-t); background: var(--surface); color: var(--kn-t); font-size: 11.5px; font-weight: 600; line-height: 16px; white-space: nowrap; pointer-events: none; }
+.kn-cm-ref-l.is-hot { background: var(--kn-t); color: var(--surface); }

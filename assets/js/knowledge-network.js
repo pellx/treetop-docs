@@ -232,7 +232,7 @@
       arr(mp.nodes).forEach(function (n) {
         if (!n || !n.id || ids[n.id]) { issue('error', where + ' 的节点 ID 缺失或重复：' + (n && n.id), [mp.id]); return; }
         if (typeof n.y !== 'number' || (typeof n.x !== 'number' && typeof n.lx !== 'number')) { issue('error', where + ' 的节点 ' + n.id + ' 缺少坐标', [mp.id]); return; }
-        var o = { id: n.id, t: String(n.t == null ? '' : n.t), d: n.d || '', x: n.x, lx: n.lx, y: n.y, w: n.w, h: n.h, s: n.s || '', tip: n.tip || '', go: null,
+        var o = { id: n.id, t: String(n.t == null ? '' : n.t), d: n.d || '', x: n.x, lx: n.lx, y: n.y, w: n.w, h: n.h, s: n.s || '', tip: n.tip || '', at: arr(typeof n.at === 'string' ? [n.at] : n.at), go: null,
           'in': arr(typeof n['in'] === 'string' ? [n['in']] : n['in']), open: n.open || '', marks: arr(n.marks), rel: arr(n.rel) };
         if (n.go) {
           var g = /^([a-z]{2}\d-\d{2})(?:\/(p\d+))?$/.exec(String(n.go));
@@ -260,6 +260,8 @@
         out.edges.push(e);
       });
       out.legend = mp.legend !== false;
+      /* 示意图底图：细胞质基质、线粒体等场所，画在主干下面；节点的 at 指向它所在的场所，选中时场所一起高亮 */
+      out.art = arr(mp.art).filter(function (a) { return a && a.id && (a.shape === 'rect' || a.shape === 'mito'); });
       out.texts = arr(mp.texts).filter(function (t) { return t && t.t && typeof t.x === 'number' && typeof t.y === 'number'; });
       /* 模块（可展开的细节）：节点 open 声明开关，in 声明归属；marks 是点选时临时标出的相关知识点 */
       out.byId = {}; out.mods = {};
@@ -274,7 +276,7 @@
           if (!r) return;
           if (r.scope) { var sc = arr(r.scope).filter(okId); if (sc.length) rel.push({ kind: 'scope', ids: sc, t: r.t || '' }); }
           else if (r.trace) { var tc = arr(r.trace).filter(okId); if (tc.length > 1) rel.push({ kind: 'trace', ids: tc, t: r.t || '' }); }
-          else if (r.to && okId(r.to) && r.to !== n.id) rel.push({ kind: 'ref', ids: [r.to], to: r.to, tag: r.tag || '相关', why: r.why || '' });
+          else if (r.to && okId(r.to) && r.to !== n.id) rel.push({ kind: 'ref', ids: [r.to], to: r.to, tag: r.tag || '相关', why: r.why || '', on: r.on || '', dir: r.dir === 'in' || r.dir === 'out' ? r.dir : '' });
         });
         if (!rel.length) n.marks.forEach(function (x) { rel.push({ kind: 'ref', ids: [x], to: x, tag: '相关', why: '' }); });
         n.rel = rel;
@@ -1828,7 +1830,10 @@
       }
     });
     mp.texts.forEach(function (t) { var tl = cmLabel(t.t, t.x, t.y, t.lv); tl['in'] = arr(typeof t['in'] === 'string' ? [t['in']] : t['in']); G.labels.push(tl); });
-    var all = G.nodes.concat(G.groups, G.zones, G.labels);
+    G.art = mp.art.map(function (a) {
+      return a.shape === 'mito' ? cmBox(a.cx - a.rx, a.cy - a.ry, 2 * a.rx, 2 * a.ry, { a: a }) : cmBox(a.x, a.y, a.w, a.h, { a: a });
+    });
+    var all = G.nodes.concat(G.groups, G.zones, G.labels, G.art);
     var minX = Math.min.apply(null, all.map(function (b) { return b.l; })), minY = Math.min.apply(null, all.map(function (b) { return b.t; }));
     G.ox = CM_PAD - minX; G.oy = CM_PAD - minY;
     G.w = Math.max.apply(null, all.map(function (b) { return b.r; })) + G.ox + CM_PAD;
@@ -1888,8 +1893,10 @@
     /* 箭头按连线语义分色：每种一个 marker（marker 不继承线色） */
     var mk = function (k) { return '<marker id="kn-cm-ah' + (k ? '-' + k : '') + '" class="kn-cm-mk' + (k ? ' kn-cm-k-' + k : '') + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 1L10 5L0 9z"/></marker>'; };
     /* 连线：每条先画底色描边再画线，后画的线在交叉处断开前面的线，读起来像教材的"跨线" */
-    var svg = '<defs>' + mk('') + Object.keys(G.kinds).map(mk).join('') + '</defs>';
+    var tmk = function (t) { return '<marker id="kn-cm-rh-' + t + '" class="kn-cm-rmk kn-cm-t-' + t + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 1L10 5L0 9z"/></marker>'; };
+    var svg = '<defs>' + mk('') + Object.keys(G.kinds).map(mk).join('') + (mp.nodes.some(function (n) { return n.rel.length; }) ? ['core', 'warn', 'judge', 'exp', 'use'].map(tmk).join('') : '') + '</defs>';
     svg += '<g transform="translate(' + px(ox) + ' ' + px(oy) + ')">';
+    G.art.forEach(function (b) { svg += cmArtSvg(b.a, px); });
     G.zones.forEach(function (b, i) { svg += '<rect class="kn-cm-zone" data-z="' + i + '" x="' + px(b.l) + '" y="' + px(b.t) + '" width="' + px(b.w) + '" height="' + px(b.h) + '"/>'; });
     G.groups.forEach(function (b, i) { svg += '<rect class="kn-cm-grp" data-g="' + i + '" x="' + px(b.l) + '" y="' + px(b.t) + '" width="' + px(b.w) + '" height="' + px(b.h) + '"/>'; });
     G.paths.forEach(function (p, i) {
@@ -1903,6 +1910,9 @@
     refs.svg.setAttribute('viewBox', '0 0 ' + G.w + ' ' + G.h);
     refs.svg.innerHTML = svg;
     var h = '';
+    G.art.forEach(function (b) {
+      cmArtLabels(b.a).forEach(function (l) { h += '<span class="kn-cm-art-t' + (l.cls ? ' ' + l.cls : '') + '" data-art="' + esc(l.id) + '" style="left:' + px(l.x + ox) + 'px;top:' + px(l.y + oy) + 'px">' + esc(l.t) + '</span>'; });
+    });
     G.zones.forEach(function (b, i) {
       var g = b.group; if (!g.title) return;
       h += '<span class="kn-cm-zt' + (g.talign === 'r' ? ' is-r' : '') + '" data-z="' + i + '" style="left:' + px((g.talign === 'r' ? b.r : b.l) + ox) + 'px;top:' + px(b.t + oy) + 'px">' + esc(g.title) + '</span>';
@@ -2009,6 +2019,10 @@
     });
     $$('[data-g]', refs.svg).forEach(function (el) { el.classList.toggle('kn-cm-hid', !cmItemVis(G.groups[+el.getAttribute('data-g')], v, st)); });
     cmOverlay(mp, G, st, v);
+    /* 场所高亮：选中项和它的关联里带 at 的知识点所在的场所 */
+    var lit = {};
+    if (st.sel) Object.keys(rel.near).concat([st.sel]).forEach(function (x) { if (v[x]) mp.byId[x].at.forEach(function (a) { lit[a] = 1; }); });
+    $$('[data-art]', refs.world).forEach(function (el) { el.classList.toggle('is-on', !!lit[el.getAttribute('data-art')]); });
     cmBar(mp, st);
     cmRelPanel(mp, st, v);
   }
@@ -2067,7 +2081,13 @@
         if (len > 12) {
           var bend = Math.min(90, len * .22) * (it.no % 2 ? 1 : -1), nx = -dy / len * bend, ny = dx / len * bend;
           var c1 = { x: p0.x + dx * .3 + nx, y: p0.y + dy * .3 + ny }, c2 = { x: p0.x + dx * .7 + nx, y: p0.y + dy * .7 + ny };
-          svg += '<path class="kn-cm-ref ' + tc + '" data-no="' + it.no + '" d="M' + px(p0.x) + ' ' + px(p0.y) + 'C' + px(c1.x) + ' ' + px(c1.y) + ' ' + px(c2.x) + ' ' + px(c2.y) + ' ' + px(p1.x) + ' ' + px(p1.y) + '"/>';
+          var rh = 'url(#kn-cm-rh-' + tc.slice(9) + ')';
+          svg += '<path class="kn-cm-ref ' + tc + (it.r.dir ? ' has-dir' : '') + '" data-no="' + it.no + '" d="M' + px(p0.x) + ' ' + px(p0.y) + 'C' + px(c1.x) + ' ' + px(c1.y) + ' ' + px(c2.x) + ' ' + px(c2.y) + ' ' + px(p1.x) + ' ' + px(p1.y) + '"' + (it.r.dir === 'out' ? ' marker-end="' + rh + '"' : it.r.dir === 'in' ? ' marker-start="' + rh + '"' : '') + '/>';
+          /* 弧线中点写关系的性质（如"氧原子来源"），读线就知道这条联系说的是什么 */
+          if (it.r.on) {
+            var mx = .125 * p0.x + .375 * c1.x + .375 * c2.x + .125 * p1.x, my = .125 * p0.y + .375 * c1.y + .375 * c2.y + .125 * p1.y;
+            h += '<span class="kn-cm-ref-l ' + tc + '" data-no="' + it.no + '" style="left:' + px(mx + ox) + 'px;top:' + px(my + oy) + 'px">' + esc(it.r.on) + '</span>';
+          }
         }
         h += '<span class="kn-cm-badge ' + tc + '" data-no="' + it.no + '" style="left:' + px(b.r + ox - 9) + 'px;top:' + px(b.t + oy - 10) + 'px">' + it.no + '</span>';
       });
@@ -2080,7 +2100,7 @@
     var box = $('.kn-cm-rel', refs.canvas), n = st.sel && mp.byId[st.sel];
     if (!n || !n.rel.length) { if (box) box.parentNode.removeChild(box); return; }
     if (!box) { box = D.createElement('div'); box.className = 'kn-cm-rel'; box.setAttribute('role', 'region'); box.setAttribute('aria-label', '关联说明'); refs.canvas.appendChild(box); }
-    var name = function (id) { return mp.byId[id].t.replace(/\n/g, ' '); };
+    var name = function (id) { var x = mp.byId[id]; return x.t.replace(/\n/g, ' ') + (x.d ? '（' + x.d + '）' : ''); };
     var h = '<div class="kn-cm-rel-h">「' + esc(name(n.id)) + '」的关联</div><ol class="kn-cm-rel-list">';
     n.rel.forEach(function (r) {
       if (r.kind === 'scope') h += '<li class="kn-cm-rel-scope"><span class="kn-cm-rel-ic is-scope" aria-hidden="true"></span><span><b>范围</b>' + esc(r.t || r.ids.map(name).join('、')) + '</span></li>';
@@ -2088,11 +2108,39 @@
     });
     cmRelRefs(mp, st, v).forEach(function (it) {
       var tc = cmTagCls(it.r.tag);
-      h += '<li><button type="button" class="kn-cm-rel-item" data-act="cm-goto" data-id="' + esc(it.r.to) + '" data-no="' + it.no + '" title="在图中查看；再点图中的知识点可查看它自己的关联"><span class="kn-cm-badge is-static ' + tc + '">' + it.no + '</span><span><em class="' + tc + '">' + esc(it.r.tag) + '</em><b>' + esc(mp.byId[it.r.to].t.split('\n')[0]) + '</b>' + (it.r.why ? '<span class="kn-cm-rel-why">' + esc(it.r.why) + '</span>' : '') + '</span></button></li>';
+      h += '<li><button type="button" class="kn-cm-rel-item" data-act="cm-goto" data-id="' + esc(it.r.to) + '" data-no="' + it.no + '" title="在图中查看；再点图中的知识点可查看它自己的关联"><span class="kn-cm-badge is-static ' + tc + '">' + it.no + '</span><span><em class="' + tc + '">' + esc(it.r.tag + (it.r.on ? ' · ' + it.r.on : '')) + '</em><b>' + esc(mp.byId[it.r.to].t.split('\n')[0] + (mp.byId[it.r.to].d ? '（' + mp.byId[it.r.to].d + '）' : '')) + '</b>' + (it.r.why ? '<span class="kn-cm-rel-why">' + esc(it.r.why) + '</span>' : '') + '</span></button></li>';
     });
     h += '</ol>';
     box.innerHTML = h;
     var top = $('.kn-cm-bar', refs.canvas); if (top && !narrow()) box.style.top = (top.offsetTop + top.offsetHeight + 8) + 'px'; else box.style.top = '';
+  }
+  /* 示意图：rect 为一块场所（如细胞质基质）；mito 画线粒体——外膜椭圆、内膜椭圆和向内折叠的嵴，
+   * 拆成 id-outer、id-matrix、id-inner 三个可高亮的部分。嵴的位置由数据给出，避开阶段节点。 */
+  function cmArtSvg(a, px) {
+    if (a.shape === 'rect') return '<rect class="kn-cm-art is-cyto" data-art="' + esc(a.id) + '" x="' + px(a.x) + '" y="' + px(a.y) + '" width="' + px(a.w) + '" height="' + px(a.h) + '"/>';
+    var g = 9, irx = a.rx - g, iry = a.ry - g, h = '<g class="kn-cm-mito">';
+    h += '<ellipse class="kn-cm-art is-outer" data-art="' + esc(a.id) + '-outer" cx="' + a.cx + '" cy="' + a.cy + '" rx="' + a.rx + '" ry="' + a.ry + '"/>';
+    h += '<ellipse class="kn-cm-art is-matrix" data-art="' + esc(a.id) + '-matrix" cx="' + a.cx + '" cy="' + a.cy + '" rx="' + irx + '" ry="' + iry + '"/>';
+    /* 嵴：从内膜向基质伸出的指状褶，和内膜同一条描边；内膜描边单独画在最上面，与嵴连成一体 */
+    var cr = '';
+    arr(a.cristae).forEach(function (c) {
+      var dx = c.x - a.cx; if (Math.abs(dx) >= irx - 6) return;
+      var yb = iry * Math.sqrt(1 - dx * dx / (irx * irx)), dir = c.side === 'b' ? -1 : 1;
+      var y0 = a.cy - dir * yb, len = (c.len || .55) * iry, w = 4.5, y1 = y0 + dir * len;
+      cr += 'M' + px(c.x - w) + ' ' + px(y0 - dir * 2) + 'V' + px(y1) + 'A' + w + ' ' + w + ' 0 0 ' + (dir > 0 ? 0 : 1) + ' ' + px(c.x + w) + ' ' + px(y1) + 'V' + px(y0 - dir * 2);
+    });
+    if (cr) h += '<path class="kn-cm-art is-crista" data-art="' + esc(a.id) + '-inner" d="' + cr + '"/>';
+    h += '<ellipse class="kn-cm-art is-inner" data-art="' + esc(a.id) + '-inner" cx="' + a.cx + '" cy="' + a.cy + '" rx="' + irx + '" ry="' + iry + '"/>';
+    return h + '</g>';
+  }
+  function cmArtLabels(a) {
+    var out = [];
+    if (a.t && a.lp) out.push({ id: a.shape === 'mito' ? a.id + '-outer' : a.id, t: a.t, x: a.lp[0], y: a.lp[1] });
+    if (a.shape === 'mito') {
+      if (a.matrix && a.mp) out.push({ id: a.id + '-matrix', t: a.matrix, x: a.mp[0], y: a.mp[1], cls: 'is-sub' });
+      if (a.inner && a.ip) out.push({ id: a.id + '-inner', t: a.inner, x: a.ip[0], y: a.ip[1], cls: 'is-sub' });
+    }
+    return out;
   }
   function cmVisibleBoxes(mp) {
     var G = cmapGeom(mp), st = cmState(mp), v = cmNodeVis(mp, st);
@@ -2189,7 +2237,7 @@
     cmView(mp, [G.box[id]], true, false, true);
     var el = $('.kn-cm-n[data-id="' + cssEsc(id) + '"]', refs.nodes);
     if (el) { el.classList.toggle('is-flash', false); void el.offsetWidth; el.classList.toggle('is-flash', true); }
-    $$('.kn-cm-ref, .kn-cm-badge', refs.world).forEach(function (x) { x.classList.toggle('is-hot', x.getAttribute('data-no') === no); });
+    $$('.kn-cm-ref, .kn-cm-badge, .kn-cm-ref-l', refs.world).forEach(function (x) { x.classList.toggle('is-hot', x.getAttribute('data-no') === no); });
     saveView();
   }
   function cmToggle(mod) {
@@ -2848,7 +2896,7 @@
     /* 关联面板：悬停或聚焦条目时只加粗对应的弧线和编号，图上其他内容不变 */
     var relHot = function (ev) {
       var it = ev.target.closest && ev.target.closest('.kn-cm-rel-item'), no = it ? it.getAttribute('data-no') : '';
-      $$('.kn-cm-ref, .kn-cm-badge', refs.world).forEach(function (el) { el.classList.toggle('is-hot', !!no && el.getAttribute('data-no') === no); });
+      $$('.kn-cm-ref, .kn-cm-badge, .kn-cm-ref-l', refs.world).forEach(function (el) { el.classList.toggle('is-hot', !!no && el.getAttribute('data-no') === no); });
     };
     on(refs.canvas, 'pointerover', function (ev) { if (ev.target.closest && ev.target.closest('.kn-cm-rel')) relHot(ev); });
     on(refs.canvas, 'pointerout', function (ev) { if (ev.target.closest && ev.target.closest('.kn-cm-rel') && !(ev.relatedTarget && ev.relatedTarget.closest && ev.relatedTarget.closest('.kn-cm-rel-item'))) relHot({ target: D.body }); });
