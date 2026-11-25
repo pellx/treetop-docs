@@ -724,9 +724,21 @@
       '<div class="kn-notice" role="status" hidden></div>' +
       '<div class="kn-body">' +
         '<div class="kn-view">' +
-          '<span class="kn-view-ops"><button type="button" class="kn-info-btn" data-act="report">覆盖与说明</button></span>' +
-          '<div class="kn-canvas" role="group" aria-label="思维导图"><button type="button" class="kn-reset-view" data-act="reset-view" aria-label="回正思维导图" title="回正思维导图"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5M8 12h8M12 8v8"/></svg><span>回正</span></button><span class="kn-exp-ops" role="group" aria-label="展开与收起"><button type="button" data-act="exp-all">展开</button><button type="button" data-act="exp-none">收起</button></span><div class="kn-world"><svg class="kn-edges" aria-hidden="true"></svg><div class="kn-nodes"></div></div></div>' +
+          '<div class="kn-canvas" role="group" aria-label="思维导图"><div class="kn-world"><svg class="kn-edges" aria-hidden="true"></svg><div class="kn-nodes"></div></div></div>' +
           '<div class="kn-list" hidden></div>' +
+          /* 底部工具栏：左边是视图操作，右边是说明与全屏，左右各三个 */
+          '<div class="kn-dock" role="toolbar" aria-label="思维导图操作">' +
+            '<span class="kn-dock-l">' +
+              '<button type="button" class="kn-dk-reset" data-act="reset-view" title="回正：重新适配画面"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5M8 12h8M12 8v8"/></svg><span>回正</span></button>' +
+              '<button type="button" class="kn-dk-exp" data-act="dock-exp" data-id="1"><span class="kn-lg-t">全部展开</span><span class="kn-sm-t">展开</span></button>' +
+              '<button type="button" class="kn-dk-exp" data-act="dock-exp" data-id=""><span class="kn-lg-t">全部收起</span><span class="kn-sm-t">收起</span></button>' +
+            '</span>' +
+            '<span class="kn-dock-r">' +
+              '<button type="button" class="kn-dk-legend" data-act="cm-legend" aria-expanded="false">图例</button>' +
+              '<button type="button" class="kn-info-btn" data-act="report"><span class="kn-lg-t">覆盖与说明</span><span class="kn-sm-t">说明</span></button>' +
+              '<button type="button" class="kn-dk-full" data-act="full" aria-pressed="false" title="全屏：只显示思维导图"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="kn-ic-on" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="kn-ic-off" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg><span>全屏</span></button>' +
+            '</span>' +
+          '</div>' +
         '</div>' +
         '<aside class="kn-card" aria-label="信息卡" tabindex="-1"></aside>' +
       '</div>' +
@@ -861,7 +873,7 @@
     }
     return crumbs;
   }
-  function hide() { if (root) { root.hidden = true; S.shown = false; closePop(); syncTop(); } }
+  function hide() { if (root) { setFull(false); root.hidden = true; S.shown = false; closePop(); syncTop(); } }
 
   /* 落点映射：已整理的考点在骨架里由概念代替，已并入单元的期由单元代替。返回网络里实际存在的条目 ID */
   function placeId(id) {
@@ -1080,6 +1092,38 @@
       }
     }
     if (!mp) renderCard();
+    syncDock();
+  }
+  /* 工具栏：按当前页面决定哪些按钮可用 */
+  function syncDock() {
+    var mp = S.routeMap, f = form();
+    root.classList.toggle('kn-can-exp', f === 'graph' && (mp ? !!mp.hasMods : root.classList.contains('kn-overview')));
+    root.classList.toggle('kn-has-legend', !!(mp && $('.kn-cm-legend', refs.canvas)));
+    var lg = $('.kn-dk-legend', root); if (lg) lg.setAttribute('aria-expanded', cmLegendOpen ? 'true' : 'false');
+    var fb = $('.kn-dk-full', root);
+    if (fb) { fb.setAttribute('aria-pressed', S.full ? 'true' : 'false'); $('span', fb).textContent = S.full ? (narrow() ? '退出' : '退出全屏') : '全屏'; fb.title = S.full ? '退出全屏（Esc）' : '全屏：只显示思维导图'; }
+  }
+  /* 全屏：优先用浏览器全屏；不支持时（如 iPhone）用铺满窗口的方式。尺寸变了以后等布局稳定再重新适配 */
+  function setFull(on) {
+    on = !!on;
+    if (S.full === on) return;
+    S.full = on;
+    root.classList.toggle('kn-full', on);
+    try {
+      if (on && root.requestFullscreen && !D.fullscreenElement) root.requestFullscreen().catch(function () { /* 被拒绝：保留铺满窗口 */ });
+      else if (!on && D.fullscreenElement === root && D.exitFullscreen) D.exitFullscreen().catch(function () { /* ignore */ });
+    } catch (e) { /* 旧浏览器：只用铺满窗口 */ }
+    syncDock();
+    refitSoon();
+  }
+  var refitT = 0;
+  function refitSoon() {
+    cancelAnimationFrame(refitT);
+    refitT = requestAnimationFrame(function () { refitT = requestAnimationFrame(function () {
+      if (!S.shown) return;
+      graphView.manual = false;
+      render({ keepScroll: true });
+    }); });
   }
   function renderFrom() {
     var t = trail(), last = t[t.length - 1];
@@ -1942,7 +1986,9 @@
       graphView.manual = !!(rg.manual && isFinite(rg.x) && isFinite(rg.y) && isFinite(rg.scale) && rg.scale > 0);
       if (graphView.manual) { graphView.x = rg.x; graphView.y = rg.y; graphView.scale = rg.scale; }
     } else if (graphView.key !== viewKey) { graphView.key = viewKey; graphView.manual = false; }
-    cmView(mp, hiBoxes.length ? hiBoxes : null, false, hiBoxes.length > 0);
+    var relT = !graphView.manual && cmRelTarget(mp);
+    if (relT) cmView(mp, relT, false, true, false, true);
+    else cmView(mp, hiBoxes.length ? hiBoxes : null, false, hiBoxes.length > 0);
   }
 
   /* ---------- 知识关系图：展开状态、选中、顶栏、视口 ---------- */
@@ -2044,6 +2090,7 @@
       r: Math.max.apply(null, bs.map(function (b) { return b.r; })) + pad, b: Math.max.apply(null, bs.map(function (b) { return b.b; })) + pad };
   }
   function cmOverlay(mp, G, st, v) {
+    G.refBoxes = [];
     var sg = $('.kn-cm-marks', refs.svg), ov = $('.kn-cm-ov', refs.nodes);
     if (!ov) { ov = D.createElement('div'); ov.className = 'kn-cm-ov'; refs.nodes.appendChild(ov); }
     var n = st.sel && mp.byId[st.sel], svg = '', h = '', ox = G.ox, oy = G.oy;
@@ -2072,23 +2119,63 @@
           svg += '<path class="kn-cm-trace" data-ri="' + i + '" d="' + cmD(pts) + '"/>';
         }
       });
-      var src = G.box[n.id];
-      cmRelRefs(mp, st, v).forEach(function (it) {
-        var b = G.box[it.r.to], tc = cmTagCls(it.r.tag);
-        /* 弧线：起点、终点取两框相对的边，控制点向外鼓，鼓的方向随相对位置变化，避免多条弧叠在一起 */
-        var p0 = cmClip(src, b.cx, b.cy), p1 = cmClip(b, src.cx, src.cy);
-        var dx = p1.x - p0.x, dy = p1.y - p0.y, len = Math.hypot(dx, dy);
-        if (len > 12) {
-          var bend = Math.min(90, len * .22) * (it.no % 2 ? 1 : -1), nx = -dy / len * bend, ny = dx / len * bend;
-          var c1 = { x: p0.x + dx * .3 + nx, y: p0.y + dy * .3 + ny }, c2 = { x: p0.x + dx * .7 + nx, y: p0.y + dy * .7 + ny };
-          var rh = 'url(#kn-cm-rh-' + tc.slice(9) + ')';
-          svg += '<path class="kn-cm-ref ' + tc + (it.r.dir ? ' has-dir' : '') + '" data-no="' + it.no + '" d="M' + px(p0.x) + ' ' + px(p0.y) + 'C' + px(c1.x) + ' ' + px(c1.y) + ' ' + px(c2.x) + ' ' + px(c2.y) + ' ' + px(p1.x) + ' ' + px(p1.y) + '"' + (it.r.dir === 'out' ? ' marker-end="' + rh + '"' : it.r.dir === 'in' ? ' marker-start="' + rh + '"' : '') + '/>';
-          /* 弧线中点写关系的性质（如"氧原子来源"），读线就知道这条联系说的是什么 */
-          if (it.r.on) {
-            var mx = .125 * p0.x + .375 * c1.x + .375 * c2.x + .125 * p1.x, my = .125 * p0.y + .375 * c1.y + .375 * c2.y + .125 * p1.y;
-            h += '<span class="kn-cm-ref-l ' + tc + '" data-no="' + it.no + '" style="left:' + px(mx + ox) + 'px;top:' + px(my + oy) + 'px">' + esc(it.r.on) + '</span>';
-          }
+      var src = G.box[n.id], refsList = cmRelRefs(mp, st, v);
+      /* 关联线：直角折线，从知识点的上（下）边引出，到一条空着的"走线通道"横过去，再进入对方；
+       * 或从左（右）边引出走竖向通道。通道位置逐级外移，取标签不压住东西、线穿过的知识点最少的一条。
+       * 画面里只有线粒体是曲线，其他都是直角，和主干的方正风格一致。 */
+      var vis = G.nodes.filter(function (nb) { return v[nb.id]; });
+      var taken = vis.map(function (nb) { return { l: nb.l - 4, t: nb.t - 4, r: nb.r + 4, b: nb.b + 4 }; });
+      G.art.forEach(function (ab) { cmArtLabels(ab.a).forEach(function (l) { taken.push({ l: l.x - 2, t: l.y - 2, r: l.x + cmTextW(l.t) * 12.5 + 10, b: l.y + 18 }); }); });
+      refsList.forEach(function (it) { var tb = G.box[it.r.to]; taken.push({ l: tb.r - 11, t: tb.t - 12, r: tb.r + 12, b: tb.t + 11 }); });
+      var lanes = [];
+      var hits = function (q) { return taken.filter(function (o) { return q.l < o.r && q.r > o.l && q.t < o.b && q.b > o.t; }).length; };
+      var crosses = function (pts, ends) {
+        var c = 0;
+        for (var k = 1; k < pts.length; k++) {
+          var a = pts[k - 1], b = pts[k], q = { l: Math.min(a.x, b.x) - 1, r: Math.max(a.x, b.x) + 1, t: Math.min(a.y, b.y) - 1, b: Math.max(a.y, b.y) + 1 };
+          vis.forEach(function (nb) { if (ends.indexOf(nb) < 0 && q.l < nb.r && q.r > nb.l && q.t < nb.b && q.b > nb.t) c++; });
         }
+        return c;
+      };
+      var laneClash = function (hz, at, lo, hi) { return lanes.some(function (L) { return L.hz === hz && Math.abs(L.at - at) < 7 && lo < L.hi && hi > L.lo; }); };
+      var route = function (b, side, at) {
+        /* side：'t'/'b' 横向通道 y=at；'l'/'r' 竖向通道 x=at */
+        if (side === 't' || side === 'b') {
+          var ex = clamp(b.cx, src.l + 10, src.r - 10), nx = clamp(src.cx, b.l + 10, b.r - 10);
+          var sy = at < src.cy ? src.t : src.b, ty = at < b.cy ? b.t : b.b;
+          return { pts: [{ x: ex, y: sy }, { x: ex, y: at }, { x: nx, y: at }, { x: nx, y: ty }], seg: [{ x: ex, y: at }, { x: nx, y: at }], hz: true };
+        }
+        var ey = clamp(b.cy, src.t + 6, src.b - 6), ny = clamp(src.cy, b.t + 6, b.b - 6);
+        var sx = at < src.cx ? src.l : src.r, tx = at < b.cx ? b.l : b.r;
+        return { pts: [{ x: sx, y: ey }, { x: at, y: ey }, { x: at, y: ny }, { x: tx, y: ny }], seg: [{ x: at, y: ey }, { x: at, y: ny }], hz: false };
+      };
+      G.refBoxes = [];
+      refsList.forEach(function (it) {
+        var b = G.box[it.r.to], tc = cmTagCls(it.r.tag), best = null;
+        var lw = it.r.on ? Math.round(cmTextW(it.r.on) * 11.5 + 12) : 0, lh = 18;
+        var cands = [];
+        for (var k = 1; k <= 6; k++) {
+          var g = 16 + 22 * (k - 1);
+          cands.push(['t', Math.min(src.t, b.t) - g], ['b', Math.max(src.b, b.b) + g], ['l', Math.min(src.l, b.l) - g], ['r', Math.max(src.r, b.r) + g]);
+        }
+        /* 两框之间有足够空隙时，也试中间的通道（Z 形，最短） */
+        if (b.t - src.b > 28 || src.t - b.b > 28) cands.unshift([b.t > src.b ? 'b' : 't', b.t > src.b ? (src.b + b.t) / 2 : (b.b + src.t) / 2]);
+        if (b.l - src.r > 40 || src.l - b.r > 40) cands.unshift([b.l > src.r ? 'r' : 'l', b.l > src.r ? (src.r + b.l) / 2 : (b.r + src.l) / 2]);
+        cands.forEach(function (cd, ci) {
+          var R = route(b, cd[0], cd[1]), m = { x: (R.seg[0].x + R.seg[1].x) / 2, y: (R.seg[0].y + R.seg[1].y) / 2 };
+          var lab = lw ? { l: m.x - lw / 2, t: m.y - lh / 2, r: m.x + lw / 2, b: m.y + lh / 2 } : null;
+          var lo = R.hz ? Math.min(R.seg[0].x, R.seg[1].x) : Math.min(R.seg[0].y, R.seg[1].y), hi = R.hz ? Math.max(R.seg[0].x, R.seg[1].x) : Math.max(R.seg[0].y, R.seg[1].y);
+          var len = 0; for (var q = 1; q < R.pts.length; q++) len += Math.abs(R.pts[q].x - R.pts[q - 1].x) + Math.abs(R.pts[q].y - R.pts[q - 1].y);
+          var score = (lab ? hits(lab) * 100 : 0) + crosses(R.pts, [src, b]) * 12 + (laneClash(R.hz, cd[1], lo, hi) ? 40 : 0) + len / 60 + ci * .3;
+          if (!best || score < best.score) best = { R: R, lab: lab, m: m, score: score, lo: lo, hi: hi, at: cd[1] };
+        });
+        var R = best.R, rh = 'url(#kn-cm-rh-' + tc.slice(9) + ')';
+        lanes.push({ hz: R.hz, at: best.at, lo: best.lo, hi: best.hi });
+        svg += '<path class="kn-cm-ref ' + tc + (it.r.dir ? ' has-dir' : '') + '" data-no="' + it.no + '" d="' + cmD(R.pts) + '"' + (it.r.dir === 'out' ? ' marker-end="' + rh + '"' : it.r.dir === 'in' ? ' marker-start="' + rh + '"' : '') + '/>';
+        /* 线上写关系的性质（如"氧原子来源"），读线就知道这条联系说的是什么 */
+        if (best.lab) { taken.push(best.lab); G.refBoxes.push(best.lab); h += '<span class="kn-cm-ref-l ' + tc + '" data-no="' + it.no + '" style="left:' + px(best.m.x + ox) + 'px;top:' + px(best.m.y + oy) + 'px">' + esc(it.r.on) + '</span>'; }
+        var xs = R.pts.map(function (p) { return p.x; }), ys = R.pts.map(function (p) { return p.y; });
+        G.refBoxes.push({ l: Math.min.apply(null, xs), t: Math.min.apply(null, ys), r: Math.max.apply(null, xs), b: Math.max.apply(null, ys) });
         h += '<span class="kn-cm-badge ' + tc + '" data-no="' + it.no + '" style="left:' + px(b.r + ox - 9) + 'px;top:' + px(b.t + oy - 10) + 'px">' + it.no + '</span>';
       });
     }
@@ -2096,12 +2183,16 @@
     ov.innerHTML = h;
   }
   /* 关联面板：把"为什么相关"写出来。点条目切换到那个知识点，悬停条目只加粗对应的弧线和编号。 */
+  var cmRelFold = null;
   function cmRelPanel(mp, st, v) {
     var box = $('.kn-cm-rel', refs.canvas), n = st.sel && mp.byId[st.sel];
     if (!n || !n.rel.length) { if (box) box.parentNode.removeChild(box); return; }
     if (!box) { box = D.createElement('div'); box.className = 'kn-cm-rel'; box.setAttribute('role', 'region'); box.setAttribute('aria-label', '关联说明'); refs.canvas.appendChild(box); }
     var name = function (id) { var x = mp.byId[id]; return x.t.replace(/\n/g, ' ') + (x.d ? '（' + x.d + '）' : ''); };
-    var h = '<div class="kn-cm-rel-h">「' + esc(name(n.id)) + '」的关联</div><ol class="kn-cm-rel-list">';
+    if (cmRelFold === null) cmRelFold = narrow();
+    box.classList.toggle('is-fold', cmRelFold);
+    var cnt = n.rel.length;
+    var h = '<button type="button" class="kn-cm-rel-h" data-act="cm-rel-fold" aria-expanded="' + (cmRelFold ? 'false' : 'true') + '"><span>「' + esc(name(n.id)) + '」的关联 · ' + cnt + ' 条</span><i aria-hidden="true"></i></button><ol class="kn-cm-rel-list">';
     n.rel.forEach(function (r) {
       if (r.kind === 'scope') h += '<li class="kn-cm-rel-scope"><span class="kn-cm-rel-ic is-scope" aria-hidden="true"></span><span><b>范围</b>' + esc(r.t || r.ids.map(name).join('、')) + '</span></li>';
       else if (r.kind === 'trace') h += '<li class="kn-cm-rel-trace"><span class="kn-cm-rel-ic is-trace" aria-hidden="true"></span><span><b>路线</b>' + (r.t ? esc(r.t) + '：' : '') + esc(r.ids.map(name).join(' → ')) + '</span></li>';
@@ -2148,45 +2239,61 @@
       .concat(G.zones.filter(function (z) { return cmItemVis(z, v, st); }), G.labels.filter(function (l) { return cmItemVis(l, v, st); }));
   }
   /* 视口：未手动移动时对准可见内容；target 是必须看得见的一组框（刚展开的模块、被标出的知识点） */
+  /* 可用区域：画布里扣掉顶栏、关联面板（宽屏在右、窄屏在下）以后剩下的矩形，单位为画布像素。
+   * 每次都在当下实测（全屏、窗口大小、面板高度都会变），不缓存。 */
+  function cmAvail() {
+    var cr = refs.canvas.getBoundingClientRect(), pad = 12;
+    var a = { l: pad, t: pad, r: (cr.width || 800) - pad, b: (cr.height || 520) - pad };
+    var bar = $('.kn-cm-bar', refs.canvas);
+    if (bar && bar.offsetHeight) a.t = Math.max(a.t, bar.getBoundingClientRect().bottom - cr.top + 10);
+    var rp = $('.kn-cm-rel', refs.canvas);
+    if (rp && rp.offsetHeight) {
+      var pr = rp.getBoundingClientRect();
+      if (pr.left - cr.left > cr.width / 2) a.r = Math.min(a.r, pr.left - cr.left - pad);
+      else a.b = Math.min(a.b, pr.top - cr.top - pad);
+    }
+    if (a.r - a.l < 80) a.r = a.l + 80;
+    if (a.b - a.t < 80) a.b = a.t + 80;
+    return a;
+  }
+  /* 视口：
+   *   relFit —— 选中项和它的全部关联正好放满可用区域（可放大到 1.4、缩小到 0.25）；
+   *   否则未手动移动时适配当前可见内容；target 为必须看得见的一组框，只做最少的平移。 */
   function cmView(mp, target, anim, focusTarget, keep, relFit) {
-    var G = cmapGeom(mp), cw = refs.canvas.clientWidth || 800, ch = refs.canvas.clientHeight || 520;
-    /* 关联面板在右侧时，内容只用左边的区域；窄屏时面板在底部 */
-    var rp = $('.kn-cm-rel', refs.canvas), minSc = relFit ? .7 : .8;
-    if (rp && !narrow()) cw -= rp.offsetWidth + 20;
-    else if (rp) ch -= rp.offsetHeight + 10;
-    /* 顶栏下方才是可用区域（窄屏时顶栏换到第二行、可能多行） */
-    var bar = $('.kn-cm-bar', refs.canvas), top = bar && bar.offsetHeight ? bar.offsetTop + bar.offsetHeight + 8 : 52;
-    /* 左下角的图例按钮也不遮挡内容 */
-    if ($('.kn-cm-legend', refs.canvas)) ch -= 44;
+    var G = cmapGeom(mp), A = cmAvail(), aw = A.r - A.l, ah = A.b - A.t;
     var bb = function (list, pad) {
       return { l: Math.min.apply(null, list.map(function (b) { return b.l; })) + G.ox - pad, t: Math.min.apply(null, list.map(function (b) { return b.t; })) + G.oy - pad,
         r: Math.max.apply(null, list.map(function (b) { return b.r; })) + G.ox + pad, b: Math.max.apply(null, list.map(function (b) { return b.b; })) + G.oy + pad };
     };
-    var fit = function (tb) {
-      var bw = tb.r - tb.l, bh = tb.b - tb.t, sc = clamp(Math.min(cw / bw, (ch - top) / bh), minSc, 1);
+    var fit = function (tb, lo, hi) {
+      var bw = Math.max(1, tb.r - tb.l), bh = Math.max(1, tb.b - tb.t), sc = clamp(Math.min(aw / bw, ah / bh), lo, hi);
       graphView.scale = sc;
-      graphView.x = bw * sc > cw ? 12 - tb.l * sc : (cw - bw * sc) / 2 - tb.l * sc;
-      /* 看关联时内容靠上，下面留给被平移过去查看的关联 */
-      graphView.y = bh * sc > ch - top || relFit ? top + 6 - tb.t * sc : top + (ch - top - bh * sc) / 2 - tb.t * sc;
+      graphView.x = A.l + (aw - bw * sc) / 2 - tb.l * sc;
+      graphView.y = A.t + (bh * sc > ah ? 0 : (ah - bh * sc) / 2) - tb.t * sc;
     };
-    /* keep：点击展开或选中时不重新居中，只在目标看不见时平移，避免画面跳动 */
-    if (relFit && target) { graphView.manual = false; fit(bb(target, 40)); }
-    else if (!graphView.manual && !keep) fit(focusTarget && target ? bb(target, 60) : bb(cmVisibleBoxes(mp), 24));
-    /* 最少地平移，让一组框看得见；放不下时返回 false */
     var ensure = function (tb) {
       var sc = graphView.scale, l = tb.l * sc + graphView.x, r = tb.r * sc + graphView.x, t = tb.t * sc + graphView.y, b = tb.b * sc + graphView.y;
-      if (r - l > cw || b - t > ch - top) return false;
-      if (l < 0) graphView.x -= l; else if (r > cw) graphView.x -= r - cw;
-      if (t < top) graphView.y += top - t; else if (b > ch) graphView.y -= b - ch;
+      if (r - l > aw || b - t > ah) return false;
+      if (l < A.l) graphView.x += A.l - l; else if (r > A.r) graphView.x -= r - A.r;
+      if (t < A.t) graphView.y += A.t - t; else if (b > A.b) graphView.y -= b - A.b;
       return true;
     };
-    if (target && target.length && !focusTarget) {
-      var tb = bb(target, 28);
-      /* 放不下：先缩小到可读下限，再保证被点的那个知识点（第一个）看得见 */
-      if (!ensure(tb)) { graphView.manual = false; fit(tb); ensure(bb(target.slice(0, 1), 28)); }
+    if (relFit && target && target.length) { graphView.manual = false; fit(bb(target, 24), .2, 1.4); }
+    else {
+      if (!graphView.manual && !keep) fit(focusTarget && target ? bb(target, 60) : bb(cmVisibleBoxes(mp), 24), .5, 1);
+      if (target && target.length && !focusTarget && !ensure(bb(target, 28))) { graphView.manual = false; fit(bb(target, 28), .5, 1); }
     }
     if (anim) { refs.world.classList.add('kn-cm-anim'); clearTimeout(cmView.t); cmView.t = setTimeout(function () { refs.world.classList.remove('kn-cm-anim'); }, 260); }
     applyGraphView();
+  }
+  /* 选中项的全部关联：知识点、范围、路线、关联线和线上标签 */
+  function cmRelTarget(mp) {
+    var G = cmapGeom(mp), st = cmState(mp), v = cmNodeVis(mp, st), n = st.sel && mp.byId[st.sel];
+    if (!n || !n.rel.length) return null;
+    var out = [G.box[n.id]];
+    n.rel.forEach(function (r) { r.ids.forEach(function (x) { if (v[x]) out.push(G.box[x]); }); });
+    (G.refBoxes || []).forEach(function (q) { out.push(q); });
+    return out;
   }
   /* 顶栏：选中的知识点、说明、讲义入口；右侧是全部展开与收起 */
   function cmBar(mp, st) {
@@ -2200,11 +2307,11 @@
       if (n.open) h += '<button type="button" data-act="cm-toggle" data-id="' + esc(n.open) + '">' + (st.open[n.open] ? '收起细节' : '展开细节') + '</button>';
       h += '<button type="button" data-act="cm-clear" aria-label="取消选中" title="取消选中（Esc）">×</button></div>';
     } else h += '<div class="kn-cm-bar-main kn-muted">点击知识点，查看它的联系和讲义入口' + (mp.hasMods ? '；带 ＋ 的可以展开细节' : '') + '</div>';
-    if (mp.hasMods) h += '<div class="kn-cm-bar-acts kn-cm-bar-all"><button type="button" data-act="cm-all" data-id="1">全部展开</button><button type="button" data-act="cm-all" data-id="">全部收起</button></div>';
+    bar.classList.toggle('is-idle', !n);
     /* 重画顶栏时，键盘焦点留在同一个按钮上（如"展开细节"变成"收起细节"） */
     var ae = D.activeElement, fa = ae && bar.contains(ae) ? ae.getAttribute('data-act') : '', fi = fa ? ae.getAttribute('data-id') || '' : '';
     bar.innerHTML = h;
-    if (fa) { var again = $('[data-act="' + fa + '"][data-id="' + cssEsc(fi) + '"]', bar) || $('[data-act="' + fa + '"]', bar) || $('[data-act="cm-all"]', bar); if (again) again.focus({ preventScroll: true }); }
+    if (fa) { var again = $('[data-act="' + fa + '"][data-id="' + cssEsc(fi) + '"]', bar) || $('[data-act="' + fa + '"]', bar); if (again) again.focus({ preventScroll: true }); }
   }
   function cmModBoxes(mp, mod) {
     var G = cmapGeom(mp);
@@ -2222,12 +2329,10 @@
     } else st.sel = st.sel === id ? '' : id;
     if (st.sel === id && n.rel.length) {
       /* 关联涉及的知识点在收起的模块里时，先把模块展开；视口对准选中点和全部关联 */
-      /* 视口对准选中点和它的范围、路线（核心结构）；单条关联在面板里列出，点条目再平移过去 */
-      var core = {};
-      n.rel.forEach(function (r) { r.ids.forEach(function (x) { cmReveal(mp, st, x); if (r.kind !== 'ref') core[x] = 1; }); });
-      if (!Object.keys(core).length) n.rel.forEach(function (r) { core[r.to] = 1; });
-      target = target.concat(Object.keys(core).map(function (x) { return cmapGeom(mp).box[x]; }));
-      cmSync(mp); cmView(mp, target, true, true, false, true); saveView(); return;
+      n.rel.forEach(function (r) { r.ids.forEach(function (x) { cmReveal(mp, st, x); }); });
+      cmSync(mp);
+      /* 屏幕正好装下选中项和全部关联（含绕出去的关联线和标签） */
+      cmView(mp, cmRelTarget(mp), true, true, false, true); saveView(); return;
     }
     cmAfter(mp, st.sel || n.open ? target : null);
   }
@@ -2261,15 +2366,17 @@
     var kinds = Object.keys(CM_KINDS).filter(function (k) { return G.kinds[k]; });
     var used = {}; mp.nodes.forEach(function (n) { if (CM_NODE_KEYS[n.s]) used[n.s] = 1; });
     var styles = Object.keys(CM_NODE_KEYS).filter(function (k) { return used[k]; });
-    if (!kinds.length && !styles.length && !G.zones.length) return;
-    var box = D.createElement('details');
+    var rel = mp.nodes.some(function (n) { return n.rel.length; });
+    if (!kinds.length && !styles.length && !G.zones.length && !rel) return;
+    var box = D.createElement('div');
     box.className = 'kn-cm-legend';
-    box.open = cmLegendOpen;
-    box.addEventListener('toggle', function () { cmLegendOpen = box.open; });
-    var h = '<summary class="kn-cm-lg-h">图例</summary>';
+    box.setAttribute('role', 'group'); box.setAttribute('aria-label', '图例');
+    box.hidden = !cmLegendOpen;
+    var h = '<div class="kn-cm-lg-h">图例</div>';
     if (kinds.length) h += '<div class="kn-cm-lg-row">' + kinds.map(function (k) {
       return '<button type="button" class="kn-cm-lg-k kn-cm-k-' + k + (cmOff[k] ? ' is-off' : '') + '" data-act="cm-kind" data-id="' + k + '" aria-pressed="' + (cmOff[k] ? 'false' : 'true') + '" title="' + esc(CM_KINDS[k].note + '（点击显示或隐藏）') + '"><svg viewBox="0 0 28 8" aria-hidden="true"><path d="M1 4H22"/><path class="kn-cm-lg-ah" d="M20 1L27 4L20 7z"/></svg>' + esc(CM_KINDS[k].name) + '</button>';
     }).join('') + '</div>';
+    if (rel) h += '<div class="kn-cm-lg-row"><span class="kn-cm-lg-rel"><i class="kn-cm-rel-ic is-scope"></i>范围</span><span class="kn-cm-lg-rel"><i class="kn-cm-rel-ic is-trace"></i>物质路线</span><span class="kn-cm-lg-rel"><i class="kn-cm-lg-route"></i>关联（点选时出现，线上写关系）</span></div>';
     if (styles.length || G.zones.length) h += '<div class="kn-cm-lg-row">' + (G.zones.length ? '<span class="kn-cm-lg-n is-zone">区域（场所 / 主题）</span>' : '') + styles.map(function (k) {
       return '<span class="kn-cm-lg-n kn-cm-n is-' + k + '">' + esc(CM_NODE_KEYS[k]) + '</span>';
     }).join('') + '</div>';
@@ -2858,9 +2965,17 @@
       var tr = T();
       switch (act) {
         case 'cm-sel': cmClick(id); break;
+        case 'cm-rel-fold':
+          cmRelFold = !cmRelFold;
+          var rpn = $('.kn-cm-rel', refs.canvas); if (rpn) rpn.classList.toggle('is-fold', cmRelFold);
+          b.setAttribute('aria-expanded', cmRelFold ? 'false' : 'true');
+          if (S.routeMap && !graphView.manual) { var rt = cmRelTarget(S.routeMap); if (rt) cmView(S.routeMap, rt, true, true, false, true); }
+          break;
         case 'cm-goto': cmGoto(id, b.getAttribute('data-no')); break;
         case 'cm-toggle': cmToggle(id); break;
-        case 'cm-all': cmAll(!!id); break;
+        case 'dock-exp': if (S.mode === 'cmap' && S.routeMap && S.routeMap.hasMods) cmAll(!!id); else expandAll(!!id); break;
+        case 'cm-legend': cmLegendOpen = !cmLegendOpen; var lgb = $('.kn-cm-legend', refs.canvas); if (lgb) lgb.hidden = !cmLegendOpen; syncDock(); break;
+        case 'full': setFull(!S.full); break;
         case 'cm-clear': cmClear(); break;
         case 'cm-kind': cmOff[id] = !cmOff[id]; b.classList.toggle('is-off', !!cmOff[id]); b.setAttribute('aria-pressed', cmOff[id] ? 'false' : 'true'); cmApplyOff(); break;
         case 'reset-view': graphView.manual = false; render({ keepScroll: true }); saveView(); break;
@@ -2887,7 +3002,7 @@
         case 'line-label': selectId(id); break;
         case 'trail': var t = trail(), last = t.pop(); sSet('sessionStorage', 'tt-kn-trail', t); if (last) go(last.url); break;
         case 'report': renderReport(); refs.report.hidden = false; var cl = $('.kn-c-close', refs.report); if (cl) cl.focus(); break;
-        case 'report-close': refs.report.hidden = true; $('.kn-info-btn', root).focus(); break;
+        case 'report-close': refs.report.hidden = true; var ib = $('.kn-info-btn', root); if (ib) ib.focus(); break;
         case 'notice-close': S.notice = ''; refs.notice.hidden = true; break;
         case 'card-close': S.cardClosed = true; openDrawer(false); render({ keepScroll: true }); break;
         case 'card-focus': if (narrow()) openDrawer(true); refs.card.focus(); var tl = $('.kn-c-targets', refs.card); if (tl) tl.scrollIntoView({ block: 'nearest' }); break;
@@ -2985,7 +3100,7 @@
       if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
       var t = ev.target;
       /* 卡片和操作按钮的空格优先于外壳的播放器快捷键。 */
-      if ((ev.key === ' ' || ev.code === 'Space') && !ev.shiftKey && t.matches && t.matches('.kn-n-flag, .kn-n-main, .kn-n-exp, .kn-n-acts button, .kn-l-main, .kn-l-go button, .kn-exp-ops button, button.kn-cm-n')) {
+      if ((ev.key === ' ' || ev.code === 'Space') && !ev.shiftKey && t.matches && t.matches('.kn-n-flag, .kn-n-main, .kn-n-exp, .kn-n-acts button, .kn-l-main, .kn-l-go button, .kn-dock button, button.kn-cm-n')) {
         ev.preventDefault();
         if (!ev.repeat) t.click();
         return;
@@ -2995,7 +3110,8 @@
         if (!refs.report.hidden) { refs.report.hidden = true; ev.preventDefault(); return; }
         if (root.classList.contains('kn-drawer-open')) { openDrawer(false); ev.preventDefault(); return; }
         if (S.preview) { S.preview = ''; renderCard(); ev.preventDefault(); return; }
-        if (S.mode === 'cmap' && cmClear()) ev.preventDefault();
+        if (S.mode === 'cmap' && cmClear()) { ev.preventDefault(); return; }
+        if (S.full) { setFull(false); ev.preventDefault(); }
         return;
       }
       if (/^[123]$/.test(ev.key) && !ev.shiftKey && root.contains(t)) { setLogic(['rel', 'task', 'method'][+ev.key - 1]); ev.preventDefault(); return; }
@@ -3004,6 +3120,11 @@
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].indexOf(ev.key) < 0) return;
       ev.preventDefault();
       moveFocus(t, ev.key);
+    });
+    /* 用户按 Esc 等方式退出浏览器全屏时，同步退出全屏模式；进入或退出后重新适配画面 */
+    on(D, 'fullscreenchange', function () {
+      if (!D.fullscreenElement && S.full) { S.full = false; root.classList.remove('kn-full'); syncDock(); }
+      refitSoon();
     });
     var rzT = 0;
     on(WIN, 'resize', function () { clearTimeout(rzT); rzT = setTimeout(function () { if (S.shown) render({ keepScroll: true }); }, 150); });
