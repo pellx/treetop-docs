@@ -218,7 +218,8 @@ html[data-theme="dark"] .kn { --kn-energy: #79bfff; --kn-g0: #7ab8ff; --kn-g1: #
 .kn-cm-n.is-main { font-weight: 700; border-width: 2px; }
 .kn-cm-n.is-bare { border-color: transparent; background: transparent; }
 .kn-cm-n.is-note { border-style: dashed; font-size: 13px; line-height: 18px; }
-button.kn-cm-n:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
+/* 悬停只换边框颜色，不改变其他内容的明暗 */
+button.kn-cm-n:hover { border-color: var(--accent); }
 button.kn-cm-n:focus-visible { outline: 3px solid var(--accent-strong); outline-offset: 1px; }
 .kn-cm-n.is-hi { border-color: var(--title-bar); background: var(--title-bg); box-shadow: 0 0 0 2px var(--title-bar); }
 .kn-cm-l { position: absolute; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 17px; color: var(--fg); background: var(--bg); text-align: center; white-space: nowrap; pointer-events: none; }
@@ -256,13 +257,52 @@ button.kn-cm-zt:hover { color: var(--accent-text); text-decoration: underline; }
 .kn-cm-l.kn-cm-k-ext { color: var(--kn-ext); }
 .kn-world.kn-cm-off-flow .kn-cm-k-flow, .kn-world.kn-cm-off-link .kn-cm-k-link, .kn-world.kn-cm-off-apply .kn-cm-k-apply,
 .kn-world.kn-cm-off-contrast .kn-cm-k-contrast, .kn-world.kn-cm-off-ext .kn-cm-k-ext { display: none; }
-/* 邻域高亮 */
-.kn-world.kn-cm-focusing .kn-cm-n:not(.is-src):not(.is-near), .kn-world.kn-cm-focusing .kn-cm-l:not(.is-on), .kn-world.kn-cm-focusing .kn-cm-zt { opacity: .28; }
+/* 点击选中：与选中项直接相连的线和点保持原色，其余变淡；被标出的相关知识点（marks）加框并有临时连线 */
+.kn-world.kn-cm-focusing .kn-cm-n:not(.is-src):not(.is-near):not(.is-mark), .kn-world.kn-cm-focusing .kn-cm-l:not(.is-on), .kn-world.kn-cm-focusing .kn-cm-zt:not(.is-on) { opacity: .28; }
 .kn-world.kn-cm-focusing .kn-cm-e:not(.is-on) { opacity: .15; }
+/* 变淡的线不再用底色描边断开别的线，免得盖住重合的高亮线 */
+.kn-world.kn-cm-focusing .kn-cm-halo:not(.is-on) { stroke: none; }
 .kn-world.kn-cm-focusing .kn-cm-e.is-on { stroke-width: 2.4; }
 .kn-world.kn-cm-focusing .kn-cm-n.is-near { box-shadow: 0 0 0 2px var(--accent); }
 .kn-world.kn-cm-focusing .kn-cm-n.is-src { box-shadow: 0 0 0 3px var(--accent-strong); }
+.kn-world.kn-cm-focusing .kn-cm-n.is-mark { box-shadow: 0 0 0 3px var(--kn-link); }
 .kn-cm-n, .kn-cm-l, .kn-cm-e { transition: opacity .12s; }
+.kn-edges .kn-cm-e.kn-cm-mark { stroke-width: 1.8; }
+/* 按展开状态隐藏的元素（HTML 与 SVG 都适用） */
+.kn-cm-hid { display: none !important; }
+/* 展开、收起、视口移动时的短暂平移 */
+.kn-world.kn-cm-anim { transition: transform .22s ease; }
+@media (prefers-reduced-motion: reduce) { .kn-world.kn-cm-anim { transition: none; } }
+/* 副标题（场所等）与展开开关 */
+.kn-cm-n.has-d { flex-direction: column; gap: 0; }
+.kn-cm-n .kn-cm-d { display: block; font-size: 12px; line-height: 15px; color: var(--fg-dim); font-weight: 400; }
+.kn-cm-n.has-tg { padding-right: 20px; }
+.kn-cm-tg { position: absolute; right: 4px; top: 50%; width: 12px; height: 12px; margin-top: -6px; font-style: normal; }
+.kn-cm-tg::before, .kn-cm-tg::after { content: ""; position: absolute; left: 1px; right: 1px; top: 5px; height: 2px; background: currentColor; }
+.kn-cm-tg::after { left: 5px; right: auto; top: 1px; bottom: 1px; width: 2px; height: auto; }
+.kn-cm-n.is-open .kn-cm-tg::after { display: none; }
+.kn-cm-n.is-mod { font-weight: 700; border-width: 2px; }
+.kn-cm-n.is-mod.is-open, .kn-cm-n.has-tg.is-open { background: var(--bg-soft); }
+/* 顶栏：选中项名称、说明、讲义入口；右侧全部展开与收起。位于"回正"右侧，不盖住"覆盖与说明" */
+.kn-cm-bar { display: none; }
+.kn-cm .kn-cm-bar { position: absolute; z-index: 5; left: 84px; right: 112px; top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; box-sizing: border-box; min-height: 30px; padding: 3px 4px 3px 10px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); font-size: 13px; line-height: 20px; }
+.kn-cm-bar-main { flex: 1 1 240px; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; }
+.kn-cm-bar-main b { font-size: 14px; }
+.kn-cm-bar-main.kn-muted { color: var(--fg-dim); }
+.kn-cm-bar-tip { color: var(--fg-dim); }
+.kn-cm-bar-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.kn-cm-bar-acts button { height: 26px; margin: 0; padding: 0 9px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); font: inherit; font-size: 12.5px; cursor: pointer; }
+.kn-cm-bar-acts button:hover { border-color: var(--accent); color: var(--accent-text); }
+.kn-cm-bar-acts button:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 1px; }
+.kn-cm-bar-acts .kn-cm-bar-read { display: inline-flex; align-items: center; gap: 6px; border-color: var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.kn-cm-bar-acts .kn-cm-bar-read:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--on-accent); }
+.kn-cm-bar-where { font-size: 11.5px; font-weight: 400; opacity: .9; }
+.kn-cm-bar-all { padding-left: 10px; border-left: 1px solid var(--line); }
+@media (max-width: 899px) {
+  .kn-cm .kn-cm-bar { left: 10px; right: 10px; top: 46px; }
+  .kn-cm-bar-main { flex-basis: 100%; }
+  .kn-cm-bar-all { padding-left: 0; border-left: 0; }
+}
 /* 图例：固定在画布左下角，不随缩放 */
 .kn-cm-legend { position: absolute; left: 10px; bottom: 10px; z-index: 3; max-width: calc(100% - 20px); box-sizing: border-box; padding: 6px 10px 8px; border: 1px solid var(--line); background: var(--surface); font-size: 12.5px; line-height: 18px; }
 .kn:not(.kn-cm) .kn-cm-legend { display: none; }

@@ -1448,109 +1448,153 @@ window.KN_DATA = {
     {
       id: 'm-resp', name: '细胞呼吸',
       anchors: ['bx1-resp'],
-      source: '以教材第5讲（细胞呼吸）知识框架为骨架重绘：按场所分区画出两种呼吸的物质转化，并把探究实验、判断计算、影响因素与应用、易错点连回过程中的对应物质（编辑整理，覆盖 BX1-17、BX1-18 全部考点）',
+      source: '以教材第5讲（细胞呼吸）知识框架为骨架重绘：默认只画主干（有氧呼吸、无氧呼吸与各阶段），点阶段或类型展开物质与能量，探究实验、比较·判断·计算、影响因素与应用、易错点各为一个可展开的模块（编辑整理，覆盖 BX1-17、BX1-18 全部考点）',
       nodes: [
-        /* 中心与实质 */
-        { id: 'resp', t: '细胞呼吸', x: 640, y: 40, s: 'main', go: 'bx1-17/p4' },
-        { id: 'essence', t: '分解有机物 · 释放能量', x: 900, y: 40, go: 'bx1-18/p3', tip: '有氧呼吸与无氧呼吸实质相同' },
+        /* 主干：细胞呼吸 → 有氧呼吸 / 无氧呼吸 → 共同的第一阶段 → 有 O₂ / 无 O₂ 的后续阶段（行对齐：同一行的阶段属于同一种类型） */
+        { id: 'resp', t: '细胞呼吸', x: 70, y: 80, s: 'main', go: 'bx1-17/p4', tip: '有氧呼吸与无氧呼吸实质相同：分解有机物，释放能量' },
+        { id: 'aer', t: '有氧呼吸', x: 215, y: 0, open: 'aer', s: 'mod', go: 'bx1-17/p4', tip: '在 O₂ 参与下，把葡萄糖等有机物彻底氧化分解，产生 CO₂ 和水，释放能量，生成大量 ATP' },
+        { id: 'an', t: '无氧呼吸', x: 215, y: 160, open: 'an', s: 'mod', go: 'bx1-18/p1', tip: '两个阶段都在细胞质基质中进行；第一阶段与有氧呼吸的第一阶段完全相同' },
+        { id: 's1', t: '第一阶段', d: '细胞质基质', x: 420, y: 80, open: 's1', go: 'bx1-17/p5', tip: '葡萄糖分解为丙酮酸和少量 [H]，释放少量能量；有氧呼吸与无氧呼吸的第一阶段完全相同' },
+        { id: 'a2', t: '第二阶段', d: '线粒体基质', x: 770, y: 0, open: 'a2', go: 'bx1-17/p5', tip: '丙酮酸和水彻底分解成 CO₂ 和 [H]，释放少量能量' },
+        { id: 'a3', t: '第三阶段', d: '线粒体内膜', x: 1030, y: 0, open: 'a3', go: 'bx1-17/p5', tip: '前两个阶段产生的 [H] 与 O₂ 结合生成水，释放大量能量' },
+        { id: 'n2', t: '第二阶段', d: '细胞质基质', x: 770, y: 160, open: 'n2', go: 'bx1-18/p1', tip: '丙酮酸在不同酶的催化下，分解成酒精和 CO₂，或者转化成乳酸；这一阶段不释放能量' },
 
-        /* 探究实验（左列） */
-        { id: 'yeast', t: '酵母菌：兼性厌氧菌', lx: 30, y: 160, go: 'bx1-17/p1', tip: '有氧、无氧条件下都能生存' },
-        { id: 'setup', t: 'NaOH：吸收空气中的 CO₂\n无氧组先放置：保证 CO₂ 都来自无氧呼吸', lx: 30, y: 215, s: 'detail', go: 'bx1-17/p1' },
-        { id: 'compare', t: '对比实验', lx: 30, y: 275, go: 'bx1-17/p3', tip: '两组都是实验组，没有单独的空白对照' },
-        { id: 'compare-d', t: '有氧组、无氧组都是实验组\n（鲁宾和卡门的实验也是）', lx: 54, y: 323, s: 'detail', go: 'bx1-17/p3' },
-        { id: 'detect', t: '产物检测', lx: 30, y: 380, go: 'bx1-17/p2' },
-        { id: 'd-co2', t: 'CO₂：澄清石灰水变浑浊\n溴麝香草酚蓝：蓝→绿→黄', lx: 54, y: 430, s: 'detail', go: 'bx1-17/p2' },
-        { id: 'd-alc', t: '酒精：酸性重铬酸钾\n橙色 → 灰绿色', lx: 54, y: 482, s: 'detail', go: 'bx1-17/p2' },
-        { id: 'w-glu', t: '易错：葡萄糖也能使重铬酸钾变色\n→ 适当延长培养时间再检测', lx: 54, y: 537, s: 'warn', go: 'bx1-17/p2' },
+        /* 第一阶段：葡萄糖从上方进入，丙酮酸 + [H] 在通往第二阶段的线上，能量写在下方 */
+        { id: 'glu', t: '葡萄糖', x: 420, y: 0, s: 'sub', in: 's1', go: 'bx1-17/p5', tip: '1 分子葡萄糖分解成 2 分子丙酮酸' },
+        { id: 'pyr', t: '丙酮酸 + [H]', x: 560, y: 80, s: 'sub', in: ['s1', 'a2', 'n2'], go: 'bx1-17/p5', tip: '第一阶段的产物；有 O₂ 时进入线粒体，无 O₂ 时在细胞质基质中继续反应' },
+        { id: 'e-s1', t: '少量能量', x: 420, y: 160, s: 'detail', in: 's1', go: 'bx1-18/p1', tip: '有氧、无氧呼吸的第一阶段都释放少量能量' },
+        /* 有氧第二阶段 */
+        { id: 'h2o-in', t: 'H₂O', x: 742, y: -70, s: 'sub', in: 'a2', go: 'bx1-17/p5', tip: '水在第二阶段消耗、第三阶段生成（二耗三生）' },
+        { id: 'co2', t: 'CO₂', x: 800, y: -70, s: 'sub', in: 'a2', go: 'bx1-17/p5', tip: 'CO₂ 在第二阶段产生' },
+        { id: 'h', t: '[H]', x: 900, y: 0, s: 'sub', in: ['a2', 'a3'], go: 'bx1-17/p5', tip: '含第一阶段产生的 [H]：前两个阶段产生的 [H] 都在第三阶段与 O₂ 结合' },
+        { id: 'e-a2', t: '少量能量', x: 770, y: 62, s: 'detail', in: 'a2', go: 'bx1-17/p5' },
+        /* 有氧第三阶段 */
+        { id: 'o2', t: 'O₂', x: 1030, y: -70, s: 'sub', in: 'a3', go: 'bx1-17/p5', tip: 'O₂ 只在第三阶段参与' },
+        { id: 'h2o-out', t: 'H₂O', x: 1140, y: 0, s: 'sub', in: 'a3', go: 'bx1-17/p5', tip: 'O₂ 中的氧只进入生成的水' },
+        { id: 'e-a3', t: '大量能量', x: 1030, y: 62, s: 'detail', in: 'a3', go: 'bx1-17/p6', tip: '三个阶段都产生 ATP，第三阶段最多' },
+        /* 无氧第二阶段 */
+        { id: 'alc', t: '酒精 + CO₂', lx: 870, y: 130, s: 'sub', in: 'n2', go: 'bx1-18/p2', tip: '产生酒精的无氧呼吸' },
+        { id: 'lac', t: '乳酸', lx: 870, y: 190, s: 'sub', in: 'n2', go: 'bx1-18/p2', tip: '产生乳酸的无氧呼吸' },
+        { id: 'alc-ex', t: '酵母菌、多数植物细胞（如水淹的根）', lx: 985, y: 130, s: 'detail', in: 'n2', go: 'bx1-18/p2' },
+        { id: 'lac-ex', t: '乳酸菌、人和动物骨骼肌\n马铃薯块茎、甜菜块根、玉米胚', lx: 985, y: 190, s: 'detail', in: 'n2', go: 'bx1-18/p2' },
+        { id: 'e-n2', t: '不释放能量', x: 770, y: 228, s: 'detail', in: 'n2', go: 'bx1-18/p1' },
 
-        /* 过程：细胞质基质 */
-        { id: 'glu', t: '葡萄糖', x: 370, y: 300, s: 'sub', go: 'bx1-17/p5' },
-        { id: 'pyr', t: '丙酮酸 + [H]', x: 570, y: 300, s: 'sub', go: 'bx1-17/p5' },
-        { id: 'alc', t: '酒精 + CO₂', x: 470, y: 425, s: 'sub', go: 'bx1-18/p1' },
-        { id: 'lac', t: '乳酸', x: 650, y: 425, s: 'sub', go: 'bx1-18/p1' },
-        { id: 'alc-ex', t: '酵母菌、多数植物细胞\n（如水淹的根）', x: 452, y: 482, s: 'detail', go: 'bx1-18/p2' },
-        { id: 'lac-ex', t: '乳酸菌、动物骨骼肌、马铃薯\n块茎、甜菜块根、玉米胚', x: 655, y: 482, s: 'detail', go: 'bx1-18/p2' },
-        /* 过程：线粒体 */
-        { id: 'co2', t: 'CO₂', x: 860, y: 168, s: 'sub', go: 'bx1-17/p5' },
-        { id: 'h2', t: '[H]', x: 860, y: 222, s: 'sub', go: 'bx1-17/p5', tip: '第三阶段消耗的 [H] 来自第一、二阶段' },
-        { id: 'h2o', t: 'H₂O', x: 1090, y: 222, s: 'sub', go: 'bx1-17/p5' },
-        { id: 'o-trace', t: '追踪氧：O₂ 中的氧 → H₂O\n葡萄糖、水中的氧 → CO₂', x: 1090, y: 160, s: 'detail', go: 'bx1-17/p6' },
-        { id: 'w-mito', t: '易错：线粒体不能直接分解葡萄糖\n（进入线粒体的是丙酮酸）', lx: 780, y: 335, s: 'warn', go: 'bx1-17/p7' },
-        { id: 'w-pro', t: '易错：能否有氧呼吸看有无相关的酶\n原核生物（醋酸菌、蓝细菌）可有氧呼吸\n哺乳动物成熟红细胞只进行无氧呼吸', lx: 780, y: 403, s: 'warn', go: 'bx1-17/p7' },
+        /* 有氧呼吸：总反应式、能量去向、元素去向（主干上方） */
+        { id: 'eq-aer', t: 'C₆H₁₂O₆ + 6H₂O + 6O₂ →(酶) 6CO₂ + 12H₂O + 能量', lx: 30, y: -80, s: 'eq', in: 'aer', go: 'bx1-17/p4', tip: '反应式两边都有水，箭头上注明"酶"，最后写"能量"而不是 ATP' },
+        { id: 'e-aer', t: '1 mol 葡萄糖释放 2870 kJ\n约 977.28 kJ 储存在 ATP 中，其余以热能散失', lx: 30, y: -134, s: 'detail', in: 'aer', go: 'bx1-17/p4' },
+        { id: 'atp', t: 'ATP', x: 390, y: -134, s: 'ext', in: 'aer', go: 'bx1-16/p3', tip: '其他模块：酶和ATP（ATP 与 ADP 的相互转化）' },
+        { id: 'o-trace', t: '追踪氧元素：O₂ 中的氧只进入水\n葡萄糖和反应物水中的氧进入 CO₂', lx: 30, y: -190, s: 'detail', in: 'aer', go: 'bx1-17/p6' },
+        /* 无氧呼吸：两条反应式与能量（主干下方） */
+        { id: 'eq-alc', t: 'C₆H₁₂O₆ →(酶) 2C₂H₅OH + 2CO₂ + 少量能量', lx: 120, y: 252, s: 'eq', in: 'an', go: 'bx1-18/p2', tip: '实例：酵母菌、多数植物细胞（如水淹的根）' },
+        { id: 'eq-lac', t: 'C₆H₁₂O₆ →(酶) 2C₃H₆O₃ + 少量能量', lx: 120, y: 288, s: 'eq', in: 'an', go: 'bx1-18/p2', tip: '实例：乳酸菌、人和动物骨骼肌、马铃薯块茎、甜菜块根、玉米胚' },
+        { id: 'e-an', t: '约 61.08 kJ 储存在 ATP 中\n大部分能量仍储存在酒精或乳酸中', lx: 445, y: 270, s: 'detail', in: 'an', go: 'bx1-18/p2' },
 
-        /* 反应式与能量 */
-        { id: 'eq-aer', t: 'C₆H₁₂O₆ + 6H₂O + 6O₂ →(酶) 6CO₂ + 12H₂O + 能量', lx: 320, y: 590, s: 'eq', go: 'bx1-17/p4', tip: '两边都有水；箭头上注明"酶"；最后写"能量"而不是 ATP' },
-        { id: 'eq-alc', t: 'C₆H₁₂O₆ →(酶) 2C₂H₅OH + 2CO₂ + 少量能量', lx: 320, y: 636, s: 'eq', go: 'bx1-18/p2' },
-        { id: 'eq-lac', t: 'C₆H₁₂O₆ →(酶) 2C₃H₆O₃ + 少量能量', lx: 320, y: 672, s: 'eq', go: 'bx1-18/p2' },
-        { id: 'e-aer', t: '1 mol 葡萄糖释放 2870 kJ\n约 977 kJ 存入 ATP，其余为热能', lx: 790, y: 590, s: 'detail', go: 'bx1-17/p4' },
-        { id: 'e-an', t: '约 61 kJ 存入 ATP\n大部分能量留在酒精或乳酸中', lx: 790, y: 654, s: 'detail', go: 'bx1-18/p2' },
-        { id: 'atp', t: 'ATP', x: 1070, y: 622, s: 'ext', go: 'bx1-16/p3', tip: '其他模块：酶和ATP（ATP 与 ADP 的相互转化）' },
+        /* 四个模块入口：由"细胞呼吸"向下引出 */
+        { id: 'c-exp', t: '探究实验', lx: 23, y: 372, open: 'exp', s: 'mod', go: 'bx1-17/p1', tip: '探究酵母菌细胞呼吸的方式：实验装置、产物检测、对比实验' },
+        { id: 'c-judge', t: '比较·判断·计算', lx: 350, y: 372, open: 'judge', s: 'mod', go: 'bx1-18/p3', tip: '有氧与无氧的比较、根据气体变化判断呼吸方式、相关计算' },
+        { id: 'c-use', t: '影响因素与应用', lx: 700, y: 372, open: 'use', s: 'mod', go: 'bx1-18/p6', tip: '温度、O₂、水和 CO₂ 影响细胞呼吸；原理用于储存、包扎伤口、酿酒、松土等' },
+        { id: 'c-warn', t: '易错点', lx: 1218, y: 372, open: 'warn', s: 'mod', go: 'bx1-17/p7', tip: '点其中一条，图上会标出它涉及的知识点' },
 
-        /* 判断与计算（右列） */
-        { id: 'judge', t: '判断呼吸方式', lx: 1215, y: 160, go: 'bx1-18/p4' },
-        { id: 'judge-d', t: '只放 CO₂、不吸 O₂ → 只产酒精\nCO₂ = O₂ → 只有氧（或＋产乳酸）\nCO₂ > O₂ → 有氧＋产酒精\n都为 0 → 只产乳酸或细胞已死亡', lx: 1215, y: 238, s: 'detail', go: 'bx1-18/p4' },
-        { id: 'w-fat', t: '易错：底物是脂肪时 O₂ 消耗 > CO₂ 释放', lx: 1215, y: 312, s: 'warn', go: 'bx1-18/p4' },
-        { id: 'calc', t: '呼吸作用的计算', lx: 1215, y: 380, go: 'bx1-18/p5' },
-        { id: 'calc-d', t: '有氧 葡萄糖 : O₂ : CO₂ = 1 : 6 : 6\n产酒精 葡萄糖 : CO₂ = 1 : 2\n先用 O₂ 算有氧，剩余 CO₂ 算无氧', lx: 1215, y: 440, s: 'detail', go: 'bx1-18/p5' },
-        { id: 'cmp', t: '有氧与无氧的比较', lx: 1215, y: 520, go: 'bx1-18/p3' },
-        { id: 'cmp-d', t: '第一阶段完全相同\n条件、场所、产物、能量不同', lx: 1215, y: 568, s: 'detail', go: 'bx1-18/p3' },
-
-        /* 影响因素与应用（底部） */
-        { id: 'f-temp', t: '温度：影响呼吸酶的活性', lx: 30, y: 770, go: 'bx1-18/p6' },
-        { id: 'f-water', t: '水：自由水多 → 呼吸旺盛', lx: 30, y: 812, go: 'bx1-18/p6' },
-        { id: 'f-co2', t: 'CO₂：浓度高 → 抑制呼吸', lx: 30, y: 854, go: 'bx1-18/p6' },
-        { id: 'f-o2', t: 'O₂：为 0 时只进行无氧呼吸；增加时无氧呼吸受抑制', x: 820, y: 770, go: 'bx1-18/p6' },
-        { id: 'a-store', t: '储存果蔬：低温、低氧、适宜湿度\n储存种子：低温、低氧、干燥', lx: 330, y: 840, s: 'detail', go: 'bx1-18/p6' },
-        { id: 'a-wound', t: '包扎伤口：透气纱布\n抑制破伤风芽孢杆菌', x: 650, y: 850, s: 'detail', go: 'bx1-18/p7' },
-        { id: 'a-wine', t: '酿酒：先通气繁殖\n后密封产酒精', x: 800, y: 850, s: 'detail', go: 'bx1-18/p7' },
-        { id: 'a-soil', t: '松土：促进根有氧\n呼吸，吸收无机盐', x: 945, y: 850, s: 'detail', go: 'bx1-18/p7' },
-        { id: 'a-run', t: '有氧运动：避免\n肌细胞积累乳酸', x: 1085, y: 850, s: 'detail', go: 'bx1-18/p7' },
-        { id: 'a-rice', t: '稻田排水：防止根\n产酒精而烂根', x: 1225, y: 850, s: 'detail', go: 'bx1-18/p7' }
+        /* 探究实验 */
+        { id: 'yeast', t: '酵母菌：兼性厌氧菌', lx: 35, y: 437, in: 'exp', go: 'bx1-17/p1', tip: '有氧、无氧条件下都能生存；也是产生酒精的无氧呼吸的实例', marks: ['alc-ex'] },
+        { id: 'setup', t: 'NaOH：吸收空气中的 CO₂\n无氧组先放置：保证 CO₂ 都来自无氧呼吸', lx: 63, y: 487, s: 'detail', in: 'exp', go: 'bx1-17/p1' },
+        { id: 'compare', t: '对比实验', lx: 35, y: 540, in: 'exp', go: 'bx1-17/p3', tip: '设置两个或两个以上的实验组，通过对结果的比较分析，探究某种因素对实验对象的影响' },
+        { id: 'compare-d', t: '有氧组、无氧组都是实验组', lx: 63, y: 582, s: 'detail', in: 'exp', go: 'bx1-17/p3' },
+        { id: 'detect', t: '产物检测', lx: 35, y: 627, in: 'exp', go: 'bx1-17/p2' },
+        { id: 'd-co2', t: 'CO₂：澄清石灰水变浑浊\n溴麝香草酚蓝溶液：由蓝变绿再变黄', lx: 63, y: 675, s: 'detail', in: 'exp', go: 'bx1-17/p2', tip: '浑浊程度或变黄所需的时间反映 CO₂ 产生的多少', marks: ['co2', 'alc'] },
+        { id: 'd-alc', t: '酒精：酸性重铬酸钾溶液\n橙色 → 灰绿色', lx: 63, y: 729, s: 'detail', in: 'exp', go: 'bx1-17/p2', tip: '酒精在酸性条件下与橙色的重铬酸钾溶液反应，变成灰绿色', marks: ['alc'] },
+        /* 比较·判断·计算 */
+        { id: 'cmp', t: '有氧与无氧的比较', lx: 362, y: 437, in: 'judge', go: 'bx1-18/p3', tip: '实质相同：分解有机物，释放能量；区别看 O₂、场所、产物和能量', marks: ['aer', 'an', 's1'] },
+        { id: 'cmp-d', t: '第一阶段完全相同\n区别看 O₂、场所、产物和能量', lx: 390, y: 487, s: 'detail', in: 'judge', go: 'bx1-18/p3' },
+        { id: 'judge-way', t: '判断呼吸方式', lx: 362, y: 540, in: 'judge', go: 'bx1-18/p4', tip: '以葡萄糖为底物，比较 CO₂ 释放量与 O₂ 吸收量' },
+        { id: 'judge-d', t: '只释放 CO₂、不吸收 O₂ → 只产酒精的无氧呼吸\nCO₂ ＝ O₂ → 只有氧呼吸，或有氧＋产乳酸\nCO₂ ＞ O₂ → 有氧＋产酒精\n都为 0 → 只产乳酸的无氧呼吸，或细胞已死亡', lx: 390, y: 610, s: 'detail', in: 'judge', go: 'bx1-18/p4' },
+        { id: 'calc', t: '呼吸作用的计算', lx: 362, y: 680, in: 'judge', go: 'bx1-18/p5', tip: '先用 O₂ 吸收量算有氧呼吸，再用剩下的 CO₂ 算无氧呼吸', marks: ['eq-aer', 'eq-alc'] },
+        { id: 'calc-d', t: '有氧：葡萄糖 : O₂ : CO₂ ＝ 1 : 6 : 6\n产酒精：葡萄糖 : CO₂ ＝ 1 : 2，不消耗 O₂', lx: 390, y: 728, s: 'detail', in: 'judge', go: 'bx1-18/p5' },
+        /* 影响因素与应用 */
+        { id: 'f-temp', t: '温度：影响呼吸酶的活性', lx: 712, y: 437, in: 'use', go: 'bx1-18/p6' },
+        { id: 'f-water', t: '水：自由水多 → 呼吸旺盛', lx: 712, y: 475, in: 'use', go: 'bx1-18/p6' },
+        { id: 'f-co2', t: 'CO₂：浓度高 → 抑制呼吸', lx: 712, y: 513, in: 'use', go: 'bx1-18/p6' },
+        { id: 'f-o2', t: 'O₂：为 0 时只进行无氧呼吸\n增加时无氧呼吸受抑制', lx: 712, y: 563, in: 'use', go: 'bx1-18/p6', tip: 'CO₂ 释放总量最少时，有机物消耗最少' },
+        { id: 'a-store', t: '储存果蔬：低温、低氧、适宜湿度\n储存种子：低温、低氧、干燥', lx: 975, y: 500, s: 'detail', in: 'use', go: 'bx1-18/p6' },
+        { id: 'a-wound', t: '包扎伤口：透气的消毒纱布\n抑制破伤风芽孢杆菌等厌氧菌繁殖', lx: 740, y: 630, s: 'detail', in: 'use', go: 'bx1-18/p7' },
+        { id: 'a-wine', t: '酿酒：先通气（有氧呼吸、繁殖）\n后密封（无氧呼吸产酒精）', lx: 740, y: 682, s: 'detail', in: 'use', go: 'bx1-18/p7', marks: ['alc'] },
+        { id: 'a-soil', t: '松土：促进根的有氧呼吸\n利于吸收无机盐', lx: 740, y: 734, s: 'detail', in: 'use', go: 'bx1-18/p7' },
+        { id: 'a-run', t: '有氧运动（慢跑等）：避免肌细胞\n无氧呼吸产生大量乳酸', lx: 740, y: 786, s: 'detail', in: 'use', go: 'bx1-18/p7', marks: ['lac'] },
+        { id: 'a-rice', t: '稻田定期排水：防止根无氧呼吸\n产生酒精导致烂根', lx: 740, y: 838, s: 'detail', in: 'use', go: 'bx1-18/p7', marks: ['alc'] },
+        /* 易错点：点一条，标出它涉及的知识点 */
+        { id: 'w-mito', t: '线粒体不能直接分解葡萄糖\n进入线粒体的是丙酮酸', lx: 1230, y: 444, s: 'warn', in: 'warn', go: 'bx1-17/p7', tip: '葡萄糖要先在细胞质基质中分解为丙酮酸', marks: ['glu', 's1', 'pyr', 'a2'] },
+        { id: 'w-enzyme', t: '能否有氧呼吸：看有没有相关的酶\n不能只看有没有线粒体', lx: 1230, y: 496, s: 'warn', in: 'warn', go: 'bx1-17/p7', tip: '原核生物没有线粒体，但有的也能进行有氧呼吸，比如醋酸菌、蓝细菌，它们含有与有氧呼吸有关的酶', marks: ['aer', 'a2', 'a3'] },
+        { id: 'w-rbc', t: '哺乳动物成熟红细胞无线粒体\n只进行无氧呼吸', lx: 1230, y: 548, s: 'warn', in: 'warn', go: 'bx1-17/p7', tip: '真核细胞也不一定都能有氧呼吸', marks: ['an', 'lac'] },
+        { id: 'w-energy', t: '无氧呼吸只在第一阶段\n释放少量能量', lx: 1230, y: 600, s: 'warn', in: 'warn', go: 'bx1-18/p1', tip: '第二阶段不释放能量，大部分能量仍储存在酒精或乳酸中', marks: ['s1', 'e-s1', 'n2', 'e-n2'] },
+        { id: 'w-muscle', t: '人体骨骼肌无氧呼吸产生乳酸\n不产生 CO₂', lx: 1230, y: 652, s: 'warn', in: 'warn', go: 'bx1-18/p2', tip: '所以人体产生的 CO₂ 只来自有氧呼吸', marks: ['lac', 'lac-ex'] },
+        { id: 'w-glu', t: '葡萄糖也能与酸性重铬酸钾反应\n要适当延长培养时间', lx: 1230, y: 704, s: 'warn', in: 'warn', go: 'bx1-17/p2', tip: '耗尽葡萄糖后再检测酒精', marks: ['d-alc', 'alc'] },
+        { id: 'w-ctrl', t: '对比实验没有单独的空白对照组', lx: 1230, y: 747, s: 'warn', in: 'warn', go: 'bx1-17/p3', tip: '有氧组和无氧组都是实验组；鲁宾和卡门的同位素标记实验也是对比实验', marks: ['compare'] },
+        { id: 'w-fat', t: '底物是脂肪时\nO₂ 消耗量 ＞ CO₂ 释放量，不能直接套用', lx: 1230, y: 790, s: 'warn', in: 'warn', go: 'bx1-18/p4', tip: '以脂肪为底物时，O₂ 消耗量大于 CO₂ 释放量，不能套用以葡萄糖为底物的判断结论', marks: ['judge-way'] }
       ],
       groups: [
-        { id: 'z-exp', of: ['yeast', 'setup', 'compare', 'compare-d', 'detect', 'd-co2', 'd-alc', 'w-glu'], style: 'zone', title: '探究酵母菌细胞呼吸的方式', go: 'bx1-17/p1' },
-        { id: 'z-cyto', of: ['glu', 'pyr', 'alc', 'lac', 'alc-ex', 'lac-ex'], style: 'zone', title: '细胞质基质', talign: 'r' },
-        { id: 'z-mx', of: ['co2', 'h2'], style: 'zone', title: '线粒体基质', pad: 22 },
-        { id: 'z-im', of: ['h2o', 'o-trace'], style: 'zone', title: '线粒体内膜' },
-        { id: 'z-eq', of: ['eq-aer', 'eq-alc', 'eq-lac', 'e-aer', 'e-an', 'atp'], style: 'zone', title: '反应式与能量去向' },
-        { id: 'z-judge', of: ['judge', 'judge-d', 'w-fat', 'calc', 'calc-d', 'cmp', 'cmp-d'], style: 'zone', title: '判断与计算' },
-        { id: 'z-use', of: ['f-temp', 'f-water', 'f-co2', 'f-o2', 'a-store', 'a-wound', 'a-wine', 'a-soil', 'a-run', 'a-rice'], style: 'zone', title: '影响因素 → 应用', go: 'bx1-18/p6' },
-        { id: 'g-s2', of: ['co2', 'h2'], style: 'join', side: 'l', gap: 14 },
+        { id: 'g-type', of: ['aer', 'an'], style: 'join', side: 'r', gap: 14 },
+        { id: 'z-aer', of: ['eq-aer', 'e-aer', 'atp', 'o-trace'], style: 'zone', title: '有氧呼吸：反应式、能量与元素去向' },
+        { id: 'z-an', of: ['eq-alc', 'eq-lac', 'e-an'], style: 'zone', title: '无氧呼吸：反应式与能量' },
         { id: 'g-an', of: ['eq-alc', 'eq-lac'], style: 'join', side: 'r', gap: 12 },
-        { id: 'g-f3', of: ['f-temp', 'f-water', 'f-co2'], style: 'join', side: 'r', gap: 14 }
+        { id: 'z-exp', of: ['yeast', 'setup', 'compare', 'compare-d', 'detect', 'd-co2', 'd-alc'], style: 'zone' },
+        { id: 'z-judge', of: ['cmp', 'cmp-d', 'judge-way', 'judge-d', 'calc', 'calc-d'], style: 'zone' },
+        { id: 'z-use', of: ['f-temp', 'f-water', 'f-co2', 'f-o2', 'a-store', 'a-wound', 'a-wine', 'a-soil', 'a-run', 'a-rice'], style: 'zone' },
+        { id: 'g-f4', of: ['f-temp', 'f-water', 'f-co2', 'f-o2'], style: 'join', side: 'r', gap: 14 },
+        { id: 'z-warn', of: ['w-mito', 'w-enzyme', 'w-rbc', 'w-energy', 'w-muscle', 'w-glu', 'w-ctrl', 'w-fat'], style: 'zone' }
       ],
       edges: [
-        { from: 'resp', to: 'essence', label: '实质' },
-        { from: 'resp', to: 'glu', arrow: 'end', via: [[640, 110], [370, 110]], label: '分解（主要底物）', lp: [470, 98] },
-        { from: 'resp', to: 'z-exp', via: [[150, 40]], ts: 't', label: '探究方式', lp: [300, 28] },
-        /* 物质转化 */
-        { from: 'glu', to: 'pyr', k: 'flow', arrow: 'end', label: '① 第一阶段\n少量能量' },
-        { from: 'pyr', to: 'g-s2', k: 'flow', arrow: 'end', fs: 't', via: [[570, 195]], label: '有 O₂ · ② 第二阶段\n＋H₂O，少量能量', lp: [690, 172] },
-        { from: 'h2', to: 'h2o', k: 'flow', arrow: 'end', label: '③ 第三阶段\n＋O₂，大量能量', lp: [975, 196] },
-        { fork: 'pyr', to: ['alc', 'lac'], dir: 'b', at: 380, k: 'flow', arrow: true, label: '无 O₂ · ② 第二阶段\n不释放能量', lp: [500, 352] },
-        { from: 'alc', to: 'alc-ex', dash: true },
-        { from: 'lac', to: 'lac-ex', dash: true },
-        /* 反应式与能量 */
-        { from: 'eq-aer', to: 'e-aer' },
+        /* 主干 */
+        { fork: 'resp', to: ['aer', 'an'], dir: 'r', at: 140 },
+        { from: 'g-type', to: 's1', arrow: 'end', label: '第一阶段相同', lp: [323, 64] },
+        { from: 's1', to: 'a2', k: 'flow', arrow: 'end', via: [[650, 80], [650, 0]], label: '有 O₂', lp: [686, -12] },
+        { from: 's1', to: 'n2', k: 'flow', arrow: 'end', via: [[650, 80], [650, 160]], label: '无 O₂', lp: [686, 148] },
+        { from: 'a2', to: 'a3', k: 'flow', arrow: 'end' },
+        { fork: 'resp', to: ['c-exp', 'c-judge', 'c-use', 'c-warn'], dir: 'b', at: 340 },
+        /* 第一阶段细节 */
+        { from: 'glu', to: 's1', k: 'flow', arrow: 'end' },
+        { from: 's1', to: 'pyr', k: 'flow', arrow: 'end' },
+        { from: 'pyr', to: 'a2', k: 'flow', arrow: 'end', via: [[650, 80], [650, 0]] },
+        { from: 'pyr', to: 'n2', k: 'flow', arrow: 'end', via: [[650, 80], [650, 160]] },
+        { from: 's1', to: 'e-s1', k: 'flow', arrow: 'end' },
+        /* 有氧第二、三阶段细节 */
+        { from: 'h2o-in', to: 'a2', k: 'flow', arrow: 'end' },
+        { from: 'a2', to: 'co2', k: 'flow', arrow: 'end' },
+        { from: 'a2', to: 'h', k: 'flow', arrow: 'end' },
+        { from: 'h', to: 'a3', k: 'flow', arrow: 'end' },
+        { from: 'a2', to: 'e-a2', k: 'flow', arrow: 'end' },
+        { from: 'o2', to: 'a3', k: 'flow', arrow: 'end' },
+        { from: 'a3', to: 'h2o-out', k: 'flow', arrow: 'end' },
+        { from: 'a3', to: 'e-a3', k: 'flow', arrow: 'end' },
+        /* 无氧第二阶段细节 */
+        { fork: 'n2', to: ['alc', 'lac'], dir: 'r', at: 845, k: 'flow', arrow: true },
+        { from: 'n2', to: 'e-n2', k: 'flow', arrow: 'end' },
+        { from: 'alc', to: 'alc-ex', dash: true, note: '实例' },
+        { from: 'lac', to: 'lac-ex', dash: true, note: '实例' },
+        /* 类型细节 */
+        { from: 'aer', to: 'z-aer' },
+        { from: 'e-aer', to: 'atp', k: 'ext', arrow: 'end' },
+        { from: 'an', to: 'z-an' },
         { from: 'g-an', to: 'e-an' },
-        { from: 'e-aer', to: 'atp', k: 'ext', arrow: 'end', label: '储存于', lp: [1070, 580] },
-        { from: 'e-an', to: 'atp', k: 'ext', arrow: 'end' },
-        { from: 'h2o', to: 'eq-aer', k: 'link', arrow: 'end', fs: 'b', ts: 't', via: [[1090, 535], [520, 535]], label: '三个阶段合并', lp: [800, 523], note: '三个阶段相加得到总反应式：水"二耗三生"，两边都写水' },
-        /* 探究实验 ↔ 过程 */
-        { from: 'd-alc', to: 'alc', k: 'link', arrow: 'end', fs: 'r', label: '检测', lp: [330, 470], note: '酸性重铬酸钾检测无氧呼吸产生的酒精' },
-        { from: 'yeast', to: 'alc-ex', k: 'link', fs: 'r', ts: 't', via: [[300, 160], [300, 515], [452, 515]], dash: true, note: '酵母菌既是探究材料，也是酒精发酵的实例' },
-        /* 判断计算 ↔ 反应式 */
-        { from: 'z-eq', to: 'calc', k: 'link', arrow: 'end', fs: 'r', via: [[1180, 600], [1180, 380]], label: '比例\n来自', lp: [1158, 470], note: '计算用的物质比例来自总反应式' },
-        /* 影响因素与应用 */
-        { from: 'g-f3', to: 'a-store', k: 'apply', arrow: 'end' },
-        { from: 'f-o2', to: 'a-store', k: 'apply', arrow: 'end', fs: 'l', via: [[445, 770]], ts: 't' },
-        { fork: 'f-o2', to: ['a-wound', 'a-wine', 'a-soil', 'a-run', 'a-rice'], dir: 'b', at: 808, k: 'apply', arrow: true },
-        { from: 'a-run', to: 'lac', k: 'link', arrow: 'end', fs: 't', via: [[1085, 720], [690, 720]], ts: 'b', label: '避免积累', note: '剧烈运动时骨骼肌无氧呼吸产生乳酸' }
+        /* 模块 */
+        { from: 'c-exp', to: 'z-exp' },
+        { from: 'yeast', to: 'setup', fs: 'b', via: [[49, 487]], ts: 'l' },
+        { from: 'compare', to: 'compare-d', fs: 'b', via: [[49, 582]], ts: 'l' },
+        { from: 'detect', to: 'd-co2', fs: 'b', via: [[49, 675]], ts: 'l' },
+        { from: 'detect', to: 'd-alc', fs: 'b', via: [[49, 729]], ts: 'l' },
+        { from: 'c-judge', to: 'z-judge' },
+        { from: 'cmp', to: 'cmp-d', fs: 'b', via: [[376, 487]], ts: 'l' },
+        { from: 'judge-way', to: 'judge-d', fs: 'b', via: [[376, 610]], ts: 'l' },
+        { from: 'calc', to: 'calc-d', fs: 'b', via: [[376, 728]], ts: 'l' },
+        { from: 'c-use', to: 'z-use' },
+        { from: 'g-f4', to: 'a-store', k: 'apply', arrow: 'end' },
+        { from: 'f-o2', to: 'a-wound', k: 'apply', arrow: 'end', fs: 'b', via: [[726, 630]], ts: 'l' },
+        { from: 'f-o2', to: 'a-wine', k: 'apply', arrow: 'end', fs: 'b', via: [[726, 682]], ts: 'l' },
+        { from: 'f-o2', to: 'a-soil', k: 'apply', arrow: 'end', fs: 'b', via: [[726, 734]], ts: 'l' },
+        { from: 'f-o2', to: 'a-run', k: 'apply', arrow: 'end', fs: 'b', via: [[726, 786]], ts: 'l' },
+        { from: 'f-o2', to: 'a-rice', k: 'apply', arrow: 'end', fs: 'b', via: [[726, 838]], ts: 'l' },
+        { from: 'c-warn', to: 'z-warn' }
       ],
-      texts: [
-        { t: '（含第一阶段的 [H]）', x: 860, y: 252 }
-      ]
+      texts: []
     },
     {
       id: 'm-lifecycle', name: '细胞的生命历程',
