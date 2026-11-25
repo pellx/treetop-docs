@@ -1745,6 +1745,23 @@
     var s = Math.min(dx ? (b.w / 2) / Math.abs(dx) : Infinity, dy ? (b.h / 2) / Math.abs(dy) : Infinity);
     return { x: b.cx + dx * s, y: b.cy + dy * s };
   }
+  /* 圆角折线：每个拐角换成二次贝塞尔曲线，半径不超过相邻两段各自的一半。
+   * 关联线沿空着的通道绕行，拐角圆滑，读起来是一条连续的曲线，和线粒体的轮廓协调。 */
+  function cmRound(pts, r) {
+    var f = function (v) { return Math.round(v * 10) / 10; };
+    if (pts.length < 3) return cmD(pts);
+    var d = 'M' + f(pts[0].x) + ' ' + f(pts[0].y);
+    for (var i = 1; i < pts.length - 1; i++) {
+      var a = pts[i - 1], c = pts[i], b = pts[i + 1];
+      var la = Math.hypot(c.x - a.x, c.y - a.y), lb = Math.hypot(b.x - c.x, b.y - c.y);
+      if (la < .5 || lb < .5) continue;
+      var rr = Math.min(r, la / 2, lb / 2);
+      var p1 = { x: c.x + (a.x - c.x) / la * rr, y: c.y + (a.y - c.y) / la * rr }, p2 = { x: c.x + (b.x - c.x) / lb * rr, y: c.y + (b.y - c.y) / lb * rr };
+      d += 'L' + f(p1.x) + ' ' + f(p1.y) + 'Q' + f(c.x) + ' ' + f(c.y) + ' ' + f(p2.x) + ' ' + f(p2.y);
+    }
+    var z = pts[pts.length - 1];
+    return d + 'L' + f(z.x) + ' ' + f(z.y);
+  }
   function cmD(pts) { return pts.map(function (p, i) { return (i ? 'L' : 'M') + Math.round(p.x * 10) / 10 + ' ' + Math.round(p.y * 10) / 10; }).join(''); }
   function cmLabel(text, x, y, v) {
     var lines = String(text).split('\n'), tw = Math.max.apply(null, lines.map(cmTextW));
@@ -2171,7 +2188,7 @@
         });
         var R = best.R, rh = 'url(#kn-cm-rh-' + tc.slice(9) + ')';
         lanes.push({ hz: R.hz, at: best.at, lo: best.lo, hi: best.hi });
-        svg += '<path class="kn-cm-ref ' + tc + (it.r.dir ? ' has-dir' : '') + '" data-no="' + it.no + '" d="' + cmD(R.pts) + '"' + (it.r.dir === 'out' ? ' marker-end="' + rh + '"' : it.r.dir === 'in' ? ' marker-start="' + rh + '"' : '') + '/>';
+        svg += '<path class="kn-cm-ref ' + tc + (it.r.dir ? ' has-dir' : '') + '" data-no="' + it.no + '" d="' + cmRound(R.pts, 60) + '"' + (it.r.dir === 'out' ? ' marker-end="' + rh + '"' : it.r.dir === 'in' ? ' marker-start="' + rh + '"' : '') + '/>';
         /* 线上写关系的性质（如"氧原子来源"），读线就知道这条联系说的是什么 */
         if (best.lab) { taken.push(best.lab); G.refBoxes.push(best.lab); h += '<span class="kn-cm-ref-l ' + tc + '" data-no="' + it.no + '" style="left:' + px(best.m.x + ox) + 'px;top:' + px(best.m.y + oy) + 'px">' + esc(it.r.on) + '</span>'; }
         var xs = R.pts.map(function (p) { return p.x; }), ys = R.pts.map(function (p) { return p.y; });
@@ -2376,7 +2393,7 @@
     if (kinds.length) h += '<div class="kn-cm-lg-row">' + kinds.map(function (k) {
       return '<button type="button" class="kn-cm-lg-k kn-cm-k-' + k + (cmOff[k] ? ' is-off' : '') + '" data-act="cm-kind" data-id="' + k + '" aria-pressed="' + (cmOff[k] ? 'false' : 'true') + '" title="' + esc(CM_KINDS[k].note + '（点击显示或隐藏）') + '"><svg viewBox="0 0 28 8" aria-hidden="true"><path d="M1 4H22"/><path class="kn-cm-lg-ah" d="M20 1L27 4L20 7z"/></svg>' + esc(CM_KINDS[k].name) + '</button>';
     }).join('') + '</div>';
-    if (rel) h += '<div class="kn-cm-lg-row"><span class="kn-cm-lg-rel"><i class="kn-cm-rel-ic is-scope"></i>范围</span><span class="kn-cm-lg-rel"><i class="kn-cm-rel-ic is-trace"></i>物质路线</span><span class="kn-cm-lg-rel"><i class="kn-cm-lg-route"></i>关联（点选时出现，线上写关系）</span></div>';
+    if (rel) h += '<div class="kn-cm-lg-row"><span class="kn-cm-lg-rel"><i class="kn-cm-rel-ic is-scope"></i>范围</span><span class="kn-cm-lg-rel"><i class="kn-cm-rel-ic is-trace"></i>物质路线</span><span class="kn-cm-lg-rel"><svg class="kn-cm-lg-route" viewBox="0 0 26 12" aria-hidden="true"><path d="M1 11V7Q1 2 6 2H20Q25 2 25 7V11"/></svg>关联（点选时出现，线上写关系）</span></div>';
     if (styles.length || G.zones.length) h += '<div class="kn-cm-lg-row">' + (G.zones.length ? '<span class="kn-cm-lg-n is-zone">区域（场所 / 主题）</span>' : '') + styles.map(function (k) {
       return '<span class="kn-cm-lg-n kn-cm-n is-' + k + '">' + esc(CM_NODE_KEYS[k]) + '</span>';
     }).join('') + '</div>';

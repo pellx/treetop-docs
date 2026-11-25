@@ -553,9 +553,9 @@ html[data-theme="dark"] .kn { --kn-cyto: rgba(227, 194, 90, .06); --kn-cyto-line
 .kn.kn-full { position: fixed; inset: 0; z-index: 3000; }
 .kn:fullscreen { width: 100%; height: 100%; }
 /* 关联线：直角折线 */
-.kn-edges .kn-cm-ref { stroke-linejoin: miter; stroke-linecap: butt; }
+.kn-edges .kn-cm-ref { stroke-linejoin: round; stroke-linecap: round; }
 .kn-cm-lg-rel { display: inline-flex; align-items: center; gap: 5px; }
-.kn-cm-lg-route { display: inline-block; width: 22px; height: 8px; border: 1.6px solid var(--kn-t-core); border-bottom: 0; box-sizing: border-box; }
+.kn-cm-lg-route { width: 26px; height: 12px; fill: none; stroke: var(--kn-t-core); stroke-width: 1.6; }
 .kn-cm-bar.is-idle { opacity: .9; }
 .kn-sm-t { display: none; }
 @media (max-width: 520px) {
