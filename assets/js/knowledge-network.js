@@ -2137,61 +2137,56 @@
         }
       });
       var src = G.box[n.id], refsList = cmRelRefs(mp, st, v);
-      /* 关联线：直角折线，从知识点的上（下）边引出，到一条空着的"走线通道"横过去，再进入对方；
-       * 或从左（右）边引出走竖向通道。通道位置逐级外移，取标签不压住东西、线穿过的知识点最少的一条。
-       * 画面里只有线粒体是曲线，其他都是直角，和主干的方正风格一致。 */
+      /* 关联线：两点之间直接相连的弧线。弧度由小到大、两侧轮流试，取标签不压住任何东西的一条。
+       * 线粒体附近：最小弧度加倍，并避免弧线贴着线粒体的轮廓走，让两种曲线一眼分得开。 */
       var vis = G.nodes.filter(function (nb) { return v[nb.id]; });
       var taken = vis.map(function (nb) { return { l: nb.l - 4, t: nb.t - 4, r: nb.r + 4, b: nb.b + 4 }; });
       G.art.forEach(function (ab) { cmArtLabels(ab.a).forEach(function (l) { taken.push({ l: l.x - 2, t: l.y - 2, r: l.x + cmTextW(l.t) * 12.5 + 10, b: l.y + 18 }); }); });
       refsList.forEach(function (it) { var tb = G.box[it.r.to]; taken.push({ l: tb.r - 11, t: tb.t - 12, r: tb.r + 12, b: tb.t + 11 }); });
-      var lanes = [];
       var hits = function (q) { return taken.filter(function (o) { return q.l < o.r && q.r > o.l && q.t < o.b && q.b > o.t; }).length; };
-      var crosses = function (pts, ends) {
+      var mitos = mp.art.filter(function (a) { return a.shape === 'mito'; });
+      /* q：点相对椭圆的"半径"，1 为轮廓上；小于 1.35 算在线粒体附近 */
+      var eq = function (a, x, y) { var dx = (x - a.cx) / a.rx, dy = (y - a.cy) / a.ry; return Math.sqrt(dx * dx + dy * dy); };
+      var nearMito = function (b) { return mitos.some(function (a) { return eq(a, b.cx, b.cy) < 1.35; }); };
+      var bez = function (A, t) { var u = 1 - t; return { x: u * u * u * A.p0.x + 3 * u * u * t * A.c1.x + 3 * u * t * t * A.c2.x + t * t * t * A.p1.x, y: u * u * u * A.p0.y + 3 * u * u * t * A.c1.y + 3 * u * t * t * A.c2.y + t * t * t * A.p1.y }; };
+      var hug = function (A) {
         var c = 0;
-        for (var k = 1; k < pts.length; k++) {
-          var a = pts[k - 1], b = pts[k], q = { l: Math.min(a.x, b.x) - 1, r: Math.max(a.x, b.x) + 1, t: Math.min(a.y, b.y) - 1, b: Math.max(a.y, b.y) + 1 };
-          vis.forEach(function (nb) { if (ends.indexOf(nb) < 0 && q.l < nb.r && q.r > nb.l && q.t < nb.b && q.b > nb.t) c++; });
-        }
+        for (var k = 1; k < 10; k++) { var q = bez(A, k / 10); mitos.forEach(function (a) { if (Math.abs(eq(a, q.x, q.y) - 1) < .14) c++; }); }
         return c;
       };
-      var laneClash = function (hz, at, lo, hi) { return lanes.some(function (L) { return L.hz === hz && Math.abs(L.at - at) < 7 && lo < L.hi && hi > L.lo; }); };
-      var route = function (b, side, at) {
-        /* side：'t'/'b' 横向通道 y=at；'l'/'r' 竖向通道 x=at */
-        if (side === 't' || side === 'b') {
-          var ex = clamp(b.cx, src.l + 10, src.r - 10), nx = clamp(src.cx, b.l + 10, b.r - 10);
-          var sy = at < src.cy ? src.t : src.b, ty = at < b.cy ? b.t : b.b;
-          return { pts: [{ x: ex, y: sy }, { x: ex, y: at }, { x: nx, y: at }, { x: nx, y: ty }], seg: [{ x: ex, y: at }, { x: nx, y: at }], hz: true };
-        }
-        var ey = clamp(b.cy, src.t + 6, src.b - 6), ny = clamp(src.cy, b.t + 6, b.b - 6);
-        var sx = at < src.cx ? src.l : src.r, tx = at < b.cx ? b.l : b.r;
-        return { pts: [{ x: sx, y: ey }, { x: at, y: ey }, { x: at, y: ny }, { x: tx, y: ny }], seg: [{ x: at, y: ey }, { x: at, y: ny }], hz: false };
+      /* 一条弧：控制点沿两中心连线的法向鼓出 bend；端点取框边上朝向控制点的位置 */
+      var arc = function (b, bend) {
+        var a0 = { x: src.cx, y: src.cy }, a1 = { x: b.cx, y: b.cy }, dx = a1.x - a0.x, dy = a1.y - a0.y, len = Math.hypot(dx, dy) || 1;
+        var nx = -dy / len * bend, ny = dx / len * bend;
+        var c1 = { x: a0.x + dx * .3 + nx, y: a0.y + dy * .3 + ny }, c2 = { x: a0.x + dx * .7 + nx, y: a0.y + dy * .7 + ny };
+        var p0 = cmClip(src, c1.x, c1.y), p1 = cmClip(b, c2.x, c2.y);
+        var A = { p0: p0, p1: p1, c1: c1, c2: c2, len: len };
+        var m = bez(A, .5); A.mx = m.x; A.my = m.y;
+        return A;
       };
+      var srcNear = nearMito(src);
       G.refBoxes = [];
       refsList.forEach(function (it) {
-        var b = G.box[it.r.to], tc = cmTagCls(it.r.tag), best = null;
-        var lw = it.r.on ? Math.round(cmTextW(it.r.on) * 11.5 + 12) : 0, lh = 18;
-        var cands = [];
-        for (var k = 1; k <= 6; k++) {
-          var g = 16 + 22 * (k - 1);
-          cands.push(['t', Math.min(src.t, b.t) - g], ['b', Math.max(src.b, b.b) + g], ['l', Math.min(src.l, b.l) - g], ['r', Math.max(src.r, b.r) + g]);
-        }
-        /* 两框之间有足够空隙时，也试中间的通道（Z 形，最短） */
-        if (b.t - src.b > 28 || src.t - b.b > 28) cands.unshift([b.t > src.b ? 'b' : 't', b.t > src.b ? (src.b + b.t) / 2 : (b.b + src.t) / 2]);
-        if (b.l - src.r > 40 || src.l - b.r > 40) cands.unshift([b.l > src.r ? 'r' : 'l', b.l > src.r ? (src.r + b.l) / 2 : (b.r + src.l) / 2]);
-        cands.forEach(function (cd, ci) {
-          var R = route(b, cd[0], cd[1]), m = { x: (R.seg[0].x + R.seg[1].x) / 2, y: (R.seg[0].y + R.seg[1].y) / 2 };
-          var lab = lw ? { l: m.x - lw / 2, t: m.y - lh / 2, r: m.x + lw / 2, b: m.y + lh / 2 } : null;
-          var lo = R.hz ? Math.min(R.seg[0].x, R.seg[1].x) : Math.min(R.seg[0].y, R.seg[1].y), hi = R.hz ? Math.max(R.seg[0].x, R.seg[1].x) : Math.max(R.seg[0].y, R.seg[1].y);
-          var len = 0; for (var q = 1; q < R.pts.length; q++) len += Math.abs(R.pts[q].x - R.pts[q - 1].x) + Math.abs(R.pts[q].y - R.pts[q - 1].y);
-          var score = (lab ? hits(lab) * 100 : 0) + crosses(R.pts, [src, b]) * 12 + (laneClash(R.hz, cd[1], lo, hi) ? 40 : 0) + len / 60 + ci * .3;
-          if (!best || score < best.score) best = { R: R, lab: lab, m: m, score: score, lo: lo, hi: hi, at: cd[1] };
+        var b = G.box[it.r.to], tc = cmTagCls(it.r.tag), sign = it.no % 2 ? 1 : -1;
+        var len = Math.hypot(b.cx - src.cx, b.cy - src.cy);
+        if (len < 12) { h += '<span class="kn-cm-badge ' + tc + '" data-no="' + it.no + '" style="left:' + px(b.r + ox - 9) + 'px;top:' + px(b.t + oy - 10) + 'px">' + it.no + '</span>'; return; }
+        var near = srcNear || nearMito(b);
+        var mins = Math.max(near ? 70 : 30, Math.min(90, len * .22)) * (near ? 1.4 : 1);
+        var lw = it.r.on ? Math.round(cmTextW(it.r.on) * 11.5 + 12) : 0, lh = 18, best = null;
+        [1, 1.5, 2.1, 2.8, 3.6, 4.6].forEach(function (k, ki) {
+          [sign, -sign].forEach(function (sg) {
+            var A = arc(b, mins * k * sg), q = lw ? { l: A.mx - lw / 2, t: A.my - lh / 2, r: A.mx + lw / 2, b: A.my + lh / 2 } : null;
+            var score = (q ? hits(q) * 100 : 0) + (near ? hug(A) * 15 : 0) + ki * 4 + (sg === sign ? 0 : 1);
+            if (!best || score < best.score) best = { A: A, q: q, score: score };
+          });
         });
-        var R = best.R, rh = 'url(#kn-cm-rh-' + tc.slice(9) + ')';
-        lanes.push({ hz: R.hz, at: best.at, lo: best.lo, hi: best.hi });
-        svg += '<path class="kn-cm-ref ' + tc + (it.r.dir ? ' has-dir' : '') + '" data-no="' + it.no + '" d="' + cmRound(R.pts, 60) + '"' + (it.r.dir === 'out' ? ' marker-end="' + rh + '"' : it.r.dir === 'in' ? ' marker-start="' + rh + '"' : '') + '/>';
-        /* 线上写关系的性质（如"氧原子来源"），读线就知道这条联系说的是什么 */
-        if (best.lab) { taken.push(best.lab); G.refBoxes.push(best.lab); h += '<span class="kn-cm-ref-l ' + tc + '" data-no="' + it.no + '" style="left:' + px(best.m.x + ox) + 'px;top:' + px(best.m.y + oy) + 'px">' + esc(it.r.on) + '</span>'; }
-        var xs = R.pts.map(function (p) { return p.x; }), ys = R.pts.map(function (p) { return p.y; });
+        var A = best.A, rh = 'url(#kn-cm-rh-' + tc.slice(9) + ')';
+        svg += '<path class="kn-cm-ref ' + tc + (it.r.dir ? ' has-dir' : '') + '" data-no="' + it.no + '" d="M' + px(A.p0.x) + ' ' + px(A.p0.y) + 'C' + px(A.c1.x) + ' ' + px(A.c1.y) + ' ' + px(A.c2.x) + ' ' + px(A.c2.y) + ' ' + px(A.p1.x) + ' ' + px(A.p1.y) + '"' + (it.r.dir === 'out' ? ' marker-end="' + rh + '"' : it.r.dir === 'in' ? ' marker-start="' + rh + '"' : '') + '/>';
+        /* 弧线中点写关系的性质（如"氧原子来源"），读线就知道这条联系说的是什么 */
+        if (best.q) { taken.push(best.q); G.refBoxes.push(best.q); h += '<span class="kn-cm-ref-l ' + tc + '" data-no="' + it.no + '" style="left:' + px(A.mx + ox) + 'px;top:' + px(A.my + oy) + 'px">' + esc(it.r.on) + '</span>'; }
+        /* 弧线外鼓的范围也算进视口 */
+        var xs = [], ys = [];
+        for (var k2 = 0; k2 <= 8; k2++) { var pt = bez(A, k2 / 8); xs.push(pt.x); ys.push(pt.y); }
         G.refBoxes.push({ l: Math.min.apply(null, xs), t: Math.min.apply(null, ys), r: Math.max.apply(null, xs), b: Math.max.apply(null, ys) });
         h += '<span class="kn-cm-badge ' + tc + '" data-no="' + it.no + '" style="left:' + px(b.r + ox - 9) + 'px;top:' + px(b.t + oy - 10) + 'px">' + it.no + '</span>';
       });
@@ -2393,7 +2388,7 @@
     if (kinds.length) h += '<div class="kn-cm-lg-row">' + kinds.map(function (k) {
       return '<button type="button" class="kn-cm-lg-k kn-cm-k-' + k + (cmOff[k] ? ' is-off' : '') + '" data-act="cm-kind" data-id="' + k + '" aria-pressed="' + (cmOff[k] ? 'false' : 'true') + '" title="' + esc(CM_KINDS[k].note + '（点击显示或隐藏）') + '"><svg viewBox="0 0 28 8" aria-hidden="true"><path d="M1 4H22"/><path class="kn-cm-lg-ah" d="M20 1L27 4L20 7z"/></svg>' + esc(CM_KINDS[k].name) + '</button>';
     }).join('') + '</div>';
-    if (rel) h += '<div class="kn-cm-lg-row"><span class="kn-cm-lg-rel"><i class="kn-cm-rel-ic is-scope"></i>范围</span><span class="kn-cm-lg-rel"><i class="kn-cm-rel-ic is-trace"></i>物质路线</span><span class="kn-cm-lg-rel"><svg class="kn-cm-lg-route" viewBox="0 0 26 12" aria-hidden="true"><path d="M1 11V7Q1 2 6 2H20Q25 2 25 7V11"/></svg>关联（点选时出现，线上写关系）</span></div>';
+    if (rel) h += '<div class="kn-cm-lg-row"><span class="kn-cm-lg-rel"><i class="kn-cm-rel-ic is-scope"></i>范围</span><span class="kn-cm-lg-rel"><i class="kn-cm-rel-ic is-trace"></i>物质路线</span><span class="kn-cm-lg-rel"><svg class="kn-cm-lg-route" viewBox="0 0 26 12" aria-hidden="true"><path d="M1 11C6 0 20 0 25 11"/></svg>关联（点选时出现，线上写关系）</span></div>';
     if (styles.length || G.zones.length) h += '<div class="kn-cm-lg-row">' + (G.zones.length ? '<span class="kn-cm-lg-n is-zone">区域（场所 / 主题）</span>' : '') + styles.map(function (k) {
       return '<span class="kn-cm-lg-n kn-cm-n is-' + k + '">' + esc(CM_NODE_KEYS[k]) + '</span>';
     }).join('') + '</div>';
