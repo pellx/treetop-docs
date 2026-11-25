@@ -263,7 +263,7 @@
       /* 示意图底图：细胞质基质、线粒体等场所，画在主干下面；节点的 at 指向它所在的场所，选中时场所一起高亮 */
       /* ortho：两端都落在这个区域里的关联线画成横平竖直、拐角带圆弧的连线（如线粒体一带）；l/t/r/b 可省略表示不限 */
       out.ortho = mp.ortho && typeof mp.ortho === 'object' ? mp.ortho : null;
-      out.art = arr(mp.art).filter(function (a) { return a && a.id && (a.shape === 'rect' || a.shape === 'mito'); });
+      out.art = arr(mp.art).filter(function (a) { return a && a.id && ['rect', 'mito', 'tube', 'ellipse'].indexOf(a.shape) >= 0; });
       out.texts = arr(mp.texts).filter(function (t) { return t && t.t && typeof t.x === 'number' && typeof t.y === 'number'; });
       /* 模块（可展开的细节）：节点 open 声明开关，in 声明归属；marks 是点选时临时标出的相关知识点 */
       out.byId = {}; out.mods = {};
@@ -1894,7 +1894,7 @@
     });
     mp.texts.forEach(function (t) { var tl = cmLabel(t.t, t.x, t.y, t.lv); tl['in'] = arr(typeof t['in'] === 'string' ? [t['in']] : t['in']); G.labels.push(tl); });
     G.art = mp.art.map(function (a) {
-      return a.shape === 'mito' ? cmBox(a.cx - a.rx, a.cy - a.ry, 2 * a.rx, 2 * a.ry, { a: a }) : cmBox(a.x, a.y, a.w, a.h, { a: a });
+      return a.shape === 'mito' || a.shape === 'ellipse' ? cmBox(a.cx - a.rx, a.cy - a.ry, 2 * a.rx, 2 * a.ry, { a: a }) : cmBox(a.x, a.y, a.w, a.h, { a: a });
     });
     var all = G.nodes.concat(G.groups, G.zones, G.labels, G.art);
     var minX = Math.min.apply(null, all.map(function (b) { return b.l; })), minY = Math.min.apply(null, all.map(function (b) { return b.t; }));
@@ -2258,8 +2258,13 @@
   }
   /* 示意图：rect 为一块场所（如细胞质基质）；mito 画线粒体——外膜椭圆、内膜椭圆和向内折叠的嵴，
    * 拆成 id-outer、id-matrix、id-inner 三个可高亮的部分。嵴的位置由数据给出，避开阶段节点。 */
+  /* 其他形状：rect 一块区域；tube 两端为半圆的管道（如毛细血管、毛细淋巴管）；ellipse 椭圆（如组织细胞）。
+   * kind 决定配色（cyto 细胞质基质、tissue 组织液、blood 血管、lymph 淋巴管、cell 细胞），省略时为 cyto。 */
   function cmArtSvg(a, px) {
-    if (a.shape === 'rect') return '<rect class="kn-cm-art is-cyto" data-art="' + esc(a.id) + '" x="' + px(a.x) + '" y="' + px(a.y) + '" width="' + px(a.w) + '" height="' + px(a.h) + '"/>';
+    var kc = 'kn-cm-art is-' + (a.kind || 'cyto');
+    if (a.shape === 'rect') return '<rect class="' + kc + '" data-art="' + esc(a.id) + '" x="' + px(a.x) + '" y="' + px(a.y) + '" width="' + px(a.w) + '" height="' + px(a.h) + '"/>';
+    if (a.shape === 'tube') { var rr = Math.min(a.w, a.h) / 2; return '<rect class="' + kc + '" data-art="' + esc(a.id) + '" x="' + px(a.x) + '" y="' + px(a.y) + '" width="' + px(a.w) + '" height="' + px(a.h) + '" rx="' + px(rr) + '" ry="' + px(rr) + '"/>'; }
+    if (a.shape === 'ellipse') return '<ellipse class="' + kc + '" data-art="' + esc(a.id) + '" cx="' + a.cx + '" cy="' + a.cy + '" rx="' + a.rx + '" ry="' + a.ry + '"/>';
     var g = 9, irx = a.rx - g, iry = a.ry - g, h = '<g class="kn-cm-mito">';
     h += '<ellipse class="kn-cm-art is-outer" data-art="' + esc(a.id) + '-outer" cx="' + a.cx + '" cy="' + a.cy + '" rx="' + a.rx + '" ry="' + a.ry + '"/>';
     h += '<ellipse class="kn-cm-art is-matrix" data-art="' + esc(a.id) + '-matrix" cx="' + a.cx + '" cy="' + a.cy + '" rx="' + irx + '" ry="' + iry + '"/>';

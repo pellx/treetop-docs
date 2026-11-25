@@ -565,3 +565,12 @@ html[data-theme="dark"] .kn { --kn-cyto: rgba(227, 194, 90, .06); --kn-cyto-line
   .kn-dock-l, .kn-dock-r { flex-wrap: nowrap; gap: 4px; }
   .kn-dock button { padding: 0 7px; font-size: 12px; }
 }
+
+/* 示意图：组织液、毛细血管、毛细淋巴管、组织细胞 */
+.kn { --kn-tissue: rgba(70, 140, 210, .07); --kn-tissue-line: rgba(70, 140, 210, .45); --kn-blood: rgba(210, 60, 60, .10); --kn-blood-line: #c0453a; --kn-lymph: rgba(170, 150, 20, .13); --kn-lymph-line: #9a8410; --kn-cellart: rgba(130, 90, 190, .10); --kn-cellart-line: #8a5cc2; }
+html[data-theme="dark"] .kn { --kn-tissue: rgba(120, 180, 240, .07); --kn-tissue-line: rgba(120, 180, 240, .4); --kn-blood: rgba(255, 110, 100, .10); --kn-blood-line: #ff8a7a; --kn-lymph: rgba(230, 210, 90, .10); --kn-lymph-line: #e3c95a; --kn-cellart: rgba(190, 160, 240, .10); --kn-cellart-line: #c4a5ff; }
+.kn-edges .kn-cm-art.is-tissue { fill: var(--kn-tissue); stroke: var(--kn-tissue-line); stroke-width: 1.2; stroke-dasharray: 2 4; }
+.kn-edges .kn-cm-art.is-blood { fill: var(--kn-blood); stroke: var(--kn-blood-line); stroke-width: 2; }
+.kn-edges .kn-cm-art.is-lymph { fill: var(--kn-lymph); stroke: var(--kn-lymph-line); stroke-width: 2; }
+.kn-edges .kn-cm-art.is-cell { fill: var(--kn-cellart); stroke: var(--kn-cellart-line); stroke-width: 1.8; }
+.kn-edges .kn-cm-art.is-tissue.is-on, .kn-edges .kn-cm-art.is-blood.is-on, .kn-edges .kn-cm-art.is-lymph.is-on, .kn-edges .kn-cm-art.is-cell.is-on { fill: var(--kn-art-on); stroke: var(--accent-strong); stroke-dasharray: none; stroke-width: 2.6; }
