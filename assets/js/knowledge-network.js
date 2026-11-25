@@ -277,7 +277,11 @@
         n.rel.forEach(function (r) {
           if (!r) return;
           if (r.scope) { var sc = arr(r.scope).filter(okId); if (sc.length) rel.push({ kind: 'scope', ids: sc, t: r.t || '' }); }
-          else if (r.trace) { var tc = arr(r.trace).filter(okId); if (tc.length > 1) rel.push({ kind: 'trace', ids: tc, t: r.t || '' }); }
+          else if (r.trace) {
+            /* 路线里可以夹 [x, y] 折点：ids 只含知识点（用于显示、适配视口和面板），path 保留折点用于画线 */
+            var tr = arr(r.trace), tc = tr.filter(function (x) { return !Array.isArray(x) && okId(x); });
+            if (tc.length > 1) { var to = { kind: 'trace', ids: tc, t: r.t || '' }; if (tr.some(Array.isArray)) to.path = tr.filter(function (x) { return Array.isArray(x) ? x.length === 2 : tc.indexOf(x) >= 0; }); rel.push(to); }
+          }
           else if (r.to && okId(r.to) && r.to !== n.id) rel.push({ kind: 'ref', ids: [r.to], to: r.to, tag: r.tag || '相关', why: r.why || '', on: r.on || '', dir: r.dir === 'in' || r.dir === 'out' ? r.dir : '' });
         });
         if (!rel.length) n.marks.forEach(function (x) { rel.push({ kind: 'ref', ids: [x], to: x, tag: '相关', why: '' }); });
@@ -2128,10 +2132,11 @@
             h += '<span class="kn-cm-scope-t" data-ri="' + i + '" style="left:' + px(at[0] + ox) + 'px;top:' + px(at[1] + oy) + 'px">' + esc(r.t) + '</span>';
           }
         } else if (r.kind === 'trace' && ids.length > 1) {
-          /* 经过各知识点中心的直角折线；横向优先，与主干的走向一致 */
-          var pts = [{ x: G.box[ids[0]].cx, y: G.box[ids[0]].cy }];
-          for (var j = 1; j < ids.length; j++) {
-            var a = pts[pts.length - 1], b = G.box[ids[j]];
+          /* 经过各知识点中心的直角折线；横向优先，与主干的走向一致。path 里的 [x, y] 是折点（不是知识点），用来绕开中间的知识点 */
+          var seq = (r.path || ids).filter(function (x) { return Array.isArray(x) || v[x]; }).map(function (x) { return Array.isArray(x) ? { cx: x[0], cy: x[1] } : G.box[x]; });
+          var pts = [{ x: seq[0].cx, y: seq[0].cy }];
+          for (var j = 1; j < seq.length; j++) {
+            var a = pts[pts.length - 1], b = seq[j];
             if (Math.abs(a.y - b.cy) > .5 && Math.abs(a.x - b.cx) > .5) pts.push({ x: b.cx, y: a.y });
             pts.push({ x: b.cx, y: b.cy });
           }
