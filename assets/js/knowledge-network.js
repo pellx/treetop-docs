@@ -261,6 +261,8 @@
       });
       out.legend = mp.legend !== false;
       /* 示意图底图：细胞质基质、线粒体等场所，画在主干下面；节点的 at 指向它所在的场所，选中时场所一起高亮 */
+      /* ortho：两端都落在这个区域里的关联线画成横平竖直、拐角带圆弧的连线（如线粒体一带）；l/t/r/b 可省略表示不限 */
+      out.ortho = mp.ortho && typeof mp.ortho === 'object' ? mp.ortho : null;
       out.art = arr(mp.art).filter(function (a) { return a && a.id && (a.shape === 'rect' || a.shape === 'mito'); });
       out.texts = arr(mp.texts).filter(function (t) { return t && t.t && typeof t.x === 'number' && typeof t.y === 'number'; });
       /* 模块（可展开的细节）：节点 open 声明开关，in 声明归属；marks 是点选时临时标出的相关知识点 */
@@ -2137,57 +2139,94 @@
         }
       });
       var src = G.box[n.id], refsList = cmRelRefs(mp, st, v);
-      /* 关联线：两点之间直接相连的弧线。弧度由小到大、两侧轮流试，取标签不压住任何东西的一条。
-       * 线粒体附近：最小弧度加倍，并避免弧线贴着线粒体的轮廓走，让两种曲线一眼分得开。 */
+      /* 关联线两种画法：
+       *   一般情况——两点之间的弧线，弧度由小到大、两侧轮流试，取线上标签不压住东西的一条；
+       *   两端都在 ortho 区域里（细胞呼吸：丙酮酸以右、无氧第二阶段以上，即线粒体一带）——横平竖直、拐角带圆弧的连线，
+       *   走空着的通道，避免在线粒体轮廓旁再画一堆弧线。 */
       var vis = G.nodes.filter(function (nb) { return v[nb.id]; });
       var taken = vis.map(function (nb) { return { l: nb.l - 4, t: nb.t - 4, r: nb.r + 4, b: nb.b + 4 }; });
       G.art.forEach(function (ab) { cmArtLabels(ab.a).forEach(function (l) { taken.push({ l: l.x - 2, t: l.y - 2, r: l.x + cmTextW(l.t) * 12.5 + 10, b: l.y + 18 }); }); });
       refsList.forEach(function (it) { var tb = G.box[it.r.to]; taken.push({ l: tb.r - 11, t: tb.t - 12, r: tb.r + 12, b: tb.t + 11 }); });
       var hits = function (q) { return taken.filter(function (o) { return q.l < o.r && q.r > o.l && q.t < o.b && q.b > o.t; }).length; };
-      var mitos = mp.art.filter(function (a) { return a.shape === 'mito'; });
-      /* q：点相对椭圆的"半径"，1 为轮廓上；小于 1.35 算在线粒体附近 */
-      var eq = function (a, x, y) { var dx = (x - a.cx) / a.rx, dy = (y - a.cy) / a.ry; return Math.sqrt(dx * dx + dy * dy); };
-      var nearMito = function (b) { return mitos.some(function (a) { return eq(a, b.cx, b.cy) < 1.35; }); };
-      var bez = function (A, t) { var u = 1 - t; return { x: u * u * u * A.p0.x + 3 * u * u * t * A.c1.x + 3 * u * t * t * A.c2.x + t * t * t * A.p1.x, y: u * u * u * A.p0.y + 3 * u * u * t * A.c1.y + 3 * u * t * t * A.c2.y + t * t * t * A.p1.y }; };
-      var hug = function (A) {
-        var c = 0;
-        for (var k = 1; k < 10; k++) { var q = bez(A, k / 10); mitos.forEach(function (a) { if (Math.abs(eq(a, q.x, q.y) - 1) < .14) c++; }); }
-        return c;
-      };
-      /* 一条弧：控制点沿两中心连线的法向鼓出 bend；端点取框边上朝向控制点的位置 */
+      var Z = mp.ortho, inZ = function (bx) { return !!Z && bx.cx >= (Z.l == null ? -1e9 : Z.l) && bx.cx <= (Z.r == null ? 1e9 : Z.r) && bx.cy >= (Z.t == null ? -1e9 : Z.t) && bx.cy <= (Z.b == null ? 1e9 : Z.b); };
+      /* 弧线：从两框中心出发，控制点沿法向鼓出 bend；端点取框边上朝向控制点的位置 */
       var arc = function (b, bend) {
         var a0 = { x: src.cx, y: src.cy }, a1 = { x: b.cx, y: b.cy }, dx = a1.x - a0.x, dy = a1.y - a0.y, len = Math.hypot(dx, dy) || 1;
         var nx = -dy / len * bend, ny = dx / len * bend;
         var c1 = { x: a0.x + dx * .3 + nx, y: a0.y + dy * .3 + ny }, c2 = { x: a0.x + dx * .7 + nx, y: a0.y + dy * .7 + ny };
         var p0 = cmClip(src, c1.x, c1.y), p1 = cmClip(b, c2.x, c2.y);
-        var A = { p0: p0, p1: p1, c1: c1, c2: c2, len: len };
-        var m = bez(A, .5); A.mx = m.x; A.my = m.y;
-        return A;
+        return { p0: p0, p1: p1, c1: c1, c2: c2, mx: .125 * p0.x + .375 * c1.x + .375 * c2.x + .125 * p1.x, my: .125 * p0.y + .375 * c1.y + .375 * c2.y + .125 * p1.y, len: len };
       };
-      var srcNear = nearMito(src);
+      /* 直角连线：从上（下）边引出走横向通道，或从左（右）边引出走竖向通道 */
+      var lanes = [];
+      var laneClash = function (hz, at, lo, hi) { return lanes.some(function (L) { return L.hz === hz && Math.abs(L.at - at) < 7 && lo < L.hi && hi > L.lo; }); };
+      var crosses = function (pts, ends) {
+        var c = 0;
+        for (var k = 1; k < pts.length; k++) {
+          var a = pts[k - 1], b = pts[k], q = { l: Math.min(a.x, b.x) - 1, r: Math.max(a.x, b.x) + 1, t: Math.min(a.y, b.y) - 1, b: Math.max(a.y, b.y) + 1 };
+          vis.forEach(function (nb) { if (ends.indexOf(nb) < 0 && q.l < nb.r && q.r > nb.l && q.t < nb.b && q.b > nb.t) c++; });
+        }
+        return c;
+      };
+      var route = function (b, side, at) {
+        if (side === 't' || side === 'b') {
+          var ex = clamp(b.cx, src.l + 10, src.r - 10), nx = clamp(src.cx, b.l + 10, b.r - 10);
+          var sy = at < src.cy ? src.t : src.b, ty = at < b.cy ? b.t : b.b;
+          return { pts: [{ x: ex, y: sy }, { x: ex, y: at }, { x: nx, y: at }, { x: nx, y: ty }], seg: [{ x: ex, y: at }, { x: nx, y: at }], hz: true };
+        }
+        var ey = clamp(b.cy, src.t + 6, src.b - 6), ny = clamp(src.cy, b.t + 6, b.b - 6);
+        var sx = at < src.cx ? src.l : src.r, tx = at < b.cx ? b.l : b.r;
+        return { pts: [{ x: sx, y: ey }, { x: at, y: ey }, { x: at, y: ny }, { x: tx, y: ny }], seg: [{ x: at, y: ey }, { x: at, y: ny }], hz: false };
+      };
       G.refBoxes = [];
       refsList.forEach(function (it) {
-        var b = G.box[it.r.to], tc = cmTagCls(it.r.tag), sign = it.no % 2 ? 1 : -1;
-        var len = Math.hypot(b.cx - src.cx, b.cy - src.cy);
-        if (len < 12) { h += '<span class="kn-cm-badge ' + tc + '" data-no="' + it.no + '" style="left:' + px(b.r + ox - 9) + 'px;top:' + px(b.t + oy - 10) + 'px">' + it.no + '</span>'; return; }
-        var near = srcNear || nearMito(b);
-        var mins = Math.max(near ? 70 : 30, Math.min(90, len * .22)) * (near ? 1.4 : 1);
-        var lw = it.r.on ? Math.round(cmTextW(it.r.on) * 11.5 + 12) : 0, lh = 18, best = null;
-        [1, 1.5, 2.1, 2.8, 3.6, 4.6].forEach(function (k, ki) {
-          [sign, -sign].forEach(function (sg) {
-            var A = arc(b, mins * k * sg), q = lw ? { l: A.mx - lw / 2, t: A.my - lh / 2, r: A.mx + lw / 2, b: A.my + lh / 2 } : null;
-            var score = (q ? hits(q) * 100 : 0) + (near ? hug(A) * 15 : 0) + ki * 4 + (sg === sign ? 0 : 1);
-            if (!best || score < best.score) best = { A: A, q: q, score: score };
+        var b = G.box[it.r.to], tc = cmTagCls(it.r.tag), sign = it.no % 2 ? 1 : -1, rh = 'url(#kn-cm-rh-' + tc.slice(9) + ')';
+        var mk = it.r.dir === 'out' ? ' marker-end="' + rh + '"' : it.r.dir === 'in' ? ' marker-start="' + rh + '"' : '';
+        var lw = it.r.on ? Math.round(cmTextW(it.r.on) * 11.5 + 12) : 0, lh = 18, lab = null, m = null, d = '', ext = null;
+        if (inZ(src) && inZ(b)) {
+          var cands = [], best = null;
+          for (var k = 1; k <= 6; k++) {
+            var g = 16 + 22 * (k - 1);
+            cands.push(['t', Math.min(src.t, b.t) - g], ['b', Math.max(src.b, b.b) + g], ['l', Math.min(src.l, b.l) - g], ['r', Math.max(src.r, b.r) + g]);
+          }
+          if (b.t - src.b > 28 || src.t - b.b > 28) cands.unshift([b.t > src.b ? 'b' : 't', b.t > src.b ? (src.b + b.t) / 2 : (b.b + src.t) / 2]);
+          if (b.l - src.r > 40 || src.l - b.r > 40) cands.unshift([b.l > src.r ? 'r' : 'l', b.l > src.r ? (src.r + b.l) / 2 : (b.r + src.l) / 2]);
+          cands.forEach(function (cd, ci) {
+            var R = route(b, cd[0], cd[1]), mm = { x: (R.seg[0].x + R.seg[1].x) / 2, y: (R.seg[0].y + R.seg[1].y) / 2 };
+            var q = lw ? { l: mm.x - lw / 2, t: mm.y - lh / 2, r: mm.x + lw / 2, b: mm.y + lh / 2 } : null;
+            var lo = R.hz ? Math.min(R.seg[0].x, R.seg[1].x) : Math.min(R.seg[0].y, R.seg[1].y), hi = R.hz ? Math.max(R.seg[0].x, R.seg[1].x) : Math.max(R.seg[0].y, R.seg[1].y);
+            var len = 0; for (var z = 1; z < R.pts.length; z++) len += Math.abs(R.pts[z].x - R.pts[z - 1].x) + Math.abs(R.pts[z].y - R.pts[z - 1].y);
+            var score = (q ? hits(q) * 100 : 0) + crosses(R.pts, [src, b]) * 12 + (laneClash(R.hz, cd[1], lo, hi) ? 40 : 0) + len / 60 + ci * .3;
+            if (!best || score < best.score) best = { R: R, q: q, m: mm, score: score, lo: lo, hi: hi, at: cd[1] };
           });
-        });
-        var A = best.A, rh = 'url(#kn-cm-rh-' + tc.slice(9) + ')';
-        svg += '<path class="kn-cm-ref ' + tc + (it.r.dir ? ' has-dir' : '') + '" data-no="' + it.no + '" d="M' + px(A.p0.x) + ' ' + px(A.p0.y) + 'C' + px(A.c1.x) + ' ' + px(A.c1.y) + ' ' + px(A.c2.x) + ' ' + px(A.c2.y) + ' ' + px(A.p1.x) + ' ' + px(A.p1.y) + '"' + (it.r.dir === 'out' ? ' marker-end="' + rh + '"' : it.r.dir === 'in' ? ' marker-start="' + rh + '"' : '') + '/>';
-        /* 弧线中点写关系的性质（如"氧原子来源"），读线就知道这条联系说的是什么 */
-        if (best.q) { taken.push(best.q); G.refBoxes.push(best.q); h += '<span class="kn-cm-ref-l ' + tc + '" data-no="' + it.no + '" style="left:' + px(A.mx + ox) + 'px;top:' + px(A.my + oy) + 'px">' + esc(it.r.on) + '</span>'; }
-        /* 弧线外鼓的范围也算进视口 */
-        var xs = [], ys = [];
-        for (var k2 = 0; k2 <= 8; k2++) { var pt = bez(A, k2 / 8); xs.push(pt.x); ys.push(pt.y); }
-        G.refBoxes.push({ l: Math.min.apply(null, xs), t: Math.min.apply(null, ys), r: Math.max.apply(null, xs), b: Math.max.apply(null, ys) });
+          lanes.push({ hz: best.R.hz, at: best.at, lo: best.lo, hi: best.hi });
+          d = cmRound(best.R.pts, 14); lab = best.q; m = best.m;
+          var xs = best.R.pts.map(function (pt) { return pt.x; }), ys = best.R.pts.map(function (pt) { return pt.y; });
+          ext = { l: Math.min.apply(null, xs), t: Math.min.apply(null, ys), r: Math.max.apply(null, xs), b: Math.max.apply(null, ys) };
+        } else {
+          var base = arc(b, 0), A = null;
+          if (base.len >= 12) {
+            if (lw) {
+              /* 带标签的弧：弧度由小到大、两侧轮流试，取标签不压住任何东西的第一种；都不行就取压得最少的 */
+              var mins = Math.max(30, Math.min(90, base.len * .22)), bestA = null;
+              [1, 1.6, 2.3, 3.1, 4, 5.2].some(function (kk) {
+                return [sign, -sign].some(function (sg) {
+                  var c = arc(b, mins * kk * sg), q = { l: c.mx - lw / 2, t: c.my - lh / 2, r: c.mx + lw / 2, b: c.my + lh / 2 }, o = hits(q);
+                  if (!bestA || o < bestA.o) bestA = { c: c, q: q, o: o };
+                  return o === 0;
+                });
+              });
+              A = bestA.c; lab = bestA.q;
+            } else A = arc(b, Math.min(90, base.len * .22) * sign);
+            d = 'M' + px(A.p0.x) + ' ' + px(A.p0.y) + 'C' + px(A.c1.x) + ' ' + px(A.c1.y) + ' ' + px(A.c2.x) + ' ' + px(A.c2.y) + ' ' + px(A.p1.x) + ' ' + px(A.p1.y);
+            m = { x: A.mx, y: A.my };
+            ext = { l: Math.min(A.p0.x, A.p1.x, A.mx), t: Math.min(A.p0.y, A.p1.y, A.my), r: Math.max(A.p0.x, A.p1.x, A.mx), b: Math.max(A.p0.y, A.p1.y, A.my) };
+          }
+        }
+        if (d) svg += '<path class="kn-cm-ref ' + tc + (it.r.dir ? ' has-dir' : '') + '" data-no="' + it.no + '" d="' + d + '"' + mk + '/>';
+        /* 线上写关系的性质（如"氧原子来源"），读线就知道这条联系说的是什么 */
+        if (lab) { taken.push(lab); G.refBoxes.push(lab); h += '<span class="kn-cm-ref-l ' + tc + '" data-no="' + it.no + '" style="left:' + px(m.x + ox) + 'px;top:' + px(m.y + oy) + 'px">' + esc(it.r.on) + '</span>'; }
+        if (ext) G.refBoxes.push(ext);
         h += '<span class="kn-cm-badge ' + tc + '" data-no="' + it.no + '" style="left:' + px(b.r + ox - 9) + 'px;top:' + px(b.t + oy - 10) + 'px">' + it.no + '</span>';
       });
     }
